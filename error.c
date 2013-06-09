@@ -18,4 +18,33 @@
 
 #include "busybus.h"
 
+#include <stdlib.h>
+#include <string.h>
+
+static volatile int last_error = 0;
+
+static const char* const error_descr[] = {
+	"success",
+	"out of memory"
+};
+
+int bbus_get_last_error(void)
+{
+	return last_error;
+}
+
+const char* bbus_error_str(int errnum)
+{
+	if (errnum < BBUS_SUCCESS)
+		return strerror(errnum);
+	else if (errnum >= __BBUS_MAX_ERR)
+		return "invalid error code";
+	else
+		return error_descr[errnum];
+}
+
+void __bus_set_err(int errnum)
+{
+	last_error = errnum;
+}
 
