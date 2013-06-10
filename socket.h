@@ -16,34 +16,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+#ifndef __BBUS_PROTOCOL__
+#define __BBUS_PROTOCOL__
+
 #include "busybus.h"
 #include <stdlib.h>
-#include <string.h>
 
-static volatile int last_error = 0;
+int __bbus_local_socket(void);
+int __bbus_bind_local_sock(int sock, const char* path);
+int __bbus_sock_listen(int sock, int backlog);
+int __bbus_local_accept(int sock, char* pathbuf,
+		size_t bufsize, size_t* pathsize);
+int __bbus_local_connect(int sock, const char* path);
+int __bbus_sock_close(int sock);
+ssize_t __bbus_send_msg(int sock, const void* buf, size_t size);
+ssize_t __bbus_recv_msg(int sock, void* buf, size_t size);
+int __bbus_sock_ready_wr(int sock, struct bbus_timeval* tv);
+int __bbus_sock_ready_rd(int sock, struct bbus_timeval* tv);
 
-static const char* const error_descr[] = {
-	"success",
-	"out of memory"
-};
-
-int bbus_get_last_error(void)
-{
-	return last_error;
-}
-
-const char* bbus_error_str(int errnum)
-{
-	if (errnum < BBUS_SUCCESS)
-		return strerror(errnum);
-	else if (errnum >= __BBUS_MAX_ERR)
-		return "invalid error code";
-	else
-		return error_descr[errnum];
-}
-
-void __bus_set_err(int errnum)
-{
-	last_error = errnum;
-}
-
+#endif /* __BBUS_PROTOCOL__ */

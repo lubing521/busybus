@@ -64,8 +64,6 @@ const char* bbus_error_str(int errnum) BBUS_PUBLIC;
  * Data marshalling.
  **************************************/
 
-typedef struct __bbus_object bbus_object;
-
 #define BBUS_TYPE_INT		'i'
 #define BBUS_TYPE_UNSIGNED	'u'
 #define BBUS_TYPE_BYTE		'b'
@@ -73,7 +71,17 @@ typedef struct __bbus_object bbus_object;
 
 #define BBUS_TYPES		'iubs'
 
+ssize_t bbus_marshall(void* buf, size_t bufsize,
+		const char* fmt, ...) BBUS_PUBLIC;
+int bbus_unmarshall(const void* buf, size_t bufsize,
+		const char* fmt, ...) BBUS_PUBLIC;
+
+typedef struct __bbus_object bbus_object;
+
 bbus_object* bbus_make_object(const char* fmt, ...) BBUS_PUBLIC;
+bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize) BBUS_PUBLIC;
+ssize_t bbus_object_to_buf(bbus_object* obj, void* buf,
+		size_t bufsize) BBUS_PUBLIC;
 int bbus_parse_object(bbus_object* obj, const char* fmt, ...) BBUS_PUBLIC;
 void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 
@@ -81,12 +89,32 @@ void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
  * Protocol funcs and defs.
  **************************************/
 
-#define BBUS_DEF_SOCKPATH	"/var/run/bbus.sock"
+#define BBUS_MAGIC		0xBBC5
+#define BBUS_DEF_DIRPATH	"/var/run/bbus/"
+#define BBUS_DEF_SOCKPATH	"/var/run/bbus/bbus.sock"
+
+#define BBUS_MSGTYPE_SO		0x01	/* Session open */
+#define BBUS_MSGTYPE_SOOK	0x02	/* Session open confirmed */
+#define BBUS_MSGTYPE_SORJCT	0x03	/* Session open rejected */
+#define BBUS_MSGTYPE_SRVREG	0x04	/* Register service */
+#define BBUS_MSGTYPE_SRVACK	0x05	/* Service acknowledged */
+#define BBUS_MSGTYPE_CLICALL	0x06	/* Client calls a method */
+#define BBUS_MSGTYPE_CLIREPLY	0x07	/* Server replies to a client */
+#define BBUS_MSGTYPE_SRVCALL	0x08	/* Server calls a registered method */
+#define BBUS_MSGTYPE_SRVREPLY	0x09	/* Method provider replies */
+#define BBUS_MSGTYPE_ERROR	0x0A	/* Erroneous call */
+#define BBUS_MSGTYPE_CLOSE	0x0B	/* Client closes session */
 
 struct bbus_msg_hdr
 {
-
+	uint16_t magic;
+	uint8_t msgtype;
+	uint8_t errcode;
+	uint32_t size;
+	uint8_t payload[1];
 };
+
+#define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr)-1)
 
 /**************************************
  * Method calling client.
@@ -110,10 +138,10 @@ typedef bbus_object* (*bbus_method_func)(bbus_object*);
 
 struct bbus_method
 {
-    char* name;
-    char* argdscr;
-    char* retdscr;
-    bbus_method_func func;
+	char* name;
+	char* argdscr;
+	char* retdscr;
+	bbus_method_func func;
 };
 
 bbus_service_connection* bbus_service_connect(void) BBUS_PUBLIC;

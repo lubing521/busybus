@@ -14,7 +14,8 @@ COMPILER =	$(CROSS_COMPILE)$(CC)
 LIBBBUS_OBJS =		./error.o					\
 			./memory.o					\
 			./protocol.o					\
-			./server.o
+			./server.o					\
+			./socket.o
 LIBBBUS_TARGET =	libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 
