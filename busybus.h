@@ -36,8 +36,17 @@
 #define BBUS_PRINTF_FUNC(FORMAT, PARAMS)				\
 		__attribute__((format(printf, FORMAT, PARAMS)))
 
+/* Busybus malloc. Returns a valid pointer even for size == 0. */
 void* bbus_malloc(size_t size);
+/*
+ * Busybus realloc. Returns a valid pointer for size == 0,
+ * for ptr == NULL behaves like bbus_malloc.
+ */
 void* bbus_realloc(void* ptr, size_t size);
+/*
+ * Busybus free. Does nothing if ptr == NULL. It's not safe to use
+ * bbus_free on memory allocated by regular malloc and vice-versa.
+ */
 void bbus_free(void* ptr);
 
 struct bbus_timeval
@@ -66,23 +75,32 @@ const char* bbus_error_str(int errnum) BBUS_PUBLIC;
 
 #define BBUS_TYPE_INT		'i'
 #define BBUS_TYPE_UNSIGNED	'u'
-#define BBUS_TYPE_BYTE		'b'
 #define BBUS_TYPE_STRING	's'
 
 #define BBUS_TYPES		'iubs'
 
-ssize_t bbus_marshall(void* buf, size_t bufsize,
-		const char* fmt, ...) BBUS_PUBLIC;
-int bbus_unmarshall(const void* buf, size_t bufsize,
-		const char* fmt, ...) BBUS_PUBLIC;
-
 typedef struct __bbus_object bbus_object;
 
-bbus_object* bbus_make_object(const char* fmt, ...) BBUS_PUBLIC;
+#define BBUS_OBJ_EMPTY		1
+#define BBUS_OBJ_INSERTING	2
+#define BBUS_OBJ_READY		3
+#define BBUS_OBJ_EXTRACTING	4
+
+bbus_object* bbus_empty_object(void) BBUS_PUBLIC;
+int bbus_obj_setdescr(bbus_object* obj, const char* descr) BBUS_PUBLIC;
+int bbus_obj_insert_int(bbus_object* obj, int val) BBUS_PUBLIC;
+int bbus_obj_insert_unsigned(bbus_object* obj, unsigned val) BBUS_PUBLIC;
+int bbus_obj_insert_string(bbus_object* obj, const char* val) BBUS_PUBLIC;
+int bbus_obj_extract_int(bbus_object* obj, int* val) BBUS_PUBLIC;
+int bbus_obj_extract_unsigned(bbus_object* obj, unsigned* val) BBUS_PUBLIC;
+int bbus_obj_extract_string(bbus_object* obj, char** val) BBUS_PUBLIC;
+void bbus_obj_reset(bbus_object* obj) BBUS_PUBLIC;
+int bbus_obj_getstate(bbus_object* obj) BBUS_PUBLIC;
+bbus_object* bbus_make_object(const char* descr, ...) BBUS_PUBLIC;
 bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize) BBUS_PUBLIC;
 ssize_t bbus_object_to_buf(bbus_object* obj, void* buf,
 		size_t bufsize) BBUS_PUBLIC;
-int bbus_parse_object(bbus_object* obj, const char* fmt, ...) BBUS_PUBLIC;
+int bbus_parse_object(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
 void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 
 /**************************************

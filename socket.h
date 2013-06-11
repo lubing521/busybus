@@ -31,7 +31,7 @@ int __bbus_local_connect(int sock, const char* path);
 int __bbus_sock_close(int sock);
 ssize_t __bbus_send_msg(int sock, const void* buf, size_t size);
 ssize_t __bbus_recv_msg(int sock, void* buf, size_t size);
-int __bbus_sock_ready_wr(int sock, struct bbus_timeval* tv);
-int __bbus_sock_ready_rd(int sock, struct bbus_timeval* tv);
+int __bbus_sock_wr_ready(int sock, struct bbus_timeval* tv);
+int __bbus_sock_rd_ready(int sock, struct bbus_timeval* tv);
 
 #endif /* __BBUS_PROTOCOL__ */
