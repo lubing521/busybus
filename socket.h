@@ -16,8 +16,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef __BBUS_PROTOCOL__
-#define __BBUS_PROTOCOL__
+#ifndef __BBUS_SOCKET__
+#define __BBUS_SOCKET__
 
 #include "busybus.h"
 #include <stdlib.h>
@@ -34,4 +34,4 @@ ssize_t __bbus_recv_msg(int sock, void* buf, size_t size);
 int __bbus_sock_wr_ready(int sock, struct bbus_timeval* tv);
 int __bbus_sock_rd_ready(int sock, struct bbus_timeval* tv);
 
-#endif /* __BBUS_PROTOCOL__ */
+#endif /* __BBUS_SOCKET__ */

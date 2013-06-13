@@ -16,10 +16,10 @@ LIBBBUS_OBJS =		./error.o					\
 			./protocol.o					\
 			./server.o					\
 			./socket.o
-LIBBBUS_TARGET =	libbbus.so
+LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 
-$(LIBBBUS_TARGET):	$(LIBBBUS_OBJS)
+libbbus.so:		$(LIBBBUS_OBJS)
 	$(CC) -o $(LIBBBUS_TARGET) $(LIBBBUS_OBJS) $(LDFLAGS)		\
 		$(LDSOFLAGS) -Wl,-soname,$(LIBBBUS_SONAME)
 
@@ -27,10 +27,10 @@ $(LIBBBUS_TARGET):	$(LIBBBUS_OBJS)
 # bbusd
 ###############################################################################
 BBUSD_OBJS =	./bbusd.o
-BBUSD_TARGET =	bbusd
+BBUSD_TARGET =	./bbusd
 BBUSD_LIBS =	-lbbus
 
-$(BBUSD_TARGET):	$(BBUSD_OBJS)
+bbusd:			$(BBUSD_OBJS)
 	$(CC) -o $(BBUSD_TARGET) $(BBUSD_OBJS) $(LDFLAGS)		\
 		$(DEBUGFLAGS) $(BBUSD_LIBS) -L./
 

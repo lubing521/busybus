@@ -20,11 +20,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* TODO Implement a thread specific error value using pthread_setspecific() */
+
 static volatile int last_error = 0;
 
 static const char* const error_descr[] = {
 	"success",
-	"out of memory"
+	"out of memory",
+	"invalid argument",
+	"invalid busybus object operation",
+	"invalid busybus object format",
+	"not enough space in buffer"
 };
 
 int bbus_get_last_error(void)

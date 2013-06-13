@@ -62,7 +62,11 @@ struct bbus_timeval
 /* Busybus error codes. */
 #define BBUS_SUCCESS		10000
 #define BBUS_NOMEM		10001
-#define __BBUS_MAX_ERR		10002
+#define BBUS_INVALARG		10002
+#define BBUS_OBJINVOP		10003
+#define BBUS_OBJINVFMT		10004
+#define BBUS_NOSPACE		10005
+#define __BBUS_MAX_ERR		10006
 
 /* Returns the value of the last error in the busybus library. */
 int bbus_get_last_error(void) BBUS_PUBLIC;
@@ -75,7 +79,12 @@ const char* bbus_error_str(int errnum) BBUS_PUBLIC;
 
 #define BBUS_TYPE_INT		'i'
 #define BBUS_TYPE_UNSIGNED	'u'
+#define BBUS_TYPE_BYTE		'b'
 #define BBUS_TYPE_STRING	's'
+
+typedef int32_t bbus_int;
+typedef uint32_t bbus_unsigned;
+typedef uint8_t bbus_byte;
 
 #define BBUS_TYPES		'iubs'
 
@@ -88,12 +97,13 @@ typedef struct __bbus_object bbus_object;
 
 bbus_object* bbus_empty_object(void) BBUS_PUBLIC;
 int bbus_obj_setdescr(bbus_object* obj, const char* descr) BBUS_PUBLIC;
-int bbus_obj_insert_int(bbus_object* obj, int val) BBUS_PUBLIC;
-int bbus_obj_insert_unsigned(bbus_object* obj, unsigned val) BBUS_PUBLIC;
-int bbus_obj_insert_string(bbus_object* obj, const char* val) BBUS_PUBLIC;
-int bbus_obj_extract_int(bbus_object* obj, int* val) BBUS_PUBLIC;
-int bbus_obj_extract_unsigned(bbus_object* obj, unsigned* val) BBUS_PUBLIC;
-int bbus_obj_extract_string(bbus_object* obj, char** val) BBUS_PUBLIC;
+int bbus_obj_insert_int(bbus_object* obj, bbus_int val) BBUS_PUBLIC;
+int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val) BBUS_PUBLIC;
+int bbus_obj_insert_string(bbus_object* obj, uint8_t* val) BBUS_PUBLIC;
+int bbus_obj_extract_int(bbus_object* obj, bbus_int* val) BBUS_PUBLIC;
+int bbus_obj_extract_unsigned(bbus_object* obj,
+		bbus_unsigned* val) BBUS_PUBLIC;
+int bbus_obj_extract_string(bbus_object* obj, uint8_t** val) BBUS_PUBLIC;
 void bbus_obj_reset(bbus_object* obj) BBUS_PUBLIC;
 int bbus_obj_getstate(bbus_object* obj) BBUS_PUBLIC;
 bbus_object* bbus_make_object(const char* descr, ...) BBUS_PUBLIC;
