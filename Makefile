@@ -6,7 +6,7 @@ LDFLAGS =	-Wl,-E
 DEBUGFLAGS =
 LDSOFLAGS =	-shared -rdynamic
 CROSS_COMPILE =
-COMPILER =	$(CROSS_COMPILE)$(CC)
+CROSSCC =	$(CROSS_COMPILE)$(CC)
 
 ###############################################################################
 # libbbus.so
@@ -20,8 +20,8 @@ LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 
 libbbus.so:		$(LIBBBUS_OBJS)
-	$(CC) -o $(LIBBBUS_TARGET) $(LIBBBUS_OBJS) $(LDFLAGS)		\
-		$(LDSOFLAGS) -Wl,-soname,$(LIBBBUS_SONAME)
+	$(CROSSCC) -o $(LIBBBUS_TARGET) $(LIBBBUS_OBJS) $(LDFLAGS)	\
+		$(DEBUGFLAGS) $(LDSOFLAGS) -Wl,-soname,$(LIBBBUS_SONAME)
 
 ###############################################################################
 # bbusd
@@ -30,14 +30,24 @@ BBUSD_OBJS =	./bbusd.o
 BBUSD_TARGET =	./bbusd
 BBUSD_LIBS =	-lbbus
 
-bbusd:			$(BBUSD_OBJS)
-	$(CC) -o $(BBUSD_TARGET) $(BBUSD_OBJS) $(LDFLAGS)		\
+bbusd:		$(BBUSD_OBJS)
+	$(CROSSCC) -o $(BBUSD_TARGET) $(BBUSD_OBJS) $(LDFLAGS)		\
 		$(DEBUGFLAGS) $(BBUSD_LIBS) -L./
+
+###############################################################################
+# test
+###############################################################################
+TEST_OBJS =	./test.o
+TEST_TARGET =	./bbus_test
+
+test:		$(TEST_OBJS) $(LIBBBUS_OBJS)
+	$(CROSSCC) -o $(TEST_TARGET) $(TEST_OBJS) $(LIBBBUS_OBJS)	\
+		$(LDFLAGS) $(DEBUGFLAGS)
 
 ###############################################################################
 # all
 ###############################################################################
-all:		$(LIBBBUS_TARGET) $(BBUSD_TARGET)
+all:		libbbus.so bbusd
 
 ###############################################################################
 # clean
@@ -47,6 +57,8 @@ clean:
 	rm -f $(BBUSD_TARGET)
 	rm -f $(LIBBBUS_OBJS)
 	rm -f $(LIBBBUS_TARGET)
+	rm -f $(TEST_OBJS)
+	rm -f $(TEST_TARGET)
 
 ###############################################################################
 # other
@@ -58,4 +70,4 @@ clean:
 .PHONY:		all
 
 .c.o:
-	$(COMPILER) -c -o $*.o $(CFLAGS) $(DEBUGFLAGS) $*.c
+	$(CROSSCC) -c -o $*.o $(CFLAGS) $(DEBUGFLAGS) $*.c

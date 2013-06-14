@@ -27,10 +27,13 @@ struct __bbus_object
 	size_t bufsize;
 	size_t bufused;
 	char* buf;
+	/* These fields are used for data extraction. */
+	char* at;
+	char* dc;
 };
 
 #define BUFFER_BASE	64
-#define BUFFER_AT(OBJ) (OBJ->buf + OBJ->bufused)
+#define BUFFER_AT(OBJ)	(OBJ->buf + OBJ->bufused)
 
 static int has_needed_space(bbus_object* obj, size_t needed)
 {
@@ -99,6 +102,15 @@ static int validate_object_fmt(void* objbuf, size_t objsize)
 			break;
 		}
 	}
+
+	return 0;
+}
+
+static void make_ready_for_extraction(bbus_object* obj)
+{
+	obj->state = BBUS_OBJ_EXTRACTING;
+	obj->dc = obj->buf;
+	obj->at = strlen(obj->buf)+1;
 }
 
 bbus_object* bbus_empty_object(void)
@@ -108,7 +120,8 @@ bbus_object* bbus_empty_object(void)
 	obj = bbus_malloc(sizeof(struct __bbus_object));
 	if (obj == NULL)
 		return NULL;
-	*obj = { BBUS_OBJ_EMPTY, 0, 0, NULL };
+	memset(obj, 0, sizeof(struct __bbus_object));
+	obj->state = BBUS_OBJ_EMPTY;
 	return obj;
 }
 
@@ -132,6 +145,16 @@ int bbus_obj_setdescr(bbus_object* obj, const char* descr)
 	return 0;
 }
 
+const char* bbus_obj_getdescr(bbus_object* obj)
+{
+	if (obj->state != BBUS_OBJ_READY) {
+		__bbus_set_err(BBUS_OBJINVOP);
+		return NULL;
+	}
+
+	return (const char*)obj->buf;
+}
+
 int bbus_obj_insert_int(bbus_object* obj, bbus_int val)
 {
 	int r;
@@ -153,8 +176,8 @@ int bbus_obj_insert_int(bbus_object* obj, bbus_int val)
 
 
 
-int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val) BBUS_PUBLIC;
-int bbus_obj_insert_string(bbus_object* obj, uint8_t* val) BBUS_PUBLIC;
+//int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val) BBUS_PUBLIC;
+//int bbus_obj_insert_string(bbus_object* obj, uint8_t* val) BBUS_PUBLIC;
 
 
 int bbus_obj_extract_int(bbus_object* obj, bbus_int* val)
@@ -162,16 +185,27 @@ int bbus_obj_extract_int(bbus_object* obj, bbus_int* val)
 	if (obj->state != BBUS_OBJ_READY) {
 		__bbus_set_err(BBUS_OBJINVOP);
 		return -1;
+	} else {
+		make_ready_for_extraction(obj);
 	}
 
-	obj->state = BBUS_OBJ_EXTRACTING;
+	if (*(obj->dc) != BBUS_TYPE_INT) {
+		__bbus_set_err(BBUS_OBJINVOP);
+		return -1;
+	}
+
+	memcpy(val, obj->at, sizeof(bbus_int));
+	obj->at += sizeof(bbus_int);
+	obj->dc += 1;
+
+	return 0;
 }
 
 
 
-int bbus_obj_extract_unsigned(bbus_object* obj,
-		bbus_unsigned* val) BBUS_PUBLIC;
-int bbus_obj_extract_string(bbus_object* obj, uint8_t** val) BBUS_PUBLIC;
+//int bbus_obj_extract_unsigned(bbus_object* obj,
+//		bbus_unsigned* val) BBUS_PUBLIC;
+//int bbus_obj_extract_string(bbus_object* obj, uint8_t** val) BBUS_PUBLIC;
 
 
 
@@ -187,8 +221,8 @@ int bbus_obj_getstate(bbus_object* obj)
 	return obj->state;
 }
 
-bbus_object* bbus_make_object(const char* descr, ...) BBUS_PUBLIC;
-bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize) BBUS_PUBLIC;
+//bbus_object* bbus_make_object(const char* descr, ...) BBUS_PUBLIC;
+//bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
 ssize_t bbus_object_to_buf(bbus_object* obj, void* buf, size_t bufsize)
 {
@@ -207,7 +241,7 @@ ssize_t bbus_object_to_buf(bbus_object* obj, void* buf, size_t bufsize)
 }
 
 
-int bbus_parse_object(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
+//int bbus_parse_object(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
 
 
 void bbus_free_object(bbus_object* obj)

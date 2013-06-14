@@ -48,7 +48,7 @@ const char* bbus_error_str(int errnum)
 		return error_descr[errnum];
 }
 
-void __bus_set_err(int errnum)
+void __bbus_set_err(int errnum)
 {
 	last_error = errnum;
 }

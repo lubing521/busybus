@@ -17,7 +17,6 @@
  */
 
 #include "busybus.h"
-#include "protocol.h"
 
 #include <string.h>
 #include <stdio.h>

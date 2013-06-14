@@ -25,6 +25,7 @@
 
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 /**************************************
  * Common funcs and macros.
@@ -97,6 +98,7 @@ typedef struct __bbus_object bbus_object;
 
 bbus_object* bbus_empty_object(void) BBUS_PUBLIC;
 int bbus_obj_setdescr(bbus_object* obj, const char* descr) BBUS_PUBLIC;
+const char* bbus_obj_getdescr(bbus_object* obj) BBUS_PUBLIC;
 int bbus_obj_insert_int(bbus_object* obj, bbus_int val) BBUS_PUBLIC;
 int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val) BBUS_PUBLIC;
 int bbus_obj_insert_string(bbus_object* obj, uint8_t* val) BBUS_PUBLIC;
@@ -224,8 +226,8 @@ void bbus_free_server(bbus_server* srv) BBUS_PUBLIC;
 
 typedef struct __bbus_pollset bbus_pollset;
 
-bbus_pollset* bbus_make_pollset(void);
-bbus_free_pollset(bbus_pollset* pollset);
+//bbus_pollset* bbus_make_pollset(void);
+//bbus_free_pollset(bbus_pollset* pollset);
 
 #endif /* __BUSYBUS__ */
 
