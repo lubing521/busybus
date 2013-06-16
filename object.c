@@ -195,6 +195,7 @@ int bbus_obj_extract_int(bbus_object* obj, bbus_int* val)
 	}
 
 	memcpy(val, obj->at, sizeof(bbus_int));
+	val = ntohl(val);
 	obj->at += sizeof(bbus_int);
 	obj->dc += 1;
 
