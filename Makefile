@@ -11,11 +11,12 @@ CROSSCC =	$(CROSS_COMPILE)$(CC)
 ###############################################################################
 # libbbus.so
 ###############################################################################
-LIBBBUS_OBJS =		./error.o					\
-			./memory.o					\
-			./protocol.o					\
-			./server.o					\
-			./socket.o
+LIBBBUS_OBJS =		error.o						\
+			memory.o					\
+			protocol.o					\
+			server.o					\
+			socket.o					\
+			object.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 
@@ -26,7 +27,7 @@ libbbus.so:		$(LIBBBUS_OBJS)
 ###############################################################################
 # bbusd
 ###############################################################################
-BBUSD_OBJS =	./bbusd.o
+BBUSD_OBJS =	bbusd.o
 BBUSD_TARGET =	./bbusd
 BBUSD_LIBS =	-lbbus
 
@@ -43,6 +44,7 @@ TEST_TARGET =	./bbus_test
 test:		$(TEST_OBJS) $(LIBBBUS_OBJS)
 	$(CROSSCC) -o $(TEST_TARGET) $(TEST_OBJS) $(LIBBBUS_OBJS)	\
 		$(LDFLAGS) $(DEBUGFLAGS)
+	$(TEST_TARGET)
 
 ###############################################################################
 # all

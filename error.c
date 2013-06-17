@@ -20,9 +20,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* TODO Implement a thread specific error value using pthread_setspecific() */
+/*
+ * TODO: Implement a thread specific error value using
+ * pthread_setspecific() and use strerror_r for thread-safety.
+ */
 
-static volatile int last_error = 0;
+static volatile int last_error = BBUS_SUCCESS;
 
 static const char* const error_descr[] = {
 	"success",
@@ -45,7 +48,7 @@ const char* bbus_error_str(int errnum)
 	else if (errnum >= __BBUS_MAX_ERR)
 		return "invalid error code";
 	else
-		return error_descr[errnum];
+		return error_descr[errnum-10000];
 }
 
 void __bbus_set_err(int errnum)

@@ -72,7 +72,7 @@ static void print(const char* fmt, ...)
 
 #define PRINT_TESTERR(...)						\
 	do {								\
-		print("%s, line %d:", __FILE__, __LINE__);		\
+		print("%s, line %d: ", __FILE__, __LINE__);		\
 		print(__VA_ARGS__);					\
 		print("\n");						\
 	} while(0)
@@ -101,8 +101,8 @@ static void print(const char* fmt, ...)
 #define ASSERT_NOT_NULL(PTR)						\
 	do {								\
 		if (PTR == NULL) {					\
-			PRINT_ERROR("Encountered a null pointer, "	\
-				"expected a valid pointer.\n");		\
+			PRINT_TESTERR("Encountered a null pointer, "	\
+				"expected a valid pointer.");		\
 			return -1;					\
 		}							\
 	} while(0)
@@ -110,8 +110,8 @@ static void print(const char* fmt, ...)
 #define ASSERT_TRUE(EXP)						\
 	do {								\
 		if (!(EXP)) {						\
-			PRINT_ERROR("Expression evaluated to false, "	\
-				"expected value is true.\n");		\
+			PRINT_TESTERR("Expression evaluated to false, "	\
+				"expected value is true.");		\
 			return -1;					\
 		}							\
 	} while(0)
@@ -122,18 +122,18 @@ static void print(const char* fmt, ...)
 
 DEFINE_TEST(make_object)
 BEGIN
-//	bbus_object* obj;
-//	char buf[128];
-//	const char* const proper = 	"iusb\0\0x44\0x33\0x22\0x11\0x44"
-//					"\0x33\0x22\0x11somethin\0\0x55";
-//
-//	obj = bbus_make_object("iusb", 0x11223344, 0x44332211,
-//						"somethin", 0x55);
-//	ASSERT_NOT_NULL(obj);
-//	memset(buf, 0, sizeof(buf));
-//	ASSERT_TRUE(bbus_obj_to_buf(obj, buf, sizeof(buf)));
-//	ASSERT_TRUE(memcmp(proper, buf, sizeof(proper)));
-//	bbus_free_object(obj);
+	bbus_object* obj;
+	char buf[128];
+	const char* const proper = 	"iusb\0\0x44\0x33\0x22\0x11\0x44"
+					"\0x33\0x22\0x11somethin\0\0x55";
+
+	obj = bbus_make_object("iusb", 0x11223344, 0x44332211,
+						"somethin", 0x55);
+	ASSERT_NOT_NULL(obj);
+	memset(buf, 0, sizeof(buf));
+	ASSERT_TRUE(bbus_object_to_buf(obj, buf, sizeof(buf)));
+	ASSERT_TRUE(memcmp(proper, buf, sizeof(proper)));
+	bbus_free_object(obj);
 END
 
 DEFINE_TEST(validate_object_format)
