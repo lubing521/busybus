@@ -305,6 +305,17 @@ int bbus_obj_getstate(bbus_object* obj)
 bbus_object* bbus_make_object(const char* descr, ...)
 {
 	va_list va;
+	bbus_object* obj;
+
+	va_start(va, descr);
+	obj = bbus_make_object_v(descr, va);
+	va_end(va);
+
+	return obj;
+}
+
+bbus_object* bbus_make_object_v(const char* descr, va_list va)
+{
 	int i;
 	size_t dlen;
 	int r;
@@ -315,9 +326,8 @@ bbus_object* bbus_make_object(const char* descr, ...)
 		goto out;
 	r = bbus_obj_setdescr(obj, descr);
 	if (r < 0)
-		goto out_free;
+		goto out;
 	dlen = strlen(descr);
-	va_start(va, descr);
 	for (i = 0; i < dlen; ++i) {
 		switch (descr[i]) {
 		case BBUS_TYPE_INT:
@@ -333,18 +343,19 @@ bbus_object* bbus_make_object(const char* descr, ...)
 			break;
 		default:
 			__bbus_set_err(BBUS_OBJINVFMT);
-			goto out_free;
+			goto out;
 			break;
 		}
 		if (r < 0)
-			goto out_free;
+			goto out;
 	}
 
-out_free:
+	obj->state = BBUS_OBJ_READY;
+	return obj;
+
+out:
 	bbus_free_object(obj);
 	obj = NULL;
-out:
-	va_end(va);
 	return obj;
 }
 
@@ -389,12 +400,22 @@ ssize_t bbus_object_to_buf(bbus_object* obj, void* buf, size_t bufsize)
 int bbus_parse_object(bbus_object* obj, const char* descr, ...)
 {
 	va_list va;
+	int r;
+
+	va_start(va, descr);
+	r = bbus_parse_object_v(obj, descr, va);
+	va_end(va);
+
+	return r;
+}
+
+int bbus_parse_object_v(bbus_object* obj, const char* descr, va_list va)
+{
 	int i;
 	size_t dlen;
 	int r = 0;
 
 	dlen = strlen(descr);
-	va_start(va, descr);
 	for (i = 0; i < dlen; ++i) {
 		switch (descr[i]) {
 		case BBUS_TYPE_INT:
@@ -419,7 +440,6 @@ int bbus_parse_object(bbus_object* obj, const char* descr, ...)
 	}
 
 out:
-	va_end(va);
 	return r;
 }
 

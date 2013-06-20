@@ -16,4 +16,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include "busybus.h"
+#ifndef __BBUS_PROTO__
+#define __BBUS_PROTO__
+
+int __bbus_recv_msg(int sock, void* buf, size_t bufsize);
+int __bbus_send_msg(int sock, const void* buf, size_t bufsize);
+
+#endif /* __BBUS_PROTO__ */

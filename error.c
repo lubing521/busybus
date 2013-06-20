@@ -33,7 +33,9 @@ static const char* const error_descr[] = {
 	"invalid argument",
 	"invalid busybus object operation",
 	"invalid busybus object format",
-	"not enough space in buffer"
+	"not enough space in buffer",
+	"connection closed by remote peer",
+	"invalid message format"
 };
 
 int bbus_get_last_error(void)

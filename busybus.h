@@ -67,7 +67,9 @@ struct bbus_timeval
 #define BBUS_OBJINVOP		10003
 #define BBUS_OBJINVFMT		10004
 #define BBUS_NOSPACE		10005
-#define __BBUS_MAX_ERR		10006
+#define BBUS_CONNCLOSED		10006
+#define BBUS_MSGINVFMT		10007
+#define __BBUS_MAX_ERR		10008
 
 /* Returns the value of the last error in the busybus library. */
 int bbus_get_last_error(void) BBUS_PUBLIC;
@@ -109,10 +111,13 @@ int bbus_obj_extract_string(bbus_object* obj, uint8_t** val) BBUS_PUBLIC;
 void bbus_obj_reset(bbus_object* obj) BBUS_PUBLIC;
 int bbus_obj_getstate(bbus_object* obj) BBUS_PUBLIC;
 bbus_object* bbus_make_object(const char* descr, ...) BBUS_PUBLIC;
+bbus_object* bbus_make_object_v(const char* descr, va_list va) BBUS_PUBLIC;
 bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize) BBUS_PUBLIC;
 ssize_t bbus_object_to_buf(bbus_object* obj, void* buf,
 		size_t bufsize) BBUS_PUBLIC;
 int bbus_parse_object(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
+int bbus_parse_object_v(bbus_object* obj, const char* descr,
+		va_list va) BBUS_PUBLIC;
 void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 
 /**************************************
@@ -121,26 +126,31 @@ void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 
 #define BBUS_MAGIC		0xBBC5
 #define BBUS_DEF_DIRPATH	"/var/run/bbus/"
-#define BBUS_DEF_SOCKPATH	"/var/run/bbus/bbus.sock"
+#define BBUS_DEF_SOCKNAME	"bbus.sock"
 
-#define BBUS_MSGTYPE_SO		0x01	/* Session open */
-#define BBUS_MSGTYPE_SOOK	0x02	/* Session open confirmed */
-#define BBUS_MSGTYPE_SORJCT	0x03	/* Session open rejected */
-#define BBUS_MSGTYPE_SRVREG	0x04	/* Register service */
-#define BBUS_MSGTYPE_SRVACK	0x05	/* Service acknowledged */
-#define BBUS_MSGTYPE_CLICALL	0x06	/* Client calls a method */
-#define BBUS_MSGTYPE_CLIREPLY	0x07	/* Server replies to a client */
-#define BBUS_MSGTYPE_SRVCALL	0x08	/* Server calls a registered method */
-#define BBUS_MSGTYPE_SRVREPLY	0x09	/* Method provider replies */
-#define BBUS_MSGTYPE_ERROR	0x0A	/* Erroneous call */
+#define BBUS_MSGTYPE_SOCLI	0x01	/* Session open client */
+#define BBUS_MSGTYPE_SOSRV	0x02	/* Session open service provider */
+#define BBUS_MSGTYPE_SOOK	0x03	/* Session open confirmed */
+#define BBUS_MSGTYPE_SORJCT	0x04	/* Session open rejected */
+#define BBUS_MSGTYPE_SRVREG	0x05	/* Register service */
+#define BBUS_MSGTYPE_SRVACK	0x06	/* Service acknowledged */
+#define BBUS_MSGTYPE_CLICALL	0x07	/* Client calls a method */
+#define BBUS_MSGTYPE_CLIREPLY	0x08	/* Server replies to a client */
+#define BBUS_MSGTYPE_SRVCALL	0x09	/* Server calls a registered method */
+#define BBUS_MSGTYPE_SRVREPLY	0x0A	/* Method provider replies */
 #define BBUS_MSGTYPE_CLOSE	0x0B	/* Client closes session */
+
+/* Protocol error codes */
+#define BBUS_PROT_SUCCESS	0x00
+#define BBUS_PROT_NOMETHOD	0x01
 
 struct bbus_msg_hdr
 {
-	uint16_t magic;
-	uint8_t msgtype;
-	uint8_t errcode;
-	uint32_t size;
+	uint16_t magic;		/* Busybus magic number */
+	uint8_t msgtype;	/* Message type */
+	uint8_t errcode;	/* Protocol error code */
+	uint32_t psize;		/* Size of the payload */
+	uint8_t numobj;		/* Number of busybus objects carried */
 	uint8_t payload[1];
 };
 

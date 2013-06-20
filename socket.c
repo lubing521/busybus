@@ -131,7 +131,7 @@ int __bbus_sock_close(int sock)
 	return 0;
 }
 
-ssize_t __bbus_send_msg(int sock, const void* buf, size_t size)
+ssize_t __bbus_send(int sock, const void* buf, size_t size)
 {
 	ssize_t b;
 
@@ -144,7 +144,7 @@ ssize_t __bbus_send_msg(int sock, const void* buf, size_t size)
 	return b;
 }
 
-ssize_t __bbus_recv_msg(int sock, void* buf, size_t size)
+ssize_t __bbus_recv(int sock, void* buf, size_t size)
 {
 	ssize_t b;
 

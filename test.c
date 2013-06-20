@@ -107,6 +107,15 @@ static void print(const char* fmt, ...)
 		}							\
 	} while(0)
 
+#define ASSERT_NULL(PTR)						\
+	do {								\
+		if (PTR != NULL) {					\
+			PRINT_TESTERR("Expected a null pointer, "	\
+				"a valid pointer ecountered.");		\
+			return -1;					\
+		}							\
+	} while(0)
+
 #define ASSERT_TRUE(EXP)						\
 	do {								\
 		if (!(EXP)) {						\
@@ -124,11 +133,11 @@ DEFINE_TEST(make_object)
 BEGIN
 	bbus_object* obj;
 	char buf[128];
-	const char* const proper = 	"iusb\0\0x44\0x33\0x22\0x11\0x44"
-					"\0x33\0x22\0x11somethin\0\0x55";
+	static const char* const proper = "ius\0\0x44\0x33\0x22\0x11\0x44"
+						"\0x33\0x22\0x11somethin\0";
 
-	obj = bbus_make_object("iusb", 0x11223344, 0x44332211,
-						"somethin", 0x55);
+	obj = bbus_make_object("ius", 0x11223344, 0x44332211,
+						"somethin");
 	ASSERT_NOT_NULL(obj);
 	memset(buf, 0, sizeof(buf));
 	ASSERT_TRUE(bbus_object_to_buf(obj, buf, sizeof(buf)));
@@ -138,7 +147,16 @@ END
 
 DEFINE_TEST(validate_object_format)
 BEGIN
+	static const char* const good = "ius\0\0x44\0x33\0x22\0x11\0x44"
+						"\0x33\0x11somethin\0";
+	static const char* const bad = "ius\0\0x44\0x33\0x22\0x11\0x44"
+						"\0x33\0x22\0x11somethin\0";
+	bbus_object* obj;
 
+	obj = bbus_object_from_buf(bad, sizeof(bad));
+	ASSERT_NULL(obj);
+	obj = bbus_object_from_buf(good, sizeof(good));
+	ASSERT_NOT_NULL(obj);
 END
 
 /**************************************
