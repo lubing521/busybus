@@ -87,7 +87,8 @@ static void print(const char* fmt, ...)
 			tests_head = xmalloc0(				\
 					sizeof(struct testlist_elem));	\
 			tests_tail = tests_head;			\
-			insque(tests_head, NULL);			\
+			tests_head->next = NULL;			\
+			tests_head->prev = NULL;			\
 		} else {						\
 			struct testlist_elem* e;			\
 			e = xmalloc0(sizeof(struct testlist_elem));	\
@@ -105,7 +106,7 @@ static void print(const char* fmt, ...)
 				"expected a valid pointer.");		\
 			return -1;					\
 		}							\
-	} while(0)
+	} while (0)
 
 #define ASSERT_NULL(PTR)						\
 	do {								\
@@ -114,7 +115,7 @@ static void print(const char* fmt, ...)
 				"a valid pointer ecountered.");		\
 			return -1;					\
 		}							\
-	} while(0)
+	} while (0)
 
 #define ASSERT_TRUE(EXP)						\
 	do {								\
@@ -123,7 +124,24 @@ static void print(const char* fmt, ...)
 				"expected value is true.");		\
 			return -1;					\
 		}							\
-	} while(0)
+	} while (0)
+
+#define ASSERT_EQ(EXPECTED, ACTUAL)					\
+	do {								\
+		if (EXPECTED != ACTUAL) {				\
+			PRINT_TESTERR("Expected equal values, "		\
+				"actual value differs.");		\
+			return -1;					\
+		}							\
+	} while (0)
+
+#define ASSERT_STREQ(EXPECTED, ACTUAL)					\
+	do {								\
+		if (strcmp(EXPECTED, ACTUAL) != 0) {			\
+			PRINT_TESTERR("Expected equal strings");	\
+			return -1;					\
+		}							\
+	} while (0)
 
 /**************************************
  * TESTS
@@ -133,30 +151,50 @@ DEFINE_TEST(make_object)
 BEGIN
 	bbus_object* obj;
 	char buf[128];
-	static const char* const proper = "ius\0\0x44\0x33\0x22\0x11\0x44"
-						"\0x33\0x22\0x11somethin\0";
+	static const char const proper[] = "ius\0\x11\x22\x33\x44\x44"
+						"\x33\x22\x11somethin\0";
 
 	obj = bbus_make_object("ius", 0x11223344, 0x44332211,
 						"somethin");
 	ASSERT_NOT_NULL(obj);
 	memset(buf, 0, sizeof(buf));
 	ASSERT_TRUE(bbus_object_to_buf(obj, buf, sizeof(buf)));
-	ASSERT_TRUE(memcmp(proper, buf, sizeof(proper)));
+	ASSERT_TRUE(memcmp(proper, buf, 21) == 0);
 	bbus_free_object(obj);
 END
 
 DEFINE_TEST(validate_object_format)
 BEGIN
-	static const char* const good = "ius\0\0x44\0x33\0x22\0x11\0x44"
-						"\0x33\0x11somethin\0";
-	static const char* const bad = "ius\0\0x44\0x33\0x22\0x11\0x44"
-						"\0x33\0x22\0x11somethin\0";
+	static const char const good[] = "ius\0\x44\x33\x22\x11\x44"
+						"\x33\x22\x11somethin\0";
+	static const char const bad[] = "ius\0\x44\x33\x22\x11\x44"
+						"\x33\x11somethin";
 	bbus_object* obj;
 
-	obj = bbus_object_from_buf(bad, sizeof(bad));
+	obj = bbus_object_from_buf(bad, 19);
 	ASSERT_NULL(obj);
-	obj = bbus_object_from_buf(good, sizeof(good));
+	obj = bbus_object_from_buf(good, 21);
 	ASSERT_NOT_NULL(obj);
+END
+
+DEFINE_TEST(parse_object)
+BEGIN
+	static const char const objbuf[] = "ius\0\x11\x22\x33\x44\x44"
+						"\x33\x22\x11somethin\0";
+
+	bbus_object* obj;
+	bbus_int i;
+	bbus_unsigned u;
+	bbus_byte* s;
+	int r;
+
+	obj = bbus_object_from_buf(objbuf, 21);
+	ASSERT_NOT_NULL(obj);
+	r = bbus_parse_object(obj, "ius", &i, &u, &s);
+	ASSERT_EQ(0, r);
+	ASSERT_EQ(0x11223344, i);
+	ASSERT_EQ(0x44332211, u);
+	ASSERT_STREQ((char*)s, "somethin");
 END
 
 /**************************************
@@ -197,6 +235,7 @@ int main(int argc, char** argv)
 {
 	REGISTER_TEST(make_object);
 	REGISTER_TEST(validate_object_format);
+	REGISTER_TEST(parse_object);
 	return run_all_tests();
 }
 

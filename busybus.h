@@ -80,6 +80,8 @@ const char* bbus_error_str(int errnum) BBUS_PUBLIC;
  * Data marshalling.
  **************************************/
 
+/* TODO This will be extended - more types + arrays and structs. */
+
 #define BBUS_TYPE_INT		'i'
 #define BBUS_TYPE_UNSIGNED	'u'
 #define BBUS_TYPE_BYTE		'b'
@@ -141,7 +143,7 @@ void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 #define BBUS_MSGTYPE_CLOSE	0x0B	/* Client closes session */
 
 /* Protocol error codes */
-#define BBUS_PROT_SUCCESS	0x00
+#define BBUS_PROT_GOOD		0x00
 #define BBUS_PROT_NOMETHOD	0x01
 
 struct bbus_msg_hdr

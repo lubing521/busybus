@@ -105,13 +105,13 @@ static int validate_object_fmt(const void* objbuf, size_t objsize)
 			if ((objsize-at) < sizeof(bbus_byte))
 				return -1;
 			at += sizeof(bbus_byte);
-			buf_at += sizeof(bbus_byte);;
+			buf_at += sizeof(bbus_byte);
 			break;
 		case BBUS_TYPE_STRING:
 			buf_src = memmem(buf_at, objsize-at, "\0", 1);
 			if (buf_src == NULL)
 				return -1;
-			sl = strlen(buf_at);
+			sl = strlen(buf_at)+1;
 			at += sl;
 			buf_at += sl;
 			break;
@@ -163,6 +163,7 @@ int bbus_obj_setdescr(bbus_object* obj, const char* descr)
 	}
 
 	strncpy(obj->buf, descr, obj->bufsize);
+	obj->bufused = ds+1;
 	obj->state = BBUS_OBJ_INSERTING;
 	return 0;
 }
@@ -184,7 +185,7 @@ int bbus_obj_insert_int(bbus_object* obj, bbus_int val)
 
 int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val)
 {
-	int r;
+	int r; int i;
 
 	if (obj->state != BBUS_OBJ_INSERTING) {
 		__bbus_set_err(BBUS_OBJINVOP);
@@ -225,11 +226,13 @@ int bbus_obj_insert_string(bbus_object* obj, uint8_t* val)
 
 int bbus_obj_extract_int(bbus_object* obj, bbus_int* val)
 {
-	if (obj->state != BBUS_OBJ_READY) {
-		__bbus_set_err(BBUS_OBJINVOP);
-		return -1;
-	} else {
-		make_ready_for_extraction(obj);
+	if (obj->state != BBUS_OBJ_EXTRACTING) {
+		if (obj->state != BBUS_OBJ_READY) {
+			__bbus_set_err(BBUS_OBJINVOP);
+			return -1;
+		} else {
+			make_ready_for_extraction(obj);
+		}
 	}
 
 	if (*(obj->dc) != BBUS_TYPE_INT) {
@@ -247,11 +250,13 @@ int bbus_obj_extract_int(bbus_object* obj, bbus_int* val)
 
 int bbus_obj_extract_unsigned(bbus_object* obj, bbus_unsigned* val)
 {
-	if (obj->state != BBUS_OBJ_READY) {
-		__bbus_set_err(BBUS_OBJINVOP);
-		return -1;
-	} else {
-		make_ready_for_extraction(obj);
+	if (obj->state != BBUS_OBJ_EXTRACTING) {
+		if (obj->state != BBUS_OBJ_READY) {
+			__bbus_set_err(BBUS_OBJINVOP);
+			return -1;
+		} else {
+			make_ready_for_extraction(obj);
+		}
 	}
 
 	if (*(obj->dc) != BBUS_TYPE_UNSIGNED) {
@@ -271,11 +276,13 @@ int bbus_obj_extract_string(bbus_object* obj, uint8_t** val)
 {
 	size_t slen;
 
-	if (obj->state != BBUS_OBJ_READY) {
-		__bbus_set_err(BBUS_OBJINVOP);
-		return -1;
-	} else {
-		make_ready_for_extraction(obj);
+	if (obj->state != BBUS_OBJ_EXTRACTING) {
+		if (obj->state != BBUS_OBJ_READY) {
+			__bbus_set_err(BBUS_OBJINVOP);
+			return -1;
+		} else {
+			make_ready_for_extraction(obj);
+		}
 	}
 
 	if (*(obj->dc) != BBUS_TYPE_STRING) {
