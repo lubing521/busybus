@@ -185,7 +185,7 @@ int bbus_obj_insert_int(bbus_object* obj, bbus_int val)
 
 int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val)
 {
-	int r; int i;
+	int r;
 
 	if (obj->state != BBUS_OBJ_INSERTING) {
 		__bbus_set_err(BBUS_OBJINVOP);
@@ -448,6 +448,16 @@ int bbus_parse_object_v(bbus_object* obj, const char* descr, va_list va)
 
 out:
 	return r;
+}
+
+void* bbus_obj_rawdata(bbus_object* obj)
+{
+	return obj->buf;
+}
+
+size_t bbus_obj_rawdata_size(bbus_object* obj)
+{
+	return obj->bufused;
 }
 
 void bbus_free_object(bbus_object* obj)

@@ -69,7 +69,10 @@ struct bbus_timeval
 #define BBUS_NOSPACE		10005
 #define BBUS_CONNCLOSED		10006
 #define BBUS_MSGINVFMT		10007
-#define __BBUS_MAX_ERR		10008
+#define BBUS_MSGMAGIC		10008
+#define BBUS_MSGINVTYPERCVD	10009
+#define BBUS_SORJCTD		10010
+#define __BBUS_MAX_ERR		10011
 
 /* Returns the value of the last error in the busybus library. */
 int bbus_get_last_error(void) BBUS_PUBLIC;
@@ -120,13 +123,18 @@ ssize_t bbus_object_to_buf(bbus_object* obj, void* buf,
 int bbus_parse_object(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
 int bbus_parse_object_v(bbus_object* obj, const char* descr,
 		va_list va) BBUS_PUBLIC;
+void* bbus_obj_rawdata(bbus_object* obj) BBUS_PUBLIC;
+size_t bbus_obj_rawdata_size(bbus_object* obj) BBUS_PUBLIC;
 void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 
 /**************************************
  * Protocol funcs and defs.
  **************************************/
 
-#define BBUS_MAGIC		0xBBC5
+ /* TODO Signals will be added in the future. */
+
+#define BBUS_MAGIC		"\xBB\xC5"
+#define BBUS_MAGIC_SIZE		2
 #define BBUS_DEF_DIRPATH	"/var/run/bbus/"
 #define BBUS_DEF_SOCKNAME	"bbus.sock"
 
@@ -135,7 +143,7 @@ void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 #define BBUS_MSGTYPE_SOOK	0x03	/* Session open confirmed */
 #define BBUS_MSGTYPE_SORJCT	0x04	/* Session open rejected */
 #define BBUS_MSGTYPE_SRVREG	0x05	/* Register service */
-#define BBUS_MSGTYPE_SRVACK	0x06	/* Service acknowledged */
+#define BBUS_MSGTYPE_SRVACK	0x06	/* Service registered */
 #define BBUS_MSGTYPE_CLICALL	0x07	/* Client calls a method */
 #define BBUS_MSGTYPE_CLIREPLY	0x08	/* Server replies to a client */
 #define BBUS_MSGTYPE_SRVCALL	0x09	/* Server calls a registered method */
@@ -146,17 +154,27 @@ void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 #define BBUS_PROT_GOOD		0x00
 #define BBUS_PROT_NOMETHOD	0x01
 
+/* Protocol flags */
+#define BBUS_PROT_HASMETA	(1 << 1)
+#define BBUS_PROT_HASOBJECT	(1 << 2)
+
 struct bbus_msg_hdr
 {
 	uint16_t magic;		/* Busybus magic number */
 	uint8_t msgtype;	/* Message type */
 	uint8_t errcode;	/* Protocol error code */
-	uint32_t psize;		/* Size of the payload */
-	uint8_t numobj;		/* Number of busybus objects carried */
-	uint8_t payload[1];
+	uint16_t psize;		/* Size of the payload */
+	uint8_t flags;		/* Various protocol flags */
 };
 
-#define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr)-1)
+struct bbus_msg
+{
+	struct bbus_msg_hdr hdr;
+	uint16_t objoff;	/* Offset of the object - if present */
+	char payload[1];
+};
+
+#define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))
 
 /**************************************
  * Method calling client.

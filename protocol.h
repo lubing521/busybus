@@ -21,5 +21,7 @@
 
 int __bbus_recv_msg(int sock, void* buf, size_t bufsize);
 int __bbus_send_msg(int sock, const void* buf, size_t bufsize);
+void __bbus_hdr_setmagic(struct bbus_msg_hdr* hdr);
+int __bbus_hdr_checkmagic(struct bbus_msg_hdr* hdr);
 
 #endif /* __BBUS_PROTO__ */

@@ -19,6 +19,7 @@
 #include "busybus.h"
 #include "socket.h"
 #include "error.h"
+#include <string.h>
 
 int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 {
@@ -81,6 +82,16 @@ int __bbus_send_msg(int sock, const void* buf, size_t bufsize)
 	} while (msgsize != sent);
 
 	return 0;
+}
+
+void __bbus_hdr_setmagic(struct bbus_msg_hdr* hdr)
+{
+	memcpy(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE);
+}
+
+int __bbus_hdr_checkmagic(struct bbus_msg_hdr* hdr)
+{
+	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0 ? 1 : 0;
 }
 
 

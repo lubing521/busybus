@@ -17,6 +17,7 @@
  */
 
 #include "busybus.h"
+#include "protocol.h"
 #include <string.h>
 
 struct __bbus_client_connection
@@ -33,6 +34,7 @@ bbus_client_connection* bbus_client_connect_wpath(const char* path)
 {
 	struct __bbus_client_connection* conn;
 	int r;
+	struct bbus_msg_hdr hdr;
 
 	conn = bbus_malloc(sizeof(struct __bbus_client_connection));
 	if (conn == NULL)
@@ -40,23 +42,68 @@ bbus_client_connection* bbus_client_connect_wpath(const char* path)
 
 	conn->sock = __bbus_local_socket();
 	if (conn->sock < 0)
-		goto errout_free;
+		goto errout;
 
 	r = __bbus_local_connect(conn->sock, path);
 	if (r < 0)
-		goto errout_free;
+		goto errout;
 
-	return conn;
+	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
+	__bbus_set_magic(&hdr);
+	hdr->msgtype = BBUS_MSGTYPE_SOCLI;
+	r = __bbus_send_msg(conn->sock, &hdr, BBUS_MSGHDR_SIZE);
+	if (r < 0)
+		goto errout_close;
 
-errout_free:
-	bbus_free(conn);
+	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
+	r = __bbus_recv_msg(conn->sock, &hdr, BBUS_MSGHDR_SIZE);
+	if (r < 0)
+		goto errout_close;
+
+	if (!__bbus_hdr_checkmagic(&hdr)) {
+		__bbus_set_err(BBUS_MSGMAGIC);
+		goto errout_close;
+	}
+
+	if (hdr.msgtype == BBUS_MSGTYPE_SOOK) {
+		return conn;
+	} else
+	if (hdr->msgtype == BBUS_MSGTYPE_SORJCT) {
+		__bbus_set_err(BBUS_SORJCTD);
+		goto errout_close;
+	} else {
+		__bbus_set_err(BBUS_MSGINVTYPERCVD);
+		goto errout_close;
+	}
+
+errout_close:
+	__bbus_sock_close(conn->sock);
 errout:
+	bbus_free(conn);
 	return NULL;
 }
 
 bbus_object* bbus_call_method(bbus_client_connection* conn,
 		const char* method, bbus_object* arg)
 {
+	int r;
+	struct bbus_msg_hdr hdr;
+	struct iovec data[3];
+	size_t mlen;
+
+	mlen = strlen(method) + 1;
+	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
+	__bbus_set_magic(&hdr);
+	hdr->msgtype = BBUS_MSGTYPE_CLICALL;
+	hdr->psize = mlen + bbus_obj_rawdata_size(obj);
+	hdr->flags |= BBUS_PROT_HASMETA;
+	hdr->flags |= BBUS_PROT_HASOBJECT;
+	data[0].iov_base = &hdr;
+	data[0].iov_len = BBUS_MSGHDR_SIZE;
+	data[1].iov_base = method;
+	data[1].iov_len = mlen;
+	data[2].iov_base = bbus_obj_rawdata(obj);
+	data[2].iov_len = bbus_obj_rawdata_size(obj);
 }
 
 int bbus_close_client_conn(bbus_client_connection* conn)
@@ -67,6 +114,8 @@ int bbus_close_client_conn(bbus_client_connection* conn)
 	if (r < 0)
 		return -1;
 	bbus_free(conn);
+
+	return 0;
 }
 
 
