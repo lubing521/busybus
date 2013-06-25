@@ -17,11 +17,15 @@
  */
 
 #include "busybus.h"
+#include "socket.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <search.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/wait.h>
 
 typedef int (*test_callback)(void);
 
@@ -55,7 +59,7 @@ static void* xmalloc0(size_t size)
 
 	p = malloc(size);
 	if (p == NULL)
-		die("Out of memory");
+		die("Out of memory\n");
 	memset(p, 0, size);
 	return p;
 }
@@ -80,6 +84,35 @@ static void print(const char* fmt, ...)
 #define DEFINE_TEST(NAME)	static int __test_##NAME##__(void)
 #define BEGIN			{
 #define END			return 0; }
+
+#define FORK(PID)							\
+	do {								\
+		PID = fork();						\
+		if (PID < 0) {						\
+			die("Fatal error: fork: %s\n",			\
+				strerror(errno));			\
+		}							\
+	} while (0)
+
+#define PARENT(PID) (PID > 0)
+#define CHILD(PID) (PID == 0)
+
+#define JOIN(PID)							\
+	do {								\
+		if (PID > 0) {						\
+			int status = 0;					\
+			int ret;					\
+									\
+			ret = waitpid(PID, &status, 0);			\
+			if (ret < 0) {					\
+				die("Fatal error: waitpid: %s\n",	\
+					strerror(errno));		\
+			}						\
+		} else							\
+		if (PID == 0) {						\
+			exit(EXIT_SUCCESS);				\
+		}							\
+	} while (0)
 
 #define REGISTER_TEST(NAME)						\
 	do {								\
@@ -122,6 +155,15 @@ static void print(const char* fmt, ...)
 		if (!(EXP)) {						\
 			PRINT_TESTERR("Expression evaluated to false, "	\
 				"expected value is true.");		\
+			return -1;					\
+		}							\
+	} while (0)
+
+#define ASSERT_FALSE(EXP)						\
+	do {								\
+		if ((EXP)) {						\
+			PRINT_TESTERR("Expression evaluated to true, "	\
+				"expected value is false.");		\
 			return -1;					\
 		}							\
 	} while (0)
@@ -197,6 +239,53 @@ BEGIN
 	ASSERT_STREQ((char*)s, "somethin");
 END
 
+DEFINE_TEST(socket_accept)
+BEGIN
+	static const char* const SOCKPATH = "/tmp/bbus_test.sock";
+	pid_t pid;
+
+	FORK(pid);
+	if PARENT(pid) {
+		int sock;
+		int clisock;
+		int r;
+		char pathbuf[128];
+		size_t pathsize;
+
+		sock = __bbus_local_socket();
+		ASSERT_FALSE(sock < 0);
+		r = __bbus_bind_local_sock(sock, SOCKPATH);
+		ASSERT_FALSE(r < 0);
+		r = __bbus_sock_listen(sock, 5);
+		ASSERT_FALSE(r < 0);
+		memset(pathbuf, 0, sizeof(pathbuf));
+		clisock = __bbus_local_accept(sock, pathbuf,
+					sizeof(pathbuf), &pathsize);
+		ASSERT_FALSE(clisock < 0);
+		r = __bbus_sock_close(sock);
+		ASSERT_FALSE(r < 0);
+	} else
+	if CHILD(pid) {
+		int sock;
+		int r;
+		unsigned waitlim;
+
+		sock = __bbus_local_socket();
+		ASSERT_FALSE(sock < 0);
+		for (waitlim = 100; waitlim > 0; --waitlim) {
+			if (access(SOCKPATH, F_OK) == 0)
+				break;
+			usleep(10);
+		}
+		usleep(100);
+		r = __bbus_local_connect(sock, SOCKPATH);
+		ASSERT_FALSE(sock < 0);
+		r = __bbus_sock_close(sock);
+		ASSERT_FALSE(r < 0);
+	}
+	JOIN(pid);
+END
+
 /**************************************
  * \TESTS
  **************************************/
@@ -231,11 +320,12 @@ static int run_all_tests(void)
 	}
 }
 
-int main(int argc, char** argv)
+int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 {
 	REGISTER_TEST(make_object);
 	REGISTER_TEST(validate_object_format);
 	REGISTER_TEST(parse_object);
+	REGISTER_TEST(socket_accept);
 	return run_all_tests();
 }
 

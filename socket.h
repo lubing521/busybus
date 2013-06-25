@@ -21,6 +21,7 @@
 
 #include "busybus.h"
 #include <stdlib.h>
+#include <sys/uio.h>
 
 int __bbus_local_socket(void);
 int __bbus_bind_local_sock(int sock, const char* path);
@@ -31,6 +32,8 @@ int __bbus_local_connect(int sock, const char* path);
 int __bbus_sock_close(int sock);
 ssize_t __bbus_send(int sock, const void* buf, size_t size);
 ssize_t __bbus_recv(int sock, void* buf, size_t size);
+ssize_t __bbus_sendv(int sock, const struct iovec* iov, int numiov);
+ssize_t __bbus_recvv(int sock, struct iovec* iov, int numiov);
 int __bbus_sock_wr_ready(int sock, struct bbus_timeval* tv);
 int __bbus_sock_rd_ready(int sock, struct bbus_timeval* tv);
 

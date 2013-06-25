@@ -1,8 +1,8 @@
 ###############################################################################
 # globals
 ###############################################################################
-CFLAGS =	-Wall -fPIC -O2 -D_GNU_SOURCE -fvisibility=hidden	\
-			-Wno-psabi -Wunused
+CFLAGS =	-Wall -Wextra -fPIC -O2 -D_GNU_SOURCE			\
+				-fvisibility=hidden -Wno-psabi
 LDFLAGS =	-Wl,-E
 DEBUGFLAGS =
 LDSOFLAGS =	-shared -rdynamic

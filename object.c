@@ -81,7 +81,7 @@ static int validate_object_fmt(const void* objbuf, size_t objsize)
 	char* buf_src;
 	size_t at;
 	size_t sl;
-	int i;
+	unsigned i;
 	size_t ds;
 
 	buf_src = memmem(objbuf, objsize, "\0", 1);
@@ -323,7 +323,7 @@ bbus_object* bbus_make_object(const char* descr, ...)
 
 bbus_object* bbus_make_object_v(const char* descr, va_list va)
 {
-	int i;
+	unsigned i;
 	size_t dlen;
 	int r;
 	bbus_object* obj;
@@ -418,7 +418,7 @@ int bbus_parse_object(bbus_object* obj, const char* descr, ...)
 
 int bbus_parse_object_v(bbus_object* obj, const char* descr, va_list va)
 {
-	int i;
+	unsigned i;
 	size_t dlen;
 	int r = 0;
 

@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/uio.h>
 
 static const size_t saun_pathlen = sizeof(((struct sockaddr_un*)0)->sun_path);
 static const size_t saun_famlen = sizeof(((struct sockaddr_un*)0)->sun_family);
@@ -49,7 +50,7 @@ int __bbus_bind_local_sock(int sock, const char* path)
 	struct sockaddr_un addr;
 
 	r = unlink(path);
-	if (r < 0) {
+	if ((r < 0) && (errno != ENOENT)) {
 		__bbus_set_err(errno);
 		return -1;
 	}
@@ -149,6 +150,32 @@ ssize_t __bbus_recv(int sock, void* buf, size_t size)
 	ssize_t b;
 
 	b = recv(sock, buf, size, MSG_DONTWAIT);
+	if (b < 0) {
+		__bbus_set_err(errno);
+		return -1;
+	}
+
+	return b;
+}
+
+ssize_t __bbus_sendv(int sock, const struct iovec* iov, int numiov)
+{
+	ssize_t b;
+
+	b = writev(sock, iov, numiov);
+	if (b < 0) {
+		__bbus_set_err(errno);
+		return -1;
+	}
+
+	return b;
+}
+
+ssize_t __bbus_recvv(int sock, struct iovec* iov, int numiov)
+{
+	ssize_t b;
+
+	b = readv(sock, iov, numiov);
 	if (b < 0) {
 		__bbus_set_err(errno);
 		return -1;

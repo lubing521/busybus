@@ -51,19 +51,14 @@ bbus_client_connection* bbus_client_connect_wpath(const char* path)
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
 	__bbus_set_magic(&hdr);
 	hdr->msgtype = BBUS_MSGTYPE_SOCLI;
-	r = __bbus_send_msg(conn->sock, &hdr, BBUS_MSGHDR_SIZE);
+	r = __bbus_sendv_msg(conn->sock, hdr, NULL, NULL, 0);
 	if (r < 0)
 		goto errout_close;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	r = __bbus_recv_msg(conn->sock, &hdr, BBUS_MSGHDR_SIZE);
+	r = __bbus_recvv_msg(conn->sock, &hdr, NULL, 0);
 	if (r < 0)
 		goto errout_close;
-
-	if (!__bbus_hdr_checkmagic(&hdr)) {
-		__bbus_set_err(BBUS_MSGMAGIC);
-		goto errout_close;
-	}
 
 	if (hdr.msgtype == BBUS_MSGTYPE_SOOK) {
 		return conn;

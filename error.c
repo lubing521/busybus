@@ -21,7 +21,7 @@
 #include <string.h>
 
 /*
- * TODO: Implement a thread specific error value using
+ * TODO: Implement thread specific error value using
  * pthread_setspecific() and use strerror_r for thread-safety.
  */
 
@@ -38,7 +38,9 @@ static const char* const error_descr[] = {
 	"invalid message format",
 	"wrong magic number in received message",
 	"received message of incorrect type",
-	"session open rejected"
+	"session open rejected",
+	"didn't menage to send all data",
+	"received less data, than expected"
 };
 
 int bbus_get_last_error(void)

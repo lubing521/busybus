@@ -36,6 +36,8 @@
 /* Printf-like function. */
 #define BBUS_PRINTF_FUNC(FORMAT, PARAMS)				\
 		__attribute__((format(printf, FORMAT, PARAMS)))
+/* Unused parameter. */
+#define BBUS_UNUSED __attribute__((unused))
 
 /* Busybus malloc. Returns a valid pointer even for size == 0. */
 void* bbus_malloc(size_t size);
@@ -72,7 +74,9 @@ struct bbus_timeval
 #define BBUS_MSGMAGIC		10008
 #define BBUS_MSGINVTYPERCVD	10009
 #define BBUS_SORJCTD		10010
-#define __BBUS_MAX_ERR		10011
+#define BBUS_SENTLESS		10011
+#define BBUS_RCVDLESS		10012
+#define __BBUS_MAX_ERR		10013
 
 /* Returns the value of the last error in the busybus library. */
 int bbus_get_last_error(void) BBUS_PUBLIC;
@@ -170,7 +174,6 @@ struct bbus_msg_hdr
 struct bbus_msg
 {
 	struct bbus_msg_hdr hdr;
-	uint16_t objoff;	/* Offset of the object - if present */
 	char payload[1];
 };
 
