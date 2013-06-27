@@ -18,6 +18,8 @@
 
 #include "busybus.h"
 #include "protocol.h"
+#include "socket.h"
+#include "error.h"
 #include <string.h>
 
 struct __bbus_client_connection
@@ -25,45 +27,42 @@ struct __bbus_client_connection
 	int sock;
 };
 
-bbus_client_connection* bbus_client_connect(void)
+struct __bbus_service_connection
 {
-	return bbus_client_connect_wpath(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
-}
+	int sock;
+	char* srvname;
+};
 
-bbus_client_connection* bbus_client_connect_wpath(const char* path)
+static int do_session_open(const char* path, int sotype)
 {
-	struct __bbus_client_connection* conn;
 	int r;
 	struct bbus_msg_hdr hdr;
+	int sock;
 
-	conn = bbus_malloc(sizeof(struct __bbus_client_connection));
-	if (conn == NULL)
+	sock = __bbus_local_socket();
+	if (sock < 0)
 		goto errout;
 
-	conn->sock = __bbus_local_socket();
-	if (conn->sock < 0)
-		goto errout;
-
-	r = __bbus_local_connect(conn->sock, path);
+	r = __bbus_local_connect(sock, path);
 	if (r < 0)
 		goto errout;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	__bbus_set_magic(&hdr);
-	hdr->msgtype = BBUS_MSGTYPE_SOCLI;
-	r = __bbus_sendv_msg(conn->sock, hdr, NULL, NULL, 0);
+	__bbus_hdr_setmagic(&hdr);
+	hdr.msgtype = sotype;
+	r = __bbus_sendv_msg(sock, &hdr, NULL, NULL, 0);
 	if (r < 0)
 		goto errout_close;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	r = __bbus_recvv_msg(conn->sock, &hdr, NULL, 0);
+	r = __bbus_recvv_msg(sock, &hdr, NULL, 0);
 	if (r < 0)
 		goto errout_close;
 
 	if (hdr.msgtype == BBUS_MSGTYPE_SOOK) {
-		return conn;
+		return sock;
 	} else
-	if (hdr->msgtype == BBUS_MSGTYPE_SORJCT) {
+	if (hdr.msgtype == BBUS_MSGTYPE_SORJCT) {
 		__bbus_set_err(BBUS_SORJCTD);
 		goto errout_close;
 	} else {
@@ -72,40 +71,106 @@ bbus_client_connection* bbus_client_connect_wpath(const char* path)
 	}
 
 errout_close:
-	__bbus_sock_close(conn->sock);
+	__bbus_sock_close(sock);
 errout:
-	bbus_free(conn);
-	return NULL;
+	return -1;
 }
 
-bbus_object* bbus_call_method(bbus_client_connection* conn,
-		const char* method, bbus_object* arg)
+static int send_session_close(int sock)
 {
 	int r;
 	struct bbus_msg_hdr hdr;
-	struct iovec data[3];
-	size_t mlen;
 
-	mlen = strlen(method) + 1;
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	__bbus_set_magic(&hdr);
-	hdr->msgtype = BBUS_MSGTYPE_CLICALL;
-	hdr->psize = mlen + bbus_obj_rawdata_size(obj);
-	hdr->flags |= BBUS_PROT_HASMETA;
-	hdr->flags |= BBUS_PROT_HASOBJECT;
-	data[0].iov_base = &hdr;
-	data[0].iov_len = BBUS_MSGHDR_SIZE;
-	data[1].iov_base = method;
-	data[1].iov_len = mlen;
-	data[2].iov_base = bbus_obj_rawdata(obj);
-	data[2].iov_len = bbus_obj_rawdata_size(obj);
+	__bbus_hdr_setmagic(&hdr);
+	hdr.msgtype = BBUS_MSGTYPE_CLOSE;
+	r = __bbus_sendv_msg(sock, &hdr, NULL, NULL, 0);
+	if (r < 0)
+		return -1;
+	r = __bbus_sock_close(sock);
+	if (r < 0)
+		return -1;
+	return 0;
+}
+
+static const char* extract_meta(const void* buf, size_t bufsize)
+{
+	char* ptr;
+
+	ptr = memmem(buf, bufsize, "\0", 1);
+	if (ptr == NULL)
+		return NULL;
+	return buf;
+}
+
+bbus_client_connection* bbus_client_connect(void)
+{
+	return bbus_client_connect_wpath(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
+}
+
+bbus_client_connection* bbus_client_connect_wpath(const char* path)
+{
+	int sock;
+	bbus_client_connection* conn;
+
+	sock = do_session_open(path, BBUS_MSGTYPE_SOCLI);
+	if (sock < 0)
+		return NULL;
+
+	conn = bbus_malloc(sizeof(struct __bbus_client_connection));
+	if (conn == NULL)
+		return NULL;
+	conn->sock = sock;
+	return conn;
+}
+
+bbus_object* bbus_call_method(bbus_client_connection* conn,
+		char* method, bbus_object* arg)
+{
+	int r;
+	struct bbus_msg_hdr hdr;
+	size_t metasize;
+	size_t objsize;
+	char buf[BBUS_MAXMSGSIZE];
+
+	metasize = strlen(method) + 1;
+	objsize = bbus_obj_rawdata_size(arg);
+	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
+	__bbus_hdr_setmagic(&hdr);
+	hdr.msgtype = BBUS_MSGTYPE_CLICALL;
+	hdr.psize = metasize + objsize;
+	hdr.flags |= BBUS_PROT_HASMETA;
+	hdr.flags |= BBUS_PROT_HASOBJECT;
+
+	r = __bbus_sendv_msg(conn->sock, &hdr, method,
+			bbus_obj_rawdata(arg), objsize);
+	if (r < 0)
+		return NULL;
+
+	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
+	memset(buf, 0, BBUS_MAXMSGSIZE);
+	r = __bbus_recvv_msg(conn->sock, &hdr, buf,
+			BBUS_MAXMSGSIZE - BBUS_MSGHDR_SIZE);
+	if (r < 0)
+		return NULL;
+
+	if (hdr.msgtype == BBUS_MSGTYPE_CLIREPLY) {
+		if (hdr.errcode != 0) {
+			__bbus_set_err(__bbus_proterr_to_errnum(hdr.errcode));
+			return NULL;
+		}
+		return bbus_object_from_buf(buf, BBUS_MAXMSGSIZE);
+	} else {
+		__bbus_set_err(BBUS_MSGINVTYPERCVD);
+		return NULL;
+	}
 }
 
 int bbus_close_client_conn(bbus_client_connection* conn)
 {
 	int r;
 
-	r = __bbus_sock_close(conn->sock);
+	r = send_session_close(conn->sock);
 	if (r < 0)
 		return -1;
 	bbus_free(conn);
@@ -113,4 +178,131 @@ int bbus_close_client_conn(bbus_client_connection* conn)
 	return 0;
 }
 
+bbus_service_connection* bbus_service_connect(const char* name)
+{
+	return bbus_service_connect_wpath(name,
+			BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
+}
+
+bbus_service_connection* bbus_service_connect_wpath(const char* name,
+		const char* path)
+{
+	int sock;
+	bbus_service_connection* conn;
+
+	sock = do_session_open(path, BBUS_MSGTYPE_SOSRVP);
+	if (sock < 0)
+		return NULL;
+
+	conn = bbus_malloc(sizeof(struct __bbus_service_connection));
+	if (conn == NULL)
+		return NULL;
+	conn->sock = sock;
+	conn->srvname = bbus_copy_string(name);
+	return conn;
+}
+
+int bbus_register_method(bbus_service_connection* conn,
+		struct bbus_method* method)
+{
+	struct bbus_msg_hdr hdr;
+	size_t metasize;
+	char* meta;
+	int r;
+
+	metasize = strlen(conn->srvname);
+	metasize += strlen(method->name) + 1; // +1 for comma
+	metasize += strlen(method->argdscr) + 1; // +1 for comma
+	metasize += strlen(method->retdscr) + 1; // +1 for NULL
+	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
+	__bbus_hdr_setmagic(&hdr);
+	hdr.msgtype = BBUS_MSGTYPE_SRVREG;
+	hdr.psize = metasize;
+	meta = bbus_build_string("%s%s,%s,%s",
+					conn->srvname,
+					method->name,
+					method->argdscr,
+					method->retdscr);
+	if (meta == NULL) {
+		return -1;
+	} else
+	if (strlen(meta) != (metasize-1)) {
+		bbus_free_string(meta);
+		__bbus_set_err(BBUS_LOGICERR);
+		return -1;
+	}
+
+	r = __bbus_sendv_msg(conn->sock, &hdr, meta, NULL, 0);
+	if (r < 0)
+		return -1;
+
+	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
+	r = __bbus_recvv_msg(conn->sock, &hdr, NULL, 0);
+	if (r < 0)
+		return -1;
+
+	if (hdr.msgtype != BBUS_MSGTYPE_SRVACK) {
+		__bbus_set_err(BBUS_MSGINVTYPERCVD);
+		return -1;
+	}
+	if (hdr.errcode != 0) {
+		__bbus_set_err(__bbus_proterr_to_errnum(hdr.errcode));
+		return -1;
+	}
+
+	/* TODO register the method */
+
+	return 0;
+}
+
+int bbus_listen_method_calls(bbus_service_connection* conn,
+		struct bbus_timeval* tv)
+{
+	int r;
+	struct bbus_msg_hdr hdr;
+	char buf[BBUS_MAXMSGSIZE];
+	const char* meta;
+
+	r = __bbus_sock_rd_ready(conn->sock, tv);
+	if (r < 0) {
+		return -1;
+	} else
+	if (r == 0) {
+		/* Timeout */
+		return 0;
+	} else {
+		/* Message incoming */
+		memset(&hdr, 0, BBUS_MSGHDR_SIZE);
+		memset(buf, 0, BBUS_MAXMSGSIZE);
+		r = __bbus_recvv_msg(conn->sock, &hdr, buf, BBUS_MAXMSGSIZE);
+		if (r < 0)
+			return -1;
+		if (hdr.msgtype != BBUS_MSGTYPE_SRVCALL) {
+			__bbus_set_err(BBUS_MSGINVTYPERCVD);
+			return -1;
+		}
+
+		meta = extract_meta(buf, BBUS_MAXMSGSIZE);
+		if (meta == NULL) {
+			__bbus_set_err(BBUS_MSGINVFMT);
+			return -1;
+		}
+
+		/* TODO Call method */
+	}
+
+	return 0;
+}
+
+int bbus_close_service_conn(bbus_service_connection* conn)
+{
+	int r;
+
+	r = send_session_close(conn->sock);
+	if (r < 0)
+		return -1;
+	bbus_free_string(conn->srvname);
+	bbus_free(conn);
+	return 0;
+}
 

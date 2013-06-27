@@ -40,7 +40,9 @@ static const char* const error_descr[] = {
 	"received message of incorrect type",
 	"session open rejected",
 	"didn't menage to send all data",
-	"received less data, than expected"
+	"received less data, than expected",
+	"internal logic error",
+	"no such method"
 };
 
 int bbus_get_last_error(void)

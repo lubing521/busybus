@@ -27,5 +27,6 @@ int __bbus_sendv_msg(int sock, struct bbus_msg_hdr* hdr,
 		char* meta, char* obj, size_t objsize);
 void __bbus_hdr_setmagic(struct bbus_msg_hdr* hdr);
 int __bbus_hdr_checkmagic(struct bbus_msg_hdr* hdr);
+int __bbus_proterr_to_errnum(uint8_t errcode);
 
 #endif /* __BBUS_PROTO__ */

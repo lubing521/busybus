@@ -445,7 +445,6 @@ int bbus_parse_object_v(bbus_object* obj, const char* descr, va_list va)
 		if (r < 0)
 			goto out;
 	}
-
 out:
 	return r;
 }
@@ -455,7 +454,7 @@ void* bbus_obj_rawdata(bbus_object* obj)
 	return obj->buf;
 }
 
-size_t bbus_obj_rawdata_size(bbus_object* obj)
+size_t bbus_obj_rawdata_size(const bbus_object* obj)
 {
 	return obj->bufused;
 }

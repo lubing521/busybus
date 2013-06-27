@@ -40,23 +40,28 @@
 #define BBUS_UNUSED __attribute__((unused))
 
 /* Busybus malloc. Returns a valid pointer even for size == 0. */
-void* bbus_malloc(size_t size);
+void* bbus_malloc(size_t size) BBUS_PUBLIC;
 /*
  * Busybus realloc. Returns a valid pointer for size == 0,
  * for ptr == NULL behaves like bbus_malloc.
  */
-void* bbus_realloc(void* ptr, size_t size);
+void* bbus_realloc(void* ptr, size_t size) BBUS_PUBLIC;
 /*
  * Busybus free. Does nothing if ptr == NULL. It's not safe to use
  * bbus_free on memory allocated by regular malloc and vice-versa.
  */
-void bbus_free(void* ptr);
+void bbus_free(void* ptr) BBUS_PUBLIC;
 
 struct bbus_timeval
 {
 	long int sec;
 	long int usec;
 };
+
+char* bbus_build_string(const char* fmt, ...)
+		BBUS_PRINTF_FUNC(1, 2) BBUS_PUBLIC;
+char* bbus_copy_string(const char* str) BBUS_PUBLIC;
+void bbus_free_string(char* str) BBUS_PUBLIC;
 
 /**************************************
  * Error handling.
@@ -76,7 +81,9 @@ struct bbus_timeval
 #define BBUS_SORJCTD		10010
 #define BBUS_SENTLESS		10011
 #define BBUS_RCVDLESS		10012
-#define __BBUS_MAX_ERR		10013
+#define BBUS_LOGICERR		10013
+#define BBUS_NOMETHOD		10014
+#define __BBUS_MAX_ERR		10015
 
 /* Returns the value of the last error in the busybus library. */
 int bbus_get_last_error(void) BBUS_PUBLIC;
@@ -128,7 +135,7 @@ int bbus_parse_object(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
 int bbus_parse_object_v(bbus_object* obj, const char* descr,
 		va_list va) BBUS_PUBLIC;
 void* bbus_obj_rawdata(bbus_object* obj) BBUS_PUBLIC;
-size_t bbus_obj_rawdata_size(bbus_object* obj) BBUS_PUBLIC;
+size_t bbus_obj_rawdata_size(const bbus_object* obj) BBUS_PUBLIC;
 void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 
 /**************************************
@@ -141,18 +148,20 @@ void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 #define BBUS_MAGIC_SIZE		2
 #define BBUS_DEF_DIRPATH	"/var/run/bbus/"
 #define BBUS_DEF_SOCKNAME	"bbus.sock"
+#define BBUS_MAXMSGSIZE		4096
 
 #define BBUS_MSGTYPE_SOCLI	0x01	/* Session open client */
-#define BBUS_MSGTYPE_SOSRV	0x02	/* Session open service provider */
+#define BBUS_MSGTYPE_SOSRVP	0x02	/* Session open service provider */
 #define BBUS_MSGTYPE_SOOK	0x03	/* Session open confirmed */
 #define BBUS_MSGTYPE_SORJCT	0x04	/* Session open rejected */
 #define BBUS_MSGTYPE_SRVREG	0x05	/* Register service */
-#define BBUS_MSGTYPE_SRVACK	0x06	/* Service registered */
-#define BBUS_MSGTYPE_CLICALL	0x07	/* Client calls a method */
-#define BBUS_MSGTYPE_CLIREPLY	0x08	/* Server replies to a client */
-#define BBUS_MSGTYPE_SRVCALL	0x09	/* Server calls a registered method */
-#define BBUS_MSGTYPE_SRVREPLY	0x0A	/* Method provider replies */
-#define BBUS_MSGTYPE_CLOSE	0x0B	/* Client closes session */
+#define BBUS_MSGTYPE_SRVUNREG	0x06	/* Unregister service */
+#define BBUS_MSGTYPE_SRVACK	0x07	/* Service registered (or error) */
+#define BBUS_MSGTYPE_CLICALL	0x08	/* Client calls a method */
+#define BBUS_MSGTYPE_CLIREPLY	0x09	/* Server replies to a client */
+#define BBUS_MSGTYPE_SRVCALL	0x0A	/* Server calls a registered method */
+#define BBUS_MSGTYPE_SRVREPLY	0x0B	/* Method provider replies */
+#define BBUS_MSGTYPE_CLOSE	0x0C	/* Client closes session */
 
 /* Protocol error codes */
 #define BBUS_PROT_GOOD		0x00
@@ -189,7 +198,7 @@ bbus_client_connection* bbus_client_connect(void) BBUS_PUBLIC;
 bbus_client_connection* bbus_client_connect_wpath(
 		const char* path) BBUS_PUBLIC;
 bbus_object* bbus_call_method(bbus_client_connection* conn,
-		const char* method, bbus_object* arg) BBUS_PUBLIC;
+		char* method, bbus_object* arg) BBUS_PUBLIC;
 int bbus_close_client_conn(bbus_client_connection* conn) BBUS_PUBLIC;
 
 /**************************************
@@ -197,7 +206,7 @@ int bbus_close_client_conn(bbus_client_connection* conn) BBUS_PUBLIC;
  **************************************/
 
 typedef struct __bbus_service_connection bbus_service_connection;
-typedef bbus_object* (*bbus_method_func)(bbus_object*);
+typedef bbus_object* (*bbus_method_func)(const char*, bbus_object*);
 
 struct bbus_method
 {
@@ -207,12 +216,18 @@ struct bbus_method
 	bbus_method_func func;
 };
 
-bbus_service_connection* bbus_service_connect(void) BBUS_PUBLIC;
+bbus_service_connection* bbus_service_connect(const char* name) BBUS_PUBLIC;
 bbus_service_connection* bbus_service_connect_wpath(
-		const char* path) BBUS_PUBLIC;
-bbus_object* bbus_register_method(bbus_service_connection* conn,
+		const char* name, const char* path) BBUS_PUBLIC;
+int bbus_register_method(bbus_service_connection* conn,
 		struct bbus_method* method) BBUS_PUBLIC;
+int bbus_unregister_method(bbus_service_connection* conn,
+		const char* method) BBUS_PUBLIC;
 int bbus_close_service_conn(bbus_service_connection* conn) BBUS_PUBLIC;
+/*
+ * Returns 0 if timed out with no method call, -1 in case of an
+ * error and 1 if method has been called.
+ */
 int bbus_listen_method_calls(bbus_service_connection* conn,
 		struct bbus_timeval* tv) BBUS_PUBLIC;
 

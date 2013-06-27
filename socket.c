@@ -132,6 +132,15 @@ int __bbus_sock_close(int sock)
 	return 0;
 }
 
+int __bbus_rm_sock(const char* path)
+{
+	if (unlink(path) < 0) {
+		__bbus_set_err(errno);
+		return -1;
+	}
+	return 0;
+}
+
 ssize_t __bbus_send(int sock, const void* buf, size_t size)
 {
 	ssize_t b;

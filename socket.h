@@ -30,6 +30,7 @@ int __bbus_local_accept(int sock, char* pathbuf,
 		size_t bufsize, size_t* pathsize);
 int __bbus_local_connect(int sock, const char* path);
 int __bbus_sock_close(int sock);
+int __bbus_rm_sock(const char* path);
 ssize_t __bbus_send(int sock, const void* buf, size_t size);
 ssize_t __bbus_recv(int sock, void* buf, size_t size);
 ssize_t __bbus_sendv(int sock, const struct iovec* iov, int numiov);

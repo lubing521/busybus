@@ -188,6 +188,25 @@ int __bbus_hdr_checkmagic(struct bbus_msg_hdr* hdr)
 	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0 ? 1 : 0;
 }
 
+int __bbus_proterr_to_errnum(uint8_t errcode)
+{
+	int errnum;
+
+	switch (errcode)
+	{
+	case BBUS_PROT_GOOD:
+		errnum = BBUS_SUCCESS;
+		break;
+	case BBUS_PROT_NOMETHOD:
+		errnum = BBUS_NOMETHOD;
+		break;
+	default:
+		errnum = BBUS_INVALARG;
+		break;
+	}
+
+	return errnum;
+}
 
 
 

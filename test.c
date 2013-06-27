@@ -64,6 +64,11 @@ static void* xmalloc0(size_t size)
 	return p;
 }
 
+static void xfree(void* ptr)
+{
+	free(ptr);
+}
+
 static void print(const char* fmt, ...) BBUS_PRINTF_FUNC(1, 2);
 static void print(const char* fmt, ...)
 {
@@ -217,6 +222,7 @@ BEGIN
 	ASSERT_NULL(obj);
 	obj = bbus_object_from_buf(good, 21);
 	ASSERT_NOT_NULL(obj);
+	bbus_free_object(obj);
 END
 
 DEFINE_TEST(parse_object)
@@ -237,6 +243,7 @@ BEGIN
 	ASSERT_EQ(0x11223344, i);
 	ASSERT_EQ(0x44332211, u);
 	ASSERT_STREQ((char*)s, "somethin");
+	bbus_free_object(obj);
 END
 
 DEFINE_TEST(socket_accept)
@@ -290,6 +297,19 @@ END
  * \TESTS
  **************************************/
 
+static void cleanup(void)
+{
+	struct testlist_elem* el;
+	struct testlist_elem* tmp;
+
+	el = tests_head;
+	while (el != NULL) {
+		tmp = el;
+		el = el->next;
+		xfree(tmp);
+	}
+}
+
 static int run_all_tests(void)
 {
 	struct testlist_elem* e;
@@ -313,11 +333,13 @@ static int run_all_tests(void)
 	print("Tests run:\t%d\n", tests_run);
 	if (tests_failed > 0) {
 		print("Tests failed:\t%d\n", tests_failed);
-		return -1;
+		r = -1;
 	} else {
 		print("All tests PASSED!\n");
-		return 0;
+		r = 0;
 	}
+	cleanup();
+	return r;
 }
 
 int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
