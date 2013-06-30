@@ -200,6 +200,9 @@ int __bbus_proterr_to_errnum(uint8_t errcode)
 	case BBUS_PROT_NOMETHOD:
 		errnum = BBUS_NOMETHOD;
 		break;
+	case BBUS_PROT_METHODERR:
+		errnum = BBUS_METHODERR;
+		break;
 	default:
 		errnum = BBUS_INVALARG;
 		break;

@@ -43,7 +43,8 @@ static const char* const error_descr[] = {
 	"received less data, than expected",
 	"internal logic error",
 	"no such method",
-	"no such element in hashmap"
+	"no such element in hashmap",
+	"internal method error"
 };
 
 int bbus_get_last_error(void)

@@ -31,6 +31,7 @@ struct __bbus_service_connection
 {
 	int sock;
 	char* srvname;
+	bbus_hashmap* methods;
 };
 
 static int do_session_open(const char* path, int sotype)
@@ -101,6 +102,23 @@ static const char* extract_meta(const void* buf, size_t bufsize)
 	if (ptr == NULL)
 		return NULL;
 	return buf;
+}
+
+static bbus_object* extract_object(const void* buf, size_t bufsize)
+{
+	const char* ptr;
+	bbus_object* obj;
+
+	ptr = extract_meta(buf, bufsize);
+	if (ptr == NULL)
+		return NULL;
+	buf += ((unsigned)ptr - (unsigned)buf);
+	bufsize -= ((unsigned)ptr - (unsigned)buf);
+	obj = bbus_object_from_buf(buf, bufsize);
+	if (obj == NULL)
+		return NULL;
+
+	return obj;
 }
 
 bbus_client_connection* bbus_client_connect(void)
@@ -199,6 +217,13 @@ bbus_service_connection* bbus_service_connect_wpath(const char* name,
 		return NULL;
 	conn->sock = sock;
 	conn->srvname = bbus_copy_string(name);
+	conn->methods = bbus_hmap_create();
+	if (conn->methods == NULL) {
+		__bbus_sock_close(conn->sock);
+		bbus_free_string(conn->srvname);
+		bbus_free(conn);
+		return NULL;
+	}
 	return conn;
 }
 
@@ -250,7 +275,9 @@ int bbus_register_method(bbus_service_connection* conn,
 		return -1;
 	}
 
-	/* TODO register the method */
+	r = bbus_hmap_insert(conn->methods, method->name, (void*)method->func);
+	if (r < 0)
+		return -1;
 
 	return 0;
 }
@@ -262,6 +289,9 @@ int bbus_listen_method_calls(bbus_service_connection* conn,
 	struct bbus_msg_hdr hdr;
 	char buf[BBUS_MAXMSGSIZE];
 	const char* meta;
+	bbus_object* objarg;
+	bbus_object* objret;
+	void* callback;
 
 	r = __bbus_sock_rd_ready(conn->sock, tv);
 	if (r < 0) {
@@ -288,10 +318,42 @@ int bbus_listen_method_calls(bbus_service_connection* conn,
 			return -1;
 		}
 
-		/* TODO Call method */
+		objarg = extract_object(buf, BBUS_MAXMSGSIZE);
+		if (objarg == NULL) {
+			__bbus_set_err(BBUS_MSGINVFMT);
+			return -1;
+		}
+
+		memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
+		__bbus_hdr_setmagic(&hdr);
+		hdr.msgtype = BBUS_MSGTYPE_SRVREPLY;
+		objret = NULL;
+		callback = bbus_hmap_find(conn->methods, meta);
+		if (callback == NULL) {
+			hdr.errcode = BBUS_PROT_NOMETHOD;
+			__bbus_set_err(BBUS_NOMETHOD);
+			goto send_reply;
+		}
+
+		objret = ((bbus_method_func)callback)(meta, objarg);
+		if (objret == NULL) {
+			hdr.errcode = BBUS_PROT_METHODERR;
+			__bbus_set_err(BBUS_METHODERR);
+			goto send_reply;
+		}
+
+send_reply:
+		r = __bbus_sendv_msg(conn->sock, &hdr, NULL,
+			objret == NULL ? NULL : bbus_obj_rawdata(objret),
+			objret == NULL ? 0 : bbus_obj_rawdata_size(objret));
+		if (r < 0)
+			return -1;
+
+		bbus_free_object(objret);
+		bbus_free_object(objarg);
 	}
 
-	return 0;
+	return hdr.errcode == 0 ? 0 : -1;
 }
 
 int bbus_close_service_conn(bbus_service_connection* conn)
@@ -302,6 +364,7 @@ int bbus_close_service_conn(bbus_service_connection* conn)
 	if (r < 0)
 		return -1;
 	bbus_free_string(conn->srvname);
+	bbus_hmap_free(conn->methods);
 	bbus_free(conn);
 	return 0;
 }

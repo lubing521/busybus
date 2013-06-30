@@ -97,7 +97,8 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_LOGICERR		10013
 #define BBUS_NOMETHOD		10014
 #define BBUS_HMAPNOELEM		10015
-#define __BBUS_MAX_ERR		10016
+#define BBUS_METHODERR		10016
+#define __BBUS_MAX_ERR		10017
 
 /* Returns the value of the last error in the busybus library. */
 int bbus_get_last_error(void) BBUS_PUBLIC;
@@ -180,6 +181,7 @@ void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 /* Protocol error codes */
 #define BBUS_PROT_GOOD		0x00
 #define BBUS_PROT_NOMETHOD	0x01
+#define BBUS_PROT_METHODERR	0x02
 
 /* Protocol flags */
 #define BBUS_PROT_HASMETA	(1 << 1)
