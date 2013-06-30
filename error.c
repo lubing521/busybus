@@ -42,7 +42,8 @@ static const char* const error_descr[] = {
 	"didn't menage to send all data",
 	"received less data, than expected",
 	"internal logic error",
-	"no such method"
+	"no such method",
+	"no such element in hashmap"
 };
 
 int bbus_get_last_error(void)

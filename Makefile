@@ -19,7 +19,9 @@ LIBBBUS_OBJS =		error.o						\
 			socket.o					\
 			object.o					\
 			client.o					\
-			string.o
+			string.o					\
+			crc32.o						\
+			hashmap.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 

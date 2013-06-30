@@ -63,6 +63,19 @@ char* bbus_build_string(const char* fmt, ...)
 char* bbus_copy_string(const char* str) BBUS_PUBLIC;
 void bbus_free_string(char* str) BBUS_PUBLIC;
 
+uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
+
+typedef struct __bbus_hashmap bbus_hashmap;
+
+bbus_hashmap* bbus_hmap_create(void) BBUS_PUBLIC;
+int bbus_hmap_insert(bbus_hashmap* hmap,
+		const char* key, void* val) BBUS_PUBLIC;
+void* bbus_hmap_find(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+void* bbus_hmap_remove(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+void bbus_hmap_reset(bbus_hashmap* hmap) BBUS_PUBLIC;
+void bbus_hmap_free(bbus_hashmap* hmap) BBUS_PUBLIC;
+int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
+
 /**************************************
  * Error handling.
  **************************************/
@@ -83,7 +96,8 @@ void bbus_free_string(char* str) BBUS_PUBLIC;
 #define BBUS_RCVDLESS		10012
 #define BBUS_LOGICERR		10013
 #define BBUS_NOMETHOD		10014
-#define __BBUS_MAX_ERR		10015
+#define BBUS_HMAPNOELEM		10015
+#define __BBUS_MAX_ERR		10016
 
 /* Returns the value of the last error in the busybus library. */
 int bbus_get_last_error(void) BBUS_PUBLIC;

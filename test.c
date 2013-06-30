@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/wait.h>
+#include <time.h>
 
 typedef int (*test_callback)(void);
 
@@ -42,8 +43,7 @@ static unsigned tests_failed = 0;
 static struct testlist_elem* tests_head = NULL;
 static struct testlist_elem* tests_tail = NULL;
 
-static void die(const char* fmt, ...) BBUS_PRINTF_FUNC(1, 2);
-static void die(const char* fmt, ...)
+static void BBUS_PRINTF_FUNC(1, 2) die(const char* fmt, ...)
 {
 	va_list va;
 
@@ -69,8 +69,7 @@ static void xfree(void* ptr)
 	free(ptr);
 }
 
-static void print(const char* fmt, ...) BBUS_PRINTF_FUNC(1, 2);
-static void print(const char* fmt, ...)
+static void BBUS_PRINTF_FUNC(1, 2) print(const char* fmt, ...)
 {
 	va_list va;
 
@@ -293,6 +292,37 @@ BEGIN
 	JOIN(pid);
 END
 
+DEFINE_TEST(crc32)
+BEGIN
+	static const uint32_t proper = 0x28D8E5AAU;
+	static const char* const data = "abcdefgh123456789";
+
+	ASSERT_EQ(proper, bbus_crc32(data, strlen(data)));
+END
+
+DEFINE_TEST(hashmap)
+BEGIN
+	bbus_hashmap* hmap;
+	int r;
+	int i;
+	char keybuf[128];
+	void* key;
+
+	hmap = bbus_hmap_create();
+	ASSERT_NOT_NULL(hmap);
+
+	for (i = 0; i < 140; ++i) {
+		memset(keybuf, 0, sizeof(keybuf));
+		snprintf(keybuf, sizeof(keybuf), "%d", i);
+		r = bbus_hmap_insert(hmap, keybuf, (void*)i);
+		ASSERT_FALSE(r < 0);
+	}
+
+	key = bbus_hmap_find(hmap, "40");
+	ASSERT_EQ(40, (int)key);
+	bbus_hmap_free(hmap);
+END
+
 /**************************************
  * \TESTS
  **************************************/
@@ -348,6 +378,8 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 	REGISTER_TEST(validate_object_format);
 	REGISTER_TEST(parse_object);
 	REGISTER_TEST(socket_accept);
+	REGISTER_TEST(crc32);
+	REGISTER_TEST(hashmap);
 	return run_all_tests();
 }
 
