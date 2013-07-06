@@ -6,7 +6,7 @@ What is it?
   for embedded Linux. Main objective is to create an intuitive, easy-to-use
   and small message bus using binary data marshalling without any external
   dependencies other than a standard Unix-like C library (glibc, eglibc
-  or uClibc). Is shall work out-of-the-box - ie. server daemon bbusd will
+  or uClibc). It shall work out-of-the-box - ie. server daemon bbusd will
   be fully functional without any kind of configuration files - just simple
   command line options will suffice.
 
