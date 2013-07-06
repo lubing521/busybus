@@ -1,1 +1,91 @@
-Lightweight, simple and portable message bus and IPC system for embedded Linux.
+        Busybus ALPHA (development in progress)
+
+What is it?
+
+  Busybus is a lightweight, simple and portable message bus and IPC system
+  for embedded Linux. Main objective is to create an intuitive, easy-to-use
+  and small message bus using binary data marshalling without any external
+  dependencies other than a standard Unix-like C library (glibc, eglibc
+  or uClibc). Is shall work out-of-the-box - ie. server daemon bbusd will
+  be fully functional without any kind of configuration files - just simple
+  command line options will suffice.
+
+Why busybus?
+
+  I needed it. Having D-Bus on small flash-based embedded systems is often
+  overkill. Other than that there are no many alternatives. There is ubus,
+  but it's integrated with OpenWRT, there's abus, but it uses JSON for
+  serialization and there's embus, but it doesn't seem to be actively
+  developed and it doesn't offer much functionality.
+
+Is it ready?
+
+  Not yet - right now I'm working on an initial alpha version of this program,
+  which will act basically as a working proof of concept. Once a working
+  version is ready I will try and get some attention on various mailing lists
+  and open-source focused websites.
+
+Compilation and installation:
+
+  This will probably change, but for now it's a simple 'make all' in order to
+  build the libbbus.so library and all the binaries. Additionally there's
+  the 'make test' command, that will run the test suite located in test.c.
+  
+  There's no installation procedure for now - just make sure your loader can
+  locate libbbus.so and put the binaries where you like.
+
+How easy is it?
+
+  Here's an example of a simple user session - a program connects to the server
+  and calls a method (no error checking).
+
+    bbus_client_connection* conn;
+    bbus_object* arg;
+    bbus_object* ret;
+    char* retstr;
+
+    conn = bbus_client_connect();
+    arg = bbus_build_object("s", "Hello world!");
+    ret = bbus_call_method(conn, "bbusd.echo", ret);
+    bbus_parse_object(obj, "s", &retstr);
+    printf("%s\n", retstr);
+    bbus_close_client_conn(conn);
+    bbus_free_object(ret);
+    bbus_free_object(arg);
+
+  Example echo method implementation on the service provider side:
+
+    static bbus_object* echo(const char* UNUSED method, bbus_object* arg)
+    {
+            char* str;
+
+            bbus_parse_object(arg, "s", &str);
+            return bbus_build_object("s", str);
+    }
+
+    struct bbus_method method = {
+            .name = "echo",
+            .argdscr = "s",
+            .retdscr = "s",
+            .func = echo
+    };
+
+    bbus_service_connection* conn;
+    struct bbus_timeval tv;
+
+    tv.sec = 0;
+    tv.usec = 500000;
+    conn = bbus_service_connect("some_provider");
+    bbus_register_method(conn, &method);
+    while (bbus_listen_method_calls(conn, &tv) >= 0);
+    bbus_close_service_conn(conn);
+
+  Functions used by bbusd are a bit more complex, but user programs don't
+  even need to look at them.
+
+Future plans:
+
+  - get it working,
+  - add bindings for C++ and Python,
+  - static compilation.
+
