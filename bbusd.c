@@ -17,12 +17,14 @@
  */
 
 #include "busybus.h"
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <getopt.h>
 #include <signal.h>
+#include <syslog.h>
+
+#define SYSLOG_IDENT "bbusd"
 
 static bbus_server* server;
 static struct bbus_clientlist_elem* clients;
@@ -33,11 +35,12 @@ struct option_flags
 {
 	int print_help;
 	int print_version;
+	int log_to_console;
+	int log_to_syslog;
 };
-struct option_flags options = { 0, 0 };
+struct option_flags options = { 0, 0, 1, 0 };
 
-static void die(const char* format, ...) BBUS_PRINTF_FUNC(1, 2);
-static void die(const char* format, ...)
+static void BBUS_PRINTF_FUNC(1, 2) die(const char* format, ...)
 {
 	va_list va;
 
@@ -57,6 +60,58 @@ static void print_version_and_exit(void)
 {
 	fprintf(stdout, "Version stub\n");
 	exit(EXIT_SUCCESS);
+}
+
+enum loglevel
+{
+	BBUS_LOG_EMERG = LOG_EMERG,
+	BBUS_LOG_ALERT = LOG_ALERT,
+	BBUS_LOG_CRIT = LOG_CRIT,
+	BBUS_LOG_ERR = LOG_ERR,
+	BBUS_LOG_WARN = LOG_WARNING,
+	BBUS_LOG_NOTICE = LOG_NOTICE,
+	BBUS_LOG_INFO = LOG_INFO,
+	BBUS_LOG_DEBUG = LOG_DEBUG
+};
+
+static int loglvl_to_sysloglvl(enum loglevel lvl)
+{
+	return (int)lvl;
+}
+
+static void BBUS_PRINTF_FUNC(2, 3) log(enum loglevel lvl, const char* fmt, ...)
+{
+	va_list va;
+
+	if (options.log_to_console) {
+		va_start(va, fmt);
+		switch (lvl) {
+		case BBUS_LOG_EMERG:
+		case BBUS_LOG_ALERT:
+		case BBUS_LOG_CRIT:
+		case BBUS_LOG_ERR:
+		case BBUS_LOG_WARN:
+			vfprintf(stderr, fmt, va);
+			break;
+		case BBUS_LOG_NOTICE:
+		case BBUS_LOG_INFO:
+		case BBUS_LOG_DEBUG:
+			vfprintf(stdout, fmt, va);
+			break;
+		default:
+			die("Invalid log level\n");
+			break;
+		}
+		va_end(va);
+	}
+
+	if (options.log_to_syslog) {
+		va_start(va, fmt);
+		openlog(SYSLOG_IDENT, LOG_PID, LOG_DAEMON);
+		vsyslog(loglvl_to_sysloglvl(lvl), fmt, va);
+		closelog();
+		va_end(va);
+	}
 }
 
 static void parse_args(int argc, char** argv)
@@ -147,6 +202,16 @@ static void sighandler(int signum)
 	}
 }
 
+static void accept_clients(void)
+{
+	bbus_client* cli;
+}
+
+static void handle_clients(void)
+{
+
+}
+
 static void run_main_loop(void)
 {
 	int retval;
@@ -160,13 +225,8 @@ static void run_main_loop(void)
 		memset(&tv, 0, sizeof(struct bbus_timeval));
 		bbus_clear_pollset(pollset);
 		bbus_pollset_add_srv(pollset, server);
-		tmpcli = clients;
-
-		while (tmpcli != NULL) {
+		for (tmpcli = clients; tmpcli != NULL; tmpcli = tmpcli->next)
 			bbus_pollset_add_client(pollset, tmpcli->cli);
-			tmpcli = tmpcli->next;
-		}
-
 		tv.sec = 0;
 		tv.usec = 500000;
 		retval = bbus_poll(pollset, &tv);
@@ -186,16 +246,6 @@ static void run_main_loop(void)
 			}
 		}
 	}
-}
-
-static void accept_clients(void)
-{
-
-}
-
-static void handle_clients(void)
-{
-
 }
 
 static void cleanup(void)

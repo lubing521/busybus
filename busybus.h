@@ -284,14 +284,19 @@ void bbus_clientlist_remove(struct bbus_clientlist_elem* cli) BBUS_PUBLIC;
 bbus_server* bbus_make_local_server(void) BBUS_PUBLIC;
 bbus_server* bbus_make_local_server_wpath(const char* path) BBUS_PUBLIC;
 int bbus_server_listen(bbus_server* srv) BBUS_PUBLIC;
+int bbus_server_has_pending_clients(bbus_server* srv) BBUS_PUBLIC;
 bbus_client* bbus_accept_client(bbus_server* srv) BBUS_PUBLIC;
 int bbus_server_close(bbus_server* srv) BBUS_PUBLIC;
 void bbus_free_server(bbus_server* srv) BBUS_PUBLIC;
 
 typedef struct __bbus_pollset bbus_pollset;
 
-//bbus_pollset* bbus_make_pollset(void);
-//bbus_free_pollset(bbus_pollset* pollset);
+bbus_pollset* bbus_make_pollset(void) BBUS_PUBLIC;
+void bbus_clear_pollset(bbus_pollset* pset) BBUS_PUBLIC;
+void bbus_pollset_add_srv(bbus_pollset* pset, bbus_server* src) BBUS_PUBLIC;
+void bbus_pollset_add_client(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
+int bbus_poll(bbus_pollset* pset, struct bbus_timeval* tv) BBUS_PUBLIC;
+void bbus_free_pollset(bbus_pollset* pset) BBUS_PUBLIC;
 
 #endif /* __BUSYBUS__ */
 

@@ -106,14 +106,14 @@ static const char* extract_meta(const void* buf, size_t bufsize)
 
 static bbus_object* extract_object(const void* buf, size_t bufsize)
 {
-	const char* ptr;
+	const void* ptr;
 	bbus_object* obj;
 
 	ptr = extract_meta(buf, bufsize);
 	if (ptr == NULL)
 		return NULL;
-	buf += ((unsigned)ptr - (unsigned)buf);
-	bufsize -= ((unsigned)ptr - (unsigned)buf);
+	buf += (int)(ptr - buf);
+	bufsize -= (int)(ptr - buf);
 	obj = bbus_object_from_buf(buf, bufsize);
 	if (obj == NULL)
 		return NULL;
@@ -236,9 +236,9 @@ int bbus_register_method(bbus_service_connection* conn,
 	int r;
 
 	metasize = strlen(conn->srvname);
-	metasize += strlen(method->name) + 1; // +1 for comma
-	metasize += strlen(method->argdscr) + 1; // +1 for comma
-	metasize += strlen(method->retdscr) + 1; // +1 for NULL
+	metasize += strlen(method->name) + 1; /* +1 for comma */
+	metasize += strlen(method->argdscr) + 1; /* +1 for comma */
+	metasize += strlen(method->retdscr) + 1; /* +1 for NULL */
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	__bbus_hdr_setmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_SRVREG;
