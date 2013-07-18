@@ -192,8 +192,10 @@ struct bbus_msg_hdr
 	uint16_t magic;		/* Busybus magic number */
 	uint8_t msgtype;	/* Message type */
 	uint8_t errcode;	/* Protocol error code */
+	uint32_t token;		/* Used only for method calling */
 	uint16_t psize;		/* Size of the payload */
 	uint8_t flags;		/* Various protocol flags */
+	uint8_t padding;
 };
 
 struct bbus_msg

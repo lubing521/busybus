@@ -292,6 +292,7 @@ int bbus_listen_method_calls(bbus_service_connection* conn,
 	bbus_object* objarg;
 	bbus_object* objret;
 	void* callback;
+	uint32_t token;
 
 	r = __bbus_sock_rd_ready(conn->sock, tv);
 	if (r < 0) {
@@ -312,6 +313,7 @@ int bbus_listen_method_calls(bbus_service_connection* conn,
 			return -1;
 		}
 
+		token = hdr.token;
 		meta = extract_meta(buf, BBUS_MAXMSGSIZE);
 		if (meta == NULL) {
 			__bbus_set_err(BBUS_MSGINVFMT);
@@ -327,6 +329,7 @@ int bbus_listen_method_calls(bbus_service_connection* conn,
 		memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 		__bbus_hdr_setmagic(&hdr);
 		hdr.msgtype = BBUS_MSGTYPE_SRVREPLY;
+		hdr.token = token;
 		objret = NULL;
 		callback = bbus_hmap_find(conn->methods, meta);
 		if (callback == NULL) {

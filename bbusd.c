@@ -26,11 +26,6 @@
 
 #define SYSLOG_IDENT "bbusd"
 
-static bbus_server* server;
-static struct bbus_clientlist_elem* clients;
-static bbus_pollset* pollset;
-static int run;
-
 struct option_flags
 {
 	int print_help;
@@ -38,6 +33,24 @@ struct option_flags
 	int log_to_console;
 	int log_to_syslog;
 };
+
+enum loglevel
+{
+	BBUS_LOG_EMERG = LOG_EMERG,
+	BBUS_LOG_ALERT = LOG_ALERT,
+	BBUS_LOG_CRIT = LOG_CRIT,
+	BBUS_LOG_ERR = LOG_ERR,
+	BBUS_LOG_WARN = LOG_WARNING,
+	BBUS_LOG_NOTICE = LOG_NOTICE,
+	BBUS_LOG_INFO = LOG_INFO,
+	BBUS_LOG_DEBUG = LOG_DEBUG
+};
+
+static bbus_server* server;
+static struct bbus_clientlist_elem* clients_head;
+static struct bbus_clientlist_elem* clients_tail;
+static bbus_pollset* pollset;
+static int run;
 struct option_flags options = { 0, 0, 1, 0 };
 
 static void BBUS_PRINTF_FUNC(1, 2) die(const char* format, ...)
@@ -61,18 +74,6 @@ static void print_version_and_exit(void)
 	fprintf(stdout, "Version stub\n");
 	exit(EXIT_SUCCESS);
 }
-
-enum loglevel
-{
-	BBUS_LOG_EMERG = LOG_EMERG,
-	BBUS_LOG_ALERT = LOG_ALERT,
-	BBUS_LOG_CRIT = LOG_CRIT,
-	BBUS_LOG_ERR = LOG_ERR,
-	BBUS_LOG_WARN = LOG_WARNING,
-	BBUS_LOG_NOTICE = LOG_NOTICE,
-	BBUS_LOG_INFO = LOG_INFO,
-	BBUS_LOG_DEBUG = LOG_DEBUG
-};
 
 static int loglvl_to_sysloglvl(enum loglevel lvl)
 {
@@ -205,6 +206,25 @@ static void sighandler(int signum)
 static void accept_clients(void)
 {
 	bbus_client* cli;
+
+	while (bbus_server_has_pending_clients(server)) {
+		cli = bbus_accept_client(server);
+		if (cli == NULL) {
+			log(BBUS_LOG_ERR,
+				"Error accepting incoming client connection");
+			continue;
+		}
+		
+		insque(cli, clients_tail);
+		switch (bbus_get_client_type(cli)) {
+		case BBUS_CLIENT_CALLER:
+			break;
+		case BBUS_CLIENT_SERVICE:
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 static void handle_clients(void)
@@ -225,8 +245,10 @@ static void run_main_loop(void)
 		memset(&tv, 0, sizeof(struct bbus_timeval));
 		bbus_clear_pollset(pollset);
 		bbus_pollset_add_srv(pollset, server);
-		for (tmpcli = clients; tmpcli != NULL; tmpcli = tmpcli->next)
+		for (tmpcli = clients_head; tmpcli != NULL;
+				tmpcli = tmpcli->next) {
 			bbus_pollset_add_client(pollset, tmpcli->cli);
+		}
 		tv.sec = 0;
 		tv.usec = 500000;
 		retval = bbus_poll(pollset, &tv);
@@ -241,9 +263,8 @@ static void run_main_loop(void)
 			// Incoming data
 			if (bbus_pollset_srv_isset(pollset, server)) {
 				accept_clients();
-			} else {
-				handle_clients();
 			}
+			handle_clients();
 		}
 	}
 }
@@ -256,7 +277,6 @@ static void cleanup(void)
 int main(int argc, char** argv)
 {
 	parse_args(argc, argv);
-
 	if (options.print_help)
 		print_help_and_exit();
 	if (options.print_version)
