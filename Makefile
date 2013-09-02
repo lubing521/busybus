@@ -68,13 +68,29 @@ clean:
 	rm -f $(TEST_TARGET)
 
 ###############################################################################
+# help
+###############################################################################
+help:
+	@echo "Cleaning:"
+	@echo "  clean		- delete temporary files created by build"
+	@echo
+	@echo "Build:"
+	@echo "  all		- all executables and libraries"
+	@echo "  bbusd		- busybus daemon"
+	@echo "  libbbus.so	- busybus library"
+	@echo
+	@echo "Testing:"
+	@echo "  test		- build the test binary and run the test suite"
+	@echo
+
+###############################################################################
 # other
 ###############################################################################
 
 .PRECIOUS:	%.c
 .SUFFIXES:
 .SUFFIXES:	.o .c
-.PHONY:		all
+.PHONY:		all clean help test
 
 .c.o:
 	$(CROSSCC) -c -o $*.o $(CFLAGS) $(DEBUGFLAGS) $*.c
