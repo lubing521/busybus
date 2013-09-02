@@ -12,11 +12,11 @@ What is it?
 
 Why busybus?
 
-  I needed it. Having D-Bus on small flash-based embedded systems is often
-  overkill. Other than that there are no many alternatives. There is ubus,
-  but it's integrated with OpenWRT, there's abus, but it uses JSON for
-  serialization and there's embus, but it doesn't seem to be actively
-  developed and it doesn't offer much functionality.
+  Having D-Bus on small flash-based embedded systems is often overkill. Other
+  than that there are no many alternatives. There is ubus, but it's
+  integrated with OpenWRT, there's abus, but it uses JSON for serialization
+  and there's embus, but it doesn't seem to be actively developed and it
+  doesn't offer much functionality.
 
 Is it ready?
 
