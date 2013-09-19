@@ -16,7 +16,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include "busybus.h"
+#include <busybus.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -214,7 +214,7 @@ static void accept_clients(void)
 				"Error accepting incoming client connection");
 			continue;
 		}
-		
+
 		insque(cli, clients_tail);
 		switch (bbus_get_client_type(cli)) {
 		case BBUS_CLIENT_CALLER:

@@ -1,7 +1,7 @@
 ###############################################################################
 # globals
 ###############################################################################
-CFLAGS =	-Wall -Wextra -fPIC -O2 -D_GNU_SOURCE			\
+CFLAGS =	-Wall -Wextra -fPIC -O2 -D_GNU_SOURCE -I./include 	\
 				-fvisibility=hidden -Wno-psabi
 LDFLAGS =	-Wl,-E
 DEBUGFLAGS =
@@ -12,16 +12,16 @@ CROSSCC =	$(CROSS_COMPILE)$(CC)
 ###############################################################################
 # libbbus.so
 ###############################################################################
-LIBBBUS_OBJS =		error.o						\
-			memory.o					\
-			protocol.o					\
-			server.o					\
-			socket.o					\
-			object.o					\
-			client.o					\
-			string.o					\
-			crc32.o						\
-			hashmap.o
+LIBBBUS_OBJS =		./lib/error.o					\
+			./lib/memory.o					\
+			./lib/protocol.o				\
+			./lib/server.o					\
+			./lib/socket.o					\
+			./lib/object.o					\
+			./lib/client.o					\
+			./lib/string.o					\
+			./lib/crc32.o					\
+			./lib/hashmap.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 
@@ -32,7 +32,7 @@ libbbus.so:		$(LIBBBUS_OBJS)
 ###############################################################################
 # bbusd
 ###############################################################################
-BBUSD_OBJS =	bbusd.o
+BBUSD_OBJS =	./bin/bbusd.o
 BBUSD_TARGET =	./bbusd
 BBUSD_LIBS =	-lbbus
 
@@ -43,7 +43,7 @@ bbusd:		$(BBUSD_OBJS)
 ###############################################################################
 # test
 ###############################################################################
-TEST_OBJS =	./test.o
+TEST_OBJS =	./test/test.o
 TEST_TARGET =	./bbus_test
 
 test:		$(TEST_OBJS) $(LIBBBUS_OBJS)

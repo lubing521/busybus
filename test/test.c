@@ -16,8 +16,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include "busybus.h"
-#include "socket.h"
+#include <busybus.h>
+#include "../lib/socket.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

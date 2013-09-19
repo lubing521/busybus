@@ -16,7 +16,39 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include "busybus.h"
+#include <busybus.h>
+#include "memory.h"
+#include "error.h"
+
+void* bbus_malloc(size_t size)
+{
+	void* p;
+
+	if (size == 0)
+		size = 1;
+	p = malloc(size);
+	if (p == NULL)
+		__bbus_set_err(BBUS_NOMEM);
+	return p;
+}
+
+void* bbus_realloc(void* ptr, size_t size)
+{
+	void* p;
+
+	if (size == 0)
+		size = 1;
+	p = realloc(ptr, size);
+	if (p == NULL)
+		__bbus_set_err(BBUS_NOMEM);
+	return p;
+}
+
+void bbus_free(void* ptr)
+{
+	if (ptr != NULL)
+		free(ptr);
+}
 
 
 

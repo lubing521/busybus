@@ -19,7 +19,7 @@
 #ifndef __BBUS_SOCKET__
 #define __BBUS_SOCKET__
 
-#include "busybus.h"
+#include <busybus.h>
 #include <stdlib.h>
 #include <sys/uio.h>
 

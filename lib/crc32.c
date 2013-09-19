@@ -16,7 +16,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include "busybus.h"
+#include <busybus.h>
 #include <stdint.h>
 
 static const uint32_t crc32_tab[] = {
