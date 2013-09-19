@@ -17,6 +17,7 @@
  */
 
 #include <busybus.h>
+#include "common.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -52,16 +53,6 @@ static struct bbus_clientlist_elem* clients_tail;
 static bbus_pollset* pollset;
 static int run;
 struct option_flags options = { 0, 0, 1, 0 };
-
-static void BBUS_PRINTF_FUNC(1, 2) die(const char* format, ...)
-{
-	va_list va;
-
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
-}
 
 static void print_help_and_exit(void)
 {

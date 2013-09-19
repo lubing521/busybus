@@ -32,7 +32,8 @@ libbbus.so:		$(LIBBBUS_OBJS)
 ###############################################################################
 # bbusd
 ###############################################################################
-BBUSD_OBJS =	./bin/bbusd.o
+BBUSD_OBJS =	./bin/bbusd.o						\
+		./bin/common.o
 BBUSD_TARGET =	./bbusd
 BBUSD_LIBS =	-lbbus
 
