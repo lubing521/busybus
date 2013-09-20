@@ -115,12 +115,12 @@ static void parse_args(int argc, char** argv)
 		{ 0, 0, 0, 0 }
 	};
 
-	static const char* const shortopts = "s";
+	static const char* const shortopts = "hvs:";
 
-	int opt, optind;
+	int opt, index;
 
 	while ((opt = getopt_long(argc, argv, shortopts,
-				longopts, &optind)) != -1) {
+				longopts, &index)) != -1) {
 		switch (opt) {
 		case 's':
 			bbus_setsockpath(optarg);

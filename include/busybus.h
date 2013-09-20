@@ -152,6 +152,7 @@ int bbus_parse_object_v(bbus_object* obj, const char* descr,
 void* bbus_obj_rawdata(bbus_object* obj) BBUS_PUBLIC;
 size_t bbus_obj_rawdata_size(const bbus_object* obj) BBUS_PUBLIC;
 void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
+int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
 
 /**************************************
  * Protocol funcs and defs.

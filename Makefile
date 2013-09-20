@@ -32,13 +32,25 @@ libbbus.so:		$(LIBBBUS_OBJS)
 ###############################################################################
 # bbusd
 ###############################################################################
-BBUSD_OBJS =	./bin/bbusd.o						\
-		./bin/common.o
-BBUSD_TARGET =	./bbusd
-BBUSD_LIBS =	-lbbus
+BBUSD_OBJS =		./bin/bbusd.o					\
+			./bin/common.o
+BBUSD_TARGET =		./bbusd
+BBUSD_LIBS =		-lbbus
 
-bbusd:		$(BBUSD_OBJS)
+bbusd:			$(BBUSD_OBJS)
 	$(CROSSCC) -o $(BBUSD_TARGET) $(BBUSD_OBJS) $(LDFLAGS)		\
+		$(DEBUGFLAGS) $(BBUSD_LIBS) -L./
+
+###############################################################################
+# bbus-call
+###############################################################################
+BBUSCALL_OBJS =		./bin/bbus-call.o				\
+			./bin/common.o
+BBUSCALL_TARGET =	./bbus-call
+BBUSCALL_LIBS =		-lbbus
+
+bbus-call:		$(BBUSCALL_OBJS)
+	$(CROSSCC) -o $(BBUSCALL_TARGET) $(BBUSCALL_OBJS) $(LDFLAGS)	\
 		$(DEBUGFLAGS) $(BBUSD_LIBS) -L./
 
 ###############################################################################

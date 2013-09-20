@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <stdio.h>
 
 struct __bbus_object
 {
@@ -461,8 +462,73 @@ size_t bbus_obj_rawdata_size(const bbus_object* obj)
 
 void bbus_free_object(bbus_object* obj)
 {
-	bbus_free(obj->buf);
-	bbus_free(obj);
+	if (obj) {
+		bbus_free(obj->buf);
+		bbus_free(obj);
+	}
+}
+
+static inline void shrinkbuf(char** buf, size_t* buflen, size_t numbytes)
+{
+	*buf += numbytes;
+	*buflen -= numbytes;
+}
+
+int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen)
+{
+	const char* descr;
+	int r;
+
+	descr = bbus_obj_getdescr(obj);
+	r = snprintf(buf, buflen, "bbus_object([%s]", descr);
+	shrinkbuf(&buf, &buflen, r);
+	do {
+		switch (*descr) {
+		case BBUS_TYPE_INT:
+			{
+				bbus_int i;
+				r = bbus_obj_extract_int(obj, &i);
+				if (r < 0)
+					goto out;
+				r = snprintf(buf, buflen, ", %d", i);
+			}
+			break;
+		case BBUS_TYPE_UNSIGNED:
+			{
+				bbus_unsigned u;
+				r = bbus_obj_extract_unsigned(obj, &u);
+				if (r < 0)
+					goto out;
+				r = snprintf(buf, buflen, ", %u", u);
+			}
+			break;
+		case BBUS_TYPE_STRING:
+			{
+				bbus_byte* s;
+				r = bbus_obj_extract_string(obj, &s);
+				if (r < 0)
+					goto out;
+				r = snprintf(buf, buflen, ", %s", s);
+			}
+			break;
+		default:
+			__bbus_set_err(BBUS_OBJINVFMT);
+			r = -1;
+			break;
+		}
+		if (r < 0)
+			goto nospace;
+		shrinkbuf(&buf, &buflen, r);
+	} while (*(++descr));
+	snprintf(buf, buflen, ")");
+	r = strlen(buf);
+
+out:
+	return r;
+
+nospace:
+	__bbus_set_err(BBUS_NOSPACE);
+	return r;
 }
 
 
