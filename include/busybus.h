@@ -68,10 +68,16 @@ uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 typedef struct __bbus_hashmap bbus_hashmap;
 
 bbus_hashmap* bbus_hmap_create(void) BBUS_PUBLIC;
-int bbus_hmap_insert(bbus_hashmap* hmap,
+int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
+		size_t ksize, void* val) BBUS_PUBLIC;
+int bbus_hmap_insert_str(bbus_hashmap* hmap,
 		const char* key, void* val) BBUS_PUBLIC;
-void* bbus_hmap_find(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
-void* bbus_hmap_remove(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
+		size_t ksize) BBUS_PUBLIC;
+void* bbus_hmap_find_str(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+void* bbus_hmap_remove(bbus_hashmap* hmap, const void* key,
+		size_t ksize) BBUS_PUBLIC;
+void* bbus_hmap_remove_str(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
 void bbus_hmap_reset(bbus_hashmap* hmap) BBUS_PUBLIC;
 void bbus_hmap_free(bbus_hashmap* hmap) BBUS_PUBLIC;
 int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
@@ -299,6 +305,8 @@ void bbus_clear_pollset(bbus_pollset* pset) BBUS_PUBLIC;
 void bbus_pollset_add_srv(bbus_pollset* pset, bbus_server* src) BBUS_PUBLIC;
 void bbus_pollset_add_client(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
 int bbus_poll(bbus_pollset* pset, struct bbus_timeval* tv) BBUS_PUBLIC;
+int bbus_pollset_srv_isset(bbus_pollset* pset, bbus_server* srv) BBUS_PUBLIC;
+int bbus_pollset_cli_isset(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
 void bbus_free_pollset(bbus_pollset* pset) BBUS_PUBLIC;
 
 #endif /* __BUSYBUS__ */

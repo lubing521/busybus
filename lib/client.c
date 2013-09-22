@@ -275,7 +275,8 @@ int bbus_register_method(bbus_service_connection* conn,
 		return -1;
 	}
 
-	r = bbus_hmap_insert(conn->methods, method->name, (void*)method->func);
+	r = bbus_hmap_insert_str(conn->methods, method->name,
+			(void*)method->func);
 	if (r < 0)
 		return -1;
 
@@ -331,7 +332,7 @@ int bbus_listen_method_calls(bbus_service_connection* conn,
 		hdr.msgtype = BBUS_MSGTYPE_SRVREPLY;
 		hdr.token = token;
 		objret = NULL;
-		callback = bbus_hmap_find(conn->methods, meta);
+		callback = bbus_hmap_find_str(conn->methods, meta);
 		if (callback == NULL) {
 			hdr.errcode = BBUS_PROT_NOMETHOD;
 			__bbus_set_err(BBUS_NOMETHOD);

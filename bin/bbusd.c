@@ -218,9 +218,14 @@ static void accept_clients(void)
 	}
 }
 
-static void handle_clients(void)
+static void handle_client(bbus_client* cli)
 {
-
+	switch (bbus_get_client_type(cli)) {
+	case BBUS_CLIENT_CALLER:
+		break;
+	case BBUS_CLIENT_SERVICE:
+		break;
+	}
 }
 
 static void run_main_loop(void)
@@ -255,7 +260,10 @@ static void run_main_loop(void)
 			if (bbus_pollset_srv_isset(pollset, server)) {
 				accept_clients();
 			}
-			handle_clients();
+			for (tmpcli = clients_head; tmpcli != NULL;
+				tmpcli = tmpcli->next) {
+				handle_client(tmpcli);
+			}
 		}
 	}
 }

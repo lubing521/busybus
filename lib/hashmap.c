@@ -82,7 +82,7 @@ static int enlarge_map(bbus_hashmap* hmap)
 		return -1;
 	for (i = 0; i < hmap->size; ++i) {
 		for (el = hmap->bucket_heads[i]; el != NULL; el = el->next) {
-			r = bbus_hmap_insert(newmap, el->key, el->val);
+			r = bbus_hmap_insert_str(newmap, el->key, el->val);
 			if (r < 0) {
 				bbus_hmap_free(newmap);
 				return -1;
@@ -99,7 +99,13 @@ static int enlarge_map(bbus_hashmap* hmap)
 	return 0;
 }
 
-int bbus_hmap_insert(bbus_hashmap* hmap, const char* key, void* val)
+int bbus_hmap_insert_str(bbus_hashmap* hmap, const char* key, void* val)
+{
+	return bbus_hmap_insert(hmap, key, strlen(key), val);
+}
+
+int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
+		size_t ksize, void* val)
 {
 	uint32_t crc;
 	unsigned ind;
@@ -111,7 +117,7 @@ int bbus_hmap_insert(bbus_hashmap* hmap, const char* key, void* val)
 			return -1;
 	}
 
-	crc = bbus_crc32(key, strlen(key));
+	crc = bbus_crc32(key, ksize);
 	ind = crc % hmap->size;
 	if (hmap->bucket_heads[ind] == NULL) {
 		hmap->bucket_heads[ind] = bbus_malloc(sizeof(
@@ -146,13 +152,14 @@ int bbus_hmap_insert(bbus_hashmap* hmap, const char* key, void* val)
 	return 0;
 }
 
-static struct map_entry* locate_entry(bbus_hashmap* hmap, const char* key)
+static struct map_entry* locate_entry(bbus_hashmap* hmap,
+		const void* key, size_t ksize)
 {
 	uint32_t crc;
 	unsigned ind;
 	struct map_entry* entr;
 
-	crc = bbus_crc32(key, strlen(key));
+	crc = bbus_crc32(key, ksize);
 	ind = crc % hmap->size;
 	if (hmap->bucket_heads[ind] == NULL)
 		goto noelem;
@@ -168,22 +175,33 @@ noelem:
 	return NULL;
 }
 
-void* bbus_hmap_find(bbus_hashmap* hmap, const char* key)
+void* bbus_hmap_find_str(bbus_hashmap* hmap, const char* key)
+{
+	return bbus_hmap_find(hmap, key, strlen(key));
+}
+
+void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
+		size_t ksize)
 {
 	struct map_entry* entr;
 
-	entr = locate_entry(hmap, key);
+	entr = locate_entry(hmap, key, ksize);
 	if (entr == NULL)
 		return NULL;
 	return entr->val;
 }
 
-void* bbus_hmap_remove(bbus_hashmap* hmap, const char* key)
+void* bbus_hmap_remove_str(bbus_hashmap* hmap, const char* key)
+{
+	return bbus_hmap_remove(hmap, key, strlen(key));
+}
+
+void* bbus_hmap_remove(bbus_hashmap* hmap, const void* key, size_t ksize)
 {
 	struct map_entry* entr;
 	void* ret;
 
-	entr = locate_entry(hmap, key);
+	entr = locate_entry(hmap, key, ksize);
 	if (entr == NULL)
 		return NULL;
 	ret = entr->val;
