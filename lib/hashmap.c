@@ -97,6 +97,7 @@ static int enlarge_map(bbus_hashmap* hmap)
 	hmap->size = newmap->size;
 	hmap->numstored = newmap->numstored;
 	hmap->bucket_heads = newmap->bucket_heads;
+	bbus_free(newmap); /* Free only the pointer to avoid a memory leak. */
 
 	return 0;
 }
