@@ -323,6 +323,17 @@ BEGIN
 	bbus_hmap_free(hmap);
 END
 
+DEFINE_TEST(memdup)
+BEGIN
+	static const char* const buf = "\xDE\xAD\xBE\xEF";
+	void* newp;
+
+	newp = bbus_memdup(buf, 4);
+	ASSERT_NOT_NULL(newp);
+	ASSERT_EQ(0, memcmp(buf, newp, 4));
+	bbus_free(newp);
+END
+
 /**************************************
  * \TESTS
  **************************************/
@@ -380,6 +391,7 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 	REGISTER_TEST(socket_accept);
 	REGISTER_TEST(crc32);
 	REGISTER_TEST(hashmap);
+	REGISTER_TEST(memdup);
 	return run_all_tests();
 }
 

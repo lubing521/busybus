@@ -30,7 +30,8 @@ struct map_entry
 {
 	struct map_entry* next;
 	struct map_entry* prev;
-	char* key;
+	void* key;
+	size_t ksize;
 	void* val;
 };
 
@@ -82,7 +83,8 @@ static int enlarge_map(bbus_hashmap* hmap)
 		return -1;
 	for (i = 0; i < hmap->size; ++i) {
 		for (el = hmap->bucket_heads[i]; el != NULL; el = el->next) {
-			r = bbus_hmap_insert_str(newmap, el->key, el->val);
+			r = bbus_hmap_insert(newmap, el->key,
+						el->ksize, el->val);
 			if (r < 0) {
 				bbus_hmap_free(newmap);
 				return -1;
@@ -126,9 +128,13 @@ int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
 			return -1;
 		hmap->bucket_heads[ind]->next = NULL;
 		hmap->bucket_heads[ind]->prev = NULL;
-		hmap->bucket_heads[ind]->key = bbus_copy_string(key);
-		if (hmap->bucket_heads[ind]->key == NULL)
+		hmap->bucket_heads[ind]->key = bbus_memdup(key, ksize);
+		if (hmap->bucket_heads[ind]->key == NULL) {
+			bbus_free(hmap->bucket_heads[ind]);
+			hmap->bucket_heads[ind] = NULL;
 			return -1;
+		}
+		hmap->bucket_heads[ind]->ksize = ksize;
 		hmap->bucket_heads[ind]->val = val;
 	} else {
 		struct map_entry* tail;
@@ -139,11 +145,12 @@ int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
 		newel = bbus_malloc(sizeof(struct map_entry));
 		if (newel == NULL)
 			return -1;
-		newel->key = bbus_copy_string(key);
+		newel->key = bbus_memdup(key, ksize);
 		if (newel->key == NULL) {
 			bbus_free(newel);
 			return -1;
 		}
+		newel->ksize = ksize;
 		newel->val = val;
 		insque(newel, tail);
 	}
@@ -166,7 +173,7 @@ static struct map_entry* locate_entry(bbus_hashmap* hmap,
 
 	for (entr = hmap->bucket_heads[ind];
 			entr != NULL; entr = entr->next) {
-		if (strcmp(entr->key, key) == 0)
+		if (memcmp(entr->key, key, entr->ksize) == 0)
 			return entr;
 	}
 
@@ -206,7 +213,7 @@ void* bbus_hmap_remove(bbus_hashmap* hmap, const void* key, size_t ksize)
 		return NULL;
 	ret = entr->val;
 	remque(entr);
-	bbus_free_string(entr->key);
+	bbus_free(entr->key);
 	bbus_free(entr);
 	hmap->numstored--;
 
@@ -224,7 +231,7 @@ void bbus_hmap_reset(bbus_hashmap* hmap)
 		while (el != NULL) {
 			tmpel = el;
 			el = el->next;
-			bbus_free_string(tmpel->key);
+			bbus_free(tmpel->key);
 			bbus_free(tmpel);
 		}
 		hmap->bucket_heads[i] = NULL;
@@ -256,11 +263,19 @@ static int BBUS_PRINTF_FUNC(3, 4) dump_append(char** buf,
 	return 0;
 }
 
+static const char* keyrepr(const void* src, size_t srcsize BBUS_UNUSED,
+				char* dst BBUS_UNUSED,
+				size_t dstsize BBUS_UNUSED)
+{
+	return (const char*)src; /* TODO Do a proper conversion. */
+}
+
 int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize)
 {
 	unsigned i;
 	int r;
 	struct map_entry* el;
+	char reprbuf[1024];
 
 	memset(buf, 0, bufsize);
 	r = dump_append(&buf, &bufsize,
@@ -278,7 +293,9 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize)
 		while (el != NULL) {
 			r = dump_append(&buf, &bufsize,
 				" [\"%s\"]->[0x%08x] |%s",
-				el->key, (unsigned)el->val,
+				keyrepr(el->key, el->ksize, reprbuf,
+						sizeof(reprbuf)),
+				(unsigned)el->val,
 				el->next == NULL ? "\n" : "");
 			if (r < 0)
 				return -1;

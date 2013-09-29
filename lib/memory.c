@@ -32,6 +32,17 @@ void* bbus_malloc(size_t size)
 	return p;
 }
 
+void* bbus_malloc0(size_t size)
+{
+	void* p;
+
+	p = bbus_malloc(size);
+	if (p)
+		memset(p, 0, size);
+
+	return p;
+}
+
 void* bbus_realloc(void* ptr, size_t size)
 {
 	void* p;
@@ -50,5 +61,14 @@ void bbus_free(void* ptr)
 		free(ptr);
 }
 
+void* bbus_memdup(const void* src, size_t size)
+{
+	void* newp;
 
+	newp = bbus_malloc(size);
+	if (newp)
+		memcpy(newp, src, size);
+
+	return newp;
+}
 

@@ -41,6 +41,8 @@
 
 /* Busybus malloc. Returns a valid pointer even for size == 0. */
 void* bbus_malloc(size_t size) BBUS_PUBLIC;
+/* Just like bbus_malloc, but zeroes allocated memory. */
+void* bbus_malloc0(size_t size) BBUS_PUBLIC;
 /*
  * Busybus realloc. Returns a valid pointer for size == 0,
  * for ptr == NULL behaves like bbus_malloc.
@@ -51,6 +53,11 @@ void* bbus_realloc(void* ptr, size_t size) BBUS_PUBLIC;
  * bbus_free on memory allocated by regular malloc and vice-versa.
  */
 void bbus_free(void* ptr) BBUS_PUBLIC;
+/*
+ * Duplicates the memory area pointed to by src in a newly allocated
+ * buffer created using bbus_malloc. Use bbus_free to free the memory.
+ */
+void* bbus_memdup(const void* src, size_t size) BBUS_PUBLIC;
 
 struct bbus_timeval
 {
