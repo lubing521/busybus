@@ -86,6 +86,8 @@ How easy is it?
 Future plans:
 
   - get it working,
+  - regression tests,
+  - doxygen documentation,
   - add bindings for C++ and Python,
   - static compilation.
 
