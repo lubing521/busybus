@@ -24,6 +24,7 @@
 #include <getopt.h>
 #include <signal.h>
 #include <syslog.h>
+#include <limits.h>
 
 #define SYSLOG_IDENT "bbusd"
 
@@ -47,12 +48,21 @@ enum loglevel
 	BBUS_LOG_DEBUG = LOG_DEBUG
 };
 
+struct clientlist_elem
+{
+	struct bbus_clientlist_elem* next;
+	struct bbus_clientlist_elem* prev;
+	bbus_client* cli;
+};
+
 static bbus_server* server;
 static struct bbus_clientlist_elem* clients_head;
 static struct bbus_clientlist_elem* clients_tail;
 static bbus_pollset* pollset;
 static int run;
-struct option_flags options = { 0, 0, 1, 0 };
+/* TODO in the future syslog will be the default. */
+static struct option_flags options = { 0, 0, 1, 0 };
+static bbus_hashmap* caller_map;
 
 static void print_help_and_exit(void)
 {
@@ -68,6 +78,7 @@ static void print_version_and_exit(void)
 
 static int loglvl_to_sysloglvl(enum loglevel lvl)
 {
+	/* TODO Make sure it works properly. */
 	return (int)lvl;
 }
 
@@ -138,18 +149,27 @@ static void parse_args(int argc, char** argv)
 
 static void make_client_list(void)
 {
-	clients = bbus_make_client_list();
-	if (clients == NULL) {
-		die("Error initiating the client list: %s",
+	clients_head = bbus_make_client_list();
+	if (clients_head == NULL) {
+		die("Error initiating the client list: %s\n",
+			bbus_error_str(bbus_get_last_error()));
+	}
+}
+
+static void make_caller_map(void)
+{
+	caller_map = bbus_hmap_create();
+	if (caller_map == NULL) {
+		die("Error creating the caller hashmap: %s\n",
 			bbus_error_str(bbus_get_last_error()));
 	}
 }
 
 static void make_server(void)
 {
-	server = bbus_make_local_server(DEF_SOCKPATH);
+	server = bbus_make_local_server(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
 	if (server == NULL) {
-		die("Error creating the server object: %s",
+		die("Error creating the server object: %s\n",
 			bbus_error_str(bbus_get_last_error()));
 	}
 }
@@ -160,7 +180,7 @@ static void start_server_listen(void)
 
 	retval = bbus_server_listen(server);
 	if (retval < 0) {
-		die("Error opening server for connections",
+		die("Error opening server for connections\n",
 			bbus_error_str(bbus_get_last_error()));
 	}
 }
@@ -169,7 +189,7 @@ static void make_pollset(void)
 {
 	pollset = bbus_make_pollset(server);
 	if (pollset == NULL) {
-		die("Error creating the poll_set: %s",
+		die("Error creating the poll_set: %s\n",
 			bbus_error_str(bbus_get_last_error()));
 	}
 }
@@ -194,23 +214,71 @@ static void sighandler(int signum)
 	}
 }
 
+static int client_list_add(bbus_client* cli)
+{
+	struct clientlist_elem* el;
+
+	el = bbus_malloc(sizeof(struct clientlist_elem));
+	if (el == NULL)
+		return -1;
+
+	el->cli = cli;
+	insque(el, clients_tail);
+
+	return 0;
+}
+
+static uint32_t make_token(void)
+{
+	static uint32_t curtok = 0;
+
+	if (curtok == UINT_MAX)
+		curtok = 0;
+
+	return ++curtok;
+}
+
 static void accept_clients(void)
 {
 	bbus_client* cli;
+	int r;
+	uint32_t token;
 
 	while (bbus_server_has_pending_clients(server)) {
 		cli = bbus_accept_client(server);
 		if (cli == NULL) {
 			log(BBUS_LOG_ERR,
-				"Error accepting incoming client connection");
+				"Error accepting incoming client "
+				"connection: %s\n",
+				bbus_error_str(bbus_get_last_error()));
 			continue;
 		}
 
-		insque(cli, clients_tail);
+		r = client_list_add(cli);
+		if (r == NULL) {
+			log(BBUS_LOG_ERR,
+				"Error adding new client to "
+				"the list: %s\n",
+				bbus_error_str(bbus_get_last_error()));
+			continue;
+		}
+
 		switch (bbus_get_client_type(cli)) {
 		case BBUS_CLIENT_CALLER:
+			token = make_token();
+			bbus_client_settoken(cli, token);
+			/* This client is the list's tail at this point. */
+			r = bbus_hmap_insert(caller_map, &token,
+						sizeof(token), clients_tail);
+			if (r < 0) {
+				log(BBUS_LOG_ERR,
+					"Error adding new client to "
+					"the caller map: %s\n",
+					bbus_error_str(bbus_get_last_error()));
+			}
 			break;
 		case BBUS_CLIENT_SERVICE:
+			/* Don't do anything else. */
 			break;
 		default:
 			break;
@@ -282,6 +350,7 @@ int main(int argc, char** argv)
 		print_version_and_exit();
 
 	make_client_list();
+	make_caller_map();
 	make_server();
 	start_server_listen();
 	make_pollset();

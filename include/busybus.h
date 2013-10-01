@@ -280,22 +280,9 @@ typedef struct __bbus_client bbus_client;
 #define BBUS_CLIENT_MON		3
 #define BBUS_CLIENT_CTL		4
 
+uint32_t bbus_client_gettoken(bbus_client* cli) BBUS_PUBLIC;
+void bbus_client_settoken(bbus_client* cli, uint32_t tok) BBUS_PUBLIC;
 int bbus_get_client_type(bbus_client* cli) BBUS_PUBLIC;
-
-/*
- * Client list element. Manipulated internally by insque and remque
- * functions from glibc.
- */
-struct bbus_clientlist_elem
-{
-	struct bbus_clientlist_elem* next;
-	struct bbus_clientlist_elem* prev;
-	bbus_client* cli;
-};
-
-void bbus_clientlist_insert(struct bbus_clientlist_elem* cli,
-		struct bbus_clientlist_elem* prev) BBUS_PUBLIC;
-void bbus_clientlist_remove(struct bbus_clientlist_elem* cli) BBUS_PUBLIC;
 
 bbus_server* bbus_make_local_server(void) BBUS_PUBLIC;
 bbus_server* bbus_make_local_server_wpath(const char* path) BBUS_PUBLIC;
