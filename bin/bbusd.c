@@ -55,6 +55,12 @@ struct clientlist_elem
 	bbus_client* cli;
 };
 
+struct service_map
+{
+	bbus_hashmap* subsrvc;
+	bbus_hashmap* methods;
+};
+
 static bbus_server* server;
 static struct bbus_clientlist_elem* clients_head;
 static struct bbus_clientlist_elem* clients_tail;
@@ -63,6 +69,8 @@ static int run;
 /* TODO in the future syslog will be the default. */
 static struct option_flags options = { 0, 0, 1, 0 };
 static bbus_hashmap* caller_map;
+static struct service_map* srvc_map;
+static char msgbuf[BBUS_MAXMSGSIZE];
 
 static void print_help_and_exit(void)
 {
@@ -165,6 +173,30 @@ static void make_caller_map(void)
 	}
 }
 
+static void make_service_map(void)
+{
+	srvc_map = bbus_malloc(sizeof(struct service_map));
+	if (srvc_map == NULL)
+		goto err;
+
+	srvc_map->subsrvc = bbus_map_create();
+	if (srvc_map->subsrvc == NULL) {
+		bbus_free(srvc_map);
+		goto err;
+	}
+
+	srvc_map->methods = bbus_map_create();
+	if (srvc_map->methods == NULL) {
+		bbus_hmap_free(srvc->subsrvc);
+		bbus_free(srvc_map);
+		goto err;
+	}
+
+err:
+	die("Error creating the service map: %s\n",
+		bbus_error_str(bbus_get_last_error()));
+}
+
 static void make_server(void)
 {
 	server = bbus_make_local_server(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
@@ -228,6 +260,11 @@ static int client_list_add(bbus_client* cli)
 	return 0;
 }
 
+static int register_service(bbus_clien* cli)
+{
+	return 0;
+}
+
 static uint32_t make_token(void)
 {
 	static uint32_t curtok = 0;
@@ -288,10 +325,28 @@ static void accept_clients(void)
 
 static void handle_client(bbus_client* cli)
 {
+	int r;
+
+	memset(msg_buf, 0, BBUS_MAXMSGSIZE);
+	r = bbus_srv_recvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
+	if (r < 0) {
+		log(BBUS_LOG_ERR,
+			"Error receiving message from client: %s\n",
+			bbus_error_str(bbus_get_last_error()));
+		return;
+	}
+
 	switch (bbus_get_client_type(cli)) {
 	case BBUS_CLIENT_CALLER:
 		break;
 	case BBUS_CLIENT_SERVICE:
+		r = register_service(cli);
+		if (r < 0) {
+			log(BBUS_LOG_ERR,
+				"Error registering a service: %s\n",
+				bbus_error_str(bbus_get_last_error()));
+			return;
+		}
 		break;
 	}
 }
@@ -351,6 +406,7 @@ int main(int argc, char** argv)
 
 	make_client_list();
 	make_caller_map();
+	make_service_map();
 	make_server();
 	start_server_listen();
 	make_pollset();

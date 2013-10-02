@@ -289,6 +289,7 @@ bbus_server* bbus_make_local_server_wpath(const char* path) BBUS_PUBLIC;
 int bbus_server_listen(bbus_server* srv) BBUS_PUBLIC;
 int bbus_server_has_pending_clients(bbus_server* srv) BBUS_PUBLIC;
 bbus_client* bbus_accept_client(bbus_server* srv) BBUS_PUBLIC;
+int bbus_srv_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
 int bbus_server_close(bbus_server* srv) BBUS_PUBLIC;
 void bbus_free_server(bbus_server* srv) BBUS_PUBLIC;
 
