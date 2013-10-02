@@ -102,7 +102,7 @@ static int enlarge_map(bbus_hashmap* hmap)
 	return 0;
 }
 
-int bbus_hmap_insert_str(bbus_hashmap* hmap, const char* key, void* val)
+int bbus_hmap_inserts(bbus_hashmap* hmap, const char* key, void* val)
 {
 	return bbus_hmap_insert(hmap, key, strlen(key), val);
 }
@@ -183,7 +183,7 @@ noelem:
 	return NULL;
 }
 
-void* bbus_hmap_find_str(bbus_hashmap* hmap, const char* key)
+void* bbus_hmap_finds(bbus_hashmap* hmap, const char* key)
 {
 	return bbus_hmap_find(hmap, key, strlen(key));
 }
@@ -199,7 +199,7 @@ void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
 	return entr->val;
 }
 
-void* bbus_hmap_remove_str(bbus_hashmap* hmap, const char* key)
+void* bbus_hmap_removes(bbus_hashmap* hmap, const char* key)
 {
 	return bbus_hmap_remove(hmap, key, strlen(key));
 }

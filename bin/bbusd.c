@@ -160,7 +160,7 @@ static void make_client_list(void)
 	clients_head = bbus_make_client_list();
 	if (clients_head == NULL) {
 		die("Error initiating the client list: %s\n",
-			bbus_error_str(bbus_get_last_error()));
+			bbus_strerror(bbus_lasterror()));
 	}
 }
 
@@ -169,7 +169,7 @@ static void make_caller_map(void)
 	caller_map = bbus_hmap_create();
 	if (caller_map == NULL) {
 		die("Error creating the caller hashmap: %s\n",
-			bbus_error_str(bbus_get_last_error()));
+			bbus_strerror(bbus_lasterror()));
 	}
 }
 
@@ -194,7 +194,7 @@ static void make_service_map(void)
 
 err:
 	die("Error creating the service map: %s\n",
-		bbus_error_str(bbus_get_last_error()));
+		bbus_strerror(bbus_lasterror()));
 }
 
 static void make_server(void)
@@ -202,7 +202,7 @@ static void make_server(void)
 	server = bbus_make_local_server(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
 	if (server == NULL) {
 		die("Error creating the server object: %s\n",
-			bbus_error_str(bbus_get_last_error()));
+			bbus_strerror(bbus_lasterror()));
 	}
 }
 
@@ -213,7 +213,7 @@ static void start_server_listen(void)
 	retval = bbus_server_listen(server);
 	if (retval < 0) {
 		die("Error opening server for connections\n",
-			bbus_error_str(bbus_get_last_error()));
+			bbus_strerror(bbus_lasterror()));
 	}
 }
 
@@ -222,7 +222,7 @@ static void make_pollset(void)
 	pollset = bbus_make_pollset(server);
 	if (pollset == NULL) {
 		die("Error creating the poll_set: %s\n",
-			bbus_error_str(bbus_get_last_error()));
+			bbus_strerror(bbus_lasterror()));
 	}
 }
 
@@ -287,7 +287,7 @@ static void accept_clients(void)
 			log(BBUS_LOG_ERR,
 				"Error accepting incoming client "
 				"connection: %s\n",
-				bbus_error_str(bbus_get_last_error()));
+				bbus_strerror(bbus_lasterror()));
 			continue;
 		}
 
@@ -296,7 +296,7 @@ static void accept_clients(void)
 			log(BBUS_LOG_ERR,
 				"Error adding new client to "
 				"the list: %s\n",
-				bbus_error_str(bbus_get_last_error()));
+				bbus_strerror(bbus_lasterror()));
 			continue;
 		}
 
@@ -311,7 +311,7 @@ static void accept_clients(void)
 				log(BBUS_LOG_ERR,
 					"Error adding new client to "
 					"the caller map: %s\n",
-					bbus_error_str(bbus_get_last_error()));
+					bbus_strerror(bbus_lasterror()));
 			}
 			break;
 		case BBUS_CLIENT_SERVICE:
@@ -332,7 +332,7 @@ static void handle_client(bbus_client* cli)
 	if (r < 0) {
 		log(BBUS_LOG_ERR,
 			"Error receiving message from client: %s\n",
-			bbus_error_str(bbus_get_last_error()));
+			bbus_strerror(bbus_lasterror()));
 		return;
 	}
 
@@ -344,7 +344,7 @@ static void handle_client(bbus_client* cli)
 		if (r < 0) {
 			log(BBUS_LOG_ERR,
 				"Error registering a service: %s\n",
-				bbus_error_str(bbus_get_last_error()));
+				bbus_strerror(bbus_lasterror()));
 			return;
 		}
 		break;
@@ -373,7 +373,7 @@ static void run_main_loop(void)
 		retval = bbus_poll(pollset, &tv);
 		if (retval < 0) {
 			die("Error polling connections: %s",
-				bbus_error_str(bbus_get_last_error()));
+				bbus_strerror(bbus_lasterror()));
 		} else
 		if (retval == 0) {
 			// Timeout

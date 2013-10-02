@@ -314,11 +314,11 @@ BEGIN
 	for (i = 0; i < 140; ++i) {
 		memset(keybuf, 0, sizeof(keybuf));
 		snprintf(keybuf, sizeof(keybuf), "%d", i);
-		r = bbus_hmap_insert_str(hmap, keybuf, (void*)i);
+		r = bbus_hmap_inserts(hmap, keybuf, (void*)i);
 		ASSERT_FALSE(r < 0);
 	}
 
-	key = bbus_hmap_find_str(hmap, "40");
+	key = bbus_hmap_finds(hmap, "40");
 	ASSERT_EQ(40, (int)key);
 	bbus_hmap_free(hmap);
 END

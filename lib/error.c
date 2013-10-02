@@ -47,12 +47,12 @@ static const char* const error_descr[] = {
 	"internal method error"
 };
 
-int bbus_get_last_error(void)
+int bbus_lasterror(void)
 {
 	return last_error;
 }
 
-const char* bbus_error_str(int errnum)
+const char* bbus_strerror(int errnum)
 {
 	if (errnum < BBUS_SUCCESS)
 		return strerror(errnum);

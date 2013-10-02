@@ -120,7 +120,7 @@ int main(int argc, char** argv)
 
 	ret = bbus_call_method(conn, method, arg);
 	if (ret == NULL) {
-		if (bbus_get_last_error() == BBUS_NOMETHOD) {
+		if (bbus_lasterror() == BBUS_NOMETHOD) {
 			/*
 			 * TODO check if it's a service and display
 			 * available methods.
@@ -139,23 +139,26 @@ int main(int argc, char** argv)
 	return 0;
 
 err_conn:
-	die("Error connecting to bbusd: %s\n", bbus_get_last_error());
+	die("Error connecting to bbusd: %s\n",
+			bbus_strerror(bbus_lasterror()));
 
 err_arg:
 	bbus_close_client_conn(conn);
 	bbus_free_object(arg);
-	die("Error creating the argument object: %s\n", bbus_get_last_error());
+	die("Error creating the argument object: %s\n",
+			bbus_strerror(bbus_lasterror()));
 
 err_call:
 	bbus_close_client_conn(conn);
 	bbus_free_object(arg);
-	die("Error calling method \'%s\': %s\n", method, bbus_get_last_error());
+	die("Error calling method \'%s\': %s\n", method,
+			bbus_strerror(bbus_lasterror()));
 
 err_repr:
 	bbus_close_client_conn(conn);
 	bbus_free_object(arg);
 	bbus_free_object(ret);
 	die("Error creating object representation: %s\n",
-			bbus_get_last_error());
+			bbus_strerror(bbus_lasterror()));
 }
 

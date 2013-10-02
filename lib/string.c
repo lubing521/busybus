@@ -25,7 +25,7 @@
 #define INITIAL_BUFSIZE		128
 #define MAX_ITERATIONS		8
 
-char* bbus_build_string(const char* fmt, ...)
+char* bbus_str_build(const char* fmt, ...)
 {
 	char* buf;
 	va_list va;
@@ -69,7 +69,7 @@ errout_free:
 	return NULL;
 }
 
-char* bbus_copy_string(const char* str)
+char* bbus_str_cpy(const char* str)
 {
 	char* s;
 	size_t size;
@@ -84,7 +84,7 @@ char* bbus_copy_string(const char* str)
 	return s;
 }
 
-void bbus_free_string(char* str)
+void bbus_str_free(char* str)
 {
 	bbus_free(str);
 }

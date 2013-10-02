@@ -65,10 +65,9 @@ struct bbus_timeval
 	long int usec;
 };
 
-char* bbus_build_string(const char* fmt, ...)
-		BBUS_PRINTF_FUNC(1, 2) BBUS_PUBLIC;
-char* bbus_copy_string(const char* str) BBUS_PUBLIC;
-void bbus_free_string(char* str) BBUS_PUBLIC;
+char* bbus_str_build(const char* fmt, ...) BBUS_PRINTF_FUNC(1, 2) BBUS_PUBLIC;
+char* bbus_str_cpy(const char* str) BBUS_PUBLIC;
+void bbus_str_free(char* str) BBUS_PUBLIC;
 
 uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
@@ -77,14 +76,14 @@ typedef struct __bbus_hashmap bbus_hashmap;
 bbus_hashmap* bbus_hmap_create(void) BBUS_PUBLIC;
 int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
 		size_t ksize, void* val) BBUS_PUBLIC;
-int bbus_hmap_insert_str(bbus_hashmap* hmap,
+int bbus_hmap_inserts(bbus_hashmap* hmap,
 		const char* key, void* val) BBUS_PUBLIC;
 void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
 		size_t ksize) BBUS_PUBLIC;
-void* bbus_hmap_find_str(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+void* bbus_hmap_finds(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
 void* bbus_hmap_remove(bbus_hashmap* hmap, const void* key,
 		size_t ksize) BBUS_PUBLIC;
-void* bbus_hmap_remove_str(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+void* bbus_hmap_removes(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
 void bbus_hmap_reset(bbus_hashmap* hmap) BBUS_PUBLIC;
 void bbus_hmap_free(bbus_hashmap* hmap) BBUS_PUBLIC;
 int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
@@ -114,9 +113,9 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define __BBUS_MAX_ERR		10017
 
 /* Returns the value of the last error in the busybus library. */
-int bbus_get_last_error(void) BBUS_PUBLIC;
+int bbus_lasterror(void) BBUS_PUBLIC;
 /* Returns a string representation of the error code passed in 'errnum'. */
-const char* bbus_error_str(int errnum) BBUS_PUBLIC;
+const char* bbus_strerror(int errnum) BBUS_PUBLIC;
 
 /**************************************
  * Data marshalling.

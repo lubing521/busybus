@@ -216,11 +216,11 @@ bbus_service_connection* bbus_service_connect_wpath(const char* name,
 	if (conn == NULL)
 		return NULL;
 	conn->sock = sock;
-	conn->srvname = bbus_copy_string(name);
+	conn->srvname = bbus_str_cpy(name);
 	conn->methods = bbus_hmap_create();
 	if (conn->methods == NULL) {
 		__bbus_sock_close(conn->sock);
-		bbus_free_string(conn->srvname);
+		bbus_str_free(conn->srvname);
 		bbus_free(conn);
 		return NULL;
 	}
@@ -243,7 +243,7 @@ int bbus_register_method(bbus_service_connection* conn,
 	__bbus_hdr_setmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_SRVREG;
 	hdr.psize = metasize;
-	meta = bbus_build_string("%s%s,%s,%s",
+	meta = bbus_str_build("%s%s,%s,%s",
 					conn->srvname,
 					method->name,
 					method->argdscr,
@@ -252,7 +252,7 @@ int bbus_register_method(bbus_service_connection* conn,
 		return -1;
 	} else
 	if (strlen(meta) != (metasize-1)) {
-		bbus_free_string(meta);
+		bbus_str_free(meta);
 		__bbus_set_err(BBUS_LOGICERR);
 		return -1;
 	}
@@ -275,7 +275,7 @@ int bbus_register_method(bbus_service_connection* conn,
 		return -1;
 	}
 
-	r = bbus_hmap_insert_str(conn->methods, method->name,
+	r = bbus_hmap_inserts(conn->methods, method->name,
 			(void*)method->func);
 	if (r < 0)
 		return -1;
@@ -332,7 +332,7 @@ int bbus_listen_method_calls(bbus_service_connection* conn,
 		hdr.msgtype = BBUS_MSGTYPE_SRVREPLY;
 		hdr.token = token;
 		objret = NULL;
-		callback = bbus_hmap_find_str(conn->methods, meta);
+		callback = bbus_hmap_finds(conn->methods, meta);
 		if (callback == NULL) {
 			hdr.errcode = BBUS_PROT_NOMETHOD;
 			__bbus_set_err(BBUS_NOMETHOD);
@@ -367,7 +367,7 @@ int bbus_close_service_conn(bbus_service_connection* conn)
 	r = send_session_close(conn->sock);
 	if (r < 0)
 		return -1;
-	bbus_free_string(conn->srvname);
+	bbus_str_free(conn->srvname);
 	bbus_hmap_free(conn->methods);
 	bbus_free(conn);
 	return 0;
