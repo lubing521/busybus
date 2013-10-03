@@ -16,9 +16,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-/**************************************
- * Busybus public API.
- **************************************/
+/**
+ * @mainpage Busybus public API
+ *
+ * This is the busybus public API documentation.
+ *
+ * These functions and macros are all that is needed in order to register
+ * and call busybus methods, as well as to create bindings in other languages
+ * and even to build fully functional clients and servers. In fact bbusd has
+ * been built utilising this public API exclusively.
+ */
 
 #ifndef __BUSYBUS__
 #define __BUSYBUS__
@@ -27,95 +34,244 @@
 #include <stdarg.h>
 #include <stdint.h>
 
-/**************************************
- * Common funcs and macros.
- **************************************/
+/**
+ * @defgroup __common__ Common functions and macros
+ * @{
+ *
+ * Commonly used functions handling memory allocation, string
+ * manipulation etc, and some utility macros.
+ */
 
-/* Export symbol. */
+/**
+ * @brief Makes symbol visible.
+ */
 #define BBUS_PUBLIC __attribute__((visibility("default")))
-/* Printf-like function. */
+
+/** 
+ * @brief Marks function as being "printf-like".
+ * @param FORMAT Position of the format parameter in the argument list.
+ * @param PARAMS Position of the first of the variadic arguments.
+ *
+ * Makes preprocessor verify that the variadic arguments' types match
+ * arguments specified in the format string.
+ */
 #define BBUS_PRINTF_FUNC(FORMAT, PARAMS)				\
 		__attribute__((format(printf, FORMAT, PARAMS)))
-/* Unused parameter. */
+
+/**
+ * @brief Marks a function's argument as unused.
+ */
 #define BBUS_UNUSED __attribute__((unused))
 
-/* Busybus malloc. Returns a valid pointer even for size == 0. */
+/**
+ * @brief Busybus malloc.
+ * @param size Number of bytes to allocate.
+ * @return Pointer to the allocated memory or NULL in case of an error.
+ *
+ * Returns a valid pointer even for equal to zero.
+ */
 void* bbus_malloc(size_t size) BBUS_PUBLIC;
-/* Just like bbus_malloc, but zeroes allocated memory. */
+
+/**
+ * @brief Works just like bbus_malloc, but zeroes allocated memory.
+ * @param size Number of bytes to allocate.
+ * @return Pointer to the allocated memory or NULL in case of an error.
+ */
 void* bbus_malloc0(size_t size) BBUS_PUBLIC;
-/*
- * Busybus realloc. Returns a valid pointer for size == 0,
- * for ptr == NULL behaves like bbus_malloc.
+
+/**
+ * @brief Busybus realloc.
+ * @param ptr Memory, that needs reallocation
+ * @param size Number of bytes to allocate.
+ *
+ * Returns a valid pointer for size equal to zero, for NULL ptr behaves
+ * like bbus_malloc.
  */
 void* bbus_realloc(void* ptr, size_t size) BBUS_PUBLIC;
-/*
- * Busybus free. Does nothing if ptr == NULL. It's not safe to use
- * bbus_free on memory allocated by regular malloc and vice-versa.
+
+/**
+ * @brief Busybus free.
+ * @param ptr Memory to be freed.
+ * 
+ * Does nothing if ptr is NULL. It's not safe to use bbus_free on memory
+ * allocated by regular malloc and vice-versa.
  */
 void bbus_free(void* ptr) BBUS_PUBLIC;
-/*
- * Duplicates the memory area pointed to by src in a newly allocated
- * buffer created using bbus_malloc. Use bbus_free to free the memory.
+
+/**
+ * @brief Duplicates memory area.
+ * @param src Memory to duplicate.
+ * @param size Number of bytes to duplicate.
+ * @return Pointer to the newly allocated buffer.
+ *
+ * Allocates new memory using bbus_malloc() - must be freed using bbus_free().
  */
 void* bbus_memdup(const void* src, size_t size) BBUS_PUBLIC;
 
+/**
+ * @brief Represents an elapsed time.
+ */
 struct bbus_timeval
 {
 	long int sec;
 	long int usec;
 };
 
+/**
+ * @brief Build a string from given format and arguments.
+ * @param fmt Format of the string to be built.
+ * @return Pointer to the newly allocated string or NULL if an error occurred.
+ *
+ * Returned string must be freed using bbus_str_free.
+ */
 char* bbus_str_build(const char* fmt, ...) BBUS_PRINTF_FUNC(1, 2) BBUS_PUBLIC;
+
+/**
+ * @brief Copy a string.
+ * @param str Source string to be copied.
+ * @return Pointer to the newly allocated string or NULL if an error occurred.
+ *
+ * Works more like strdup, than strcpy as it allocates it's own buffer using
+ * bbus_malloc(). Returned string must be freed using bbus_str_free.
+ */
 char* bbus_str_cpy(const char* str) BBUS_PUBLIC;
+
+/**
+ * @brief Frees a string allocated by one of the bbus string functions.
+ * @param str Pointer to the string that will be freed.
+ */
 void bbus_str_free(char* str) BBUS_PUBLIC;
 
+/**
+ * @brief Computes crc32 checksum of given data.
+ * @param buf Buffer containing the data.
+ * @param bufsize Size of the data to be computed.
+ * @return Crc32 checksum.
+ */
 uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
+/**
+ * @}
+ *
+ * @defgroup __hashmap__ Hashmap functions
+ * @{
+ *
+ * Busybus hashmap interface.
+ */
+
+/**
+ * @brief Opaque hashmap object. Only accessible through interface functions.
+ */ 
 typedef struct __bbus_hashmap bbus_hashmap;
 
+/**
+ * @brief Creates an empty hashmap object.
+ * @return Pointer to the new hashmap or NULL in case of an error.
+ */
 bbus_hashmap* bbus_hmap_create(void) BBUS_PUBLIC;
+
 int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
 		size_t ksize, void* val) BBUS_PUBLIC;
+
 int bbus_hmap_inserts(bbus_hashmap* hmap,
 		const char* key, void* val) BBUS_PUBLIC;
+
 void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
 		size_t ksize) BBUS_PUBLIC;
+
 void* bbus_hmap_finds(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
-void* bbus_hmap_remove(bbus_hashmap* hmap, const void* key,
+
+void* bbus_hmap_rm(bbus_hashmap* hmap, const void* key,
 		size_t ksize) BBUS_PUBLIC;
-void* bbus_hmap_removes(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+
+void* bbus_hmap_rms(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+
 void bbus_hmap_reset(bbus_hashmap* hmap) BBUS_PUBLIC;
+
+/**
+ * @brief Frees a hashmap object.
+ * @param hmap Hashmap to free.
+ *
+ * Does nothing to the value pointers, so it's possible to use
+ * statically allocated data structures as hashmap values.
+ */
 void bbus_hmap_free(bbus_hashmap* hmap) BBUS_PUBLIC;
+
+/**
+ * @brief Converts the hashmap's contents into human-readable form.
+ * @param hmap Hashmap object to dump.
+ * @param buf Buffer to store the data.
+ * @param bufsize Size of the buffer.
+ * @return 0 if the hashmap has been properly dumped, -1 in case of an error.
+ *
+ * Buffer must be big enough to store the output, or this function will exit
+ * with an error, although even then it's possible to read the content
+ * that has been already written to buf.
+ */
 int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 
-/**************************************
- * Error handling.
- **************************************/
+/**
+ * @}
+ *
+ * @defgroup __error__ Error handling
+ * @{
+ *
+ * Error handling functions and macros.
+ *
+ * @defgroup __errcodes__ Error codes
+ * @{
+ *
+ * All error codes, that can be set by busybus API functions.
+ */
 
-/* Busybus error codes. */
-#define BBUS_SUCCESS		10000
-#define BBUS_NOMEM		10001
-#define BBUS_INVALARG		10002
-#define BBUS_OBJINVOP		10003
-#define BBUS_OBJINVFMT		10004
-#define BBUS_NOSPACE		10005
-#define BBUS_CONNCLOSED		10006
-#define BBUS_MSGINVFMT		10007
-#define BBUS_MSGMAGIC		10008
-#define BBUS_MSGINVTYPERCVD	10009
-#define BBUS_SORJCTD		10010
-#define BBUS_SENTLESS		10011
-#define BBUS_RCVDLESS		10012
-#define BBUS_LOGICERR		10013
-#define BBUS_NOMETHOD		10014
-#define BBUS_HMAPNOELEM		10015
-#define BBUS_METHODERR		10016
-#define __BBUS_MAX_ERR		10017
+#define BBUS_SUCCESS		10000 /**< No error */
+#define BBUS_NOMEM		10001 /**< Out of memory */
+#define BBUS_INVALARG		10002 /**< Invalid argument */
+#define BBUS_OBJINVOP		10003 /**< Invalid operation on an object */
+#define BBUS_OBJINVFMT		10004 /**< Invalid format of an object */
+#define BBUS_NOSPACE		10005 /**< No space in buffer */
+#define BBUS_CONNCLOSED		10006 /**< Connection closed */
+#define BBUS_MSGINVFMT		10007 /**< Invalid message format */
+#define BBUS_MSGMAGIC		10008 /**< Invalid magic number in a message */
+#define BBUS_MSGINVTYPERCVD	10009 /**< Invalid message type */
+#define BBUS_SORJCTD		10010 /**< Session open rejected */
+#define BBUS_SENTLESS		10011 /**< Sent less data, than expected */
+#define BBUS_RCVDLESS		10012 /**< Received less data, than expected */
+#define BBUS_LOGICERR		10013 /**< Logic error */
+#define BBUS_NOMETHOD		10014 /**< No method with given name */
+#define BBUS_HMAPNOELEM		10015 /**< No such key in the hashmap */
+#define BBUS_METHODERR		10016 /**< Error calling method */
+#define __BBUS_MAX_ERR		10017 /**< Highest error code */
 
-/* Returns the value of the last error in the busybus library. */
+/**
+ * @}
+ */
+
+/**
+ * @brief Returns value of the last error in the busybus library.
+ * @return Error number.
+ *
+ * All functions in the busybus public API set the externally invisible error
+ * value to indicate the error's cause. This function is thread-safe - it
+ * returns the last error in current thread.
+ */
 int bbus_lasterror(void) BBUS_PUBLIC;
-/* Returns a string representation of the error code passed in 'errnum'. */
+
+/**
+ * @brief Returns a string representation of an error code.
+ * @param errnum Error code to interpret.
+ * @return Pointer to a human-readable error message.
+ *
+ * Returns pointer to a static string, which must not be modified. Subsequent
+ * calls will not modify the string under this address. If errnum is equal
+ * to one of the glibc errnos it will use strerror to obtain the
+ * error message.
+ */
 const char* bbus_strerror(int errnum) BBUS_PUBLIC;
+
+/**
+ * @}
+ */
 
 /**************************************
  * Data marshalling.
