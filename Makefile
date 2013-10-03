@@ -70,6 +70,13 @@ test:		$(TEST_OBJS) $(LIBBBUS_OBJS)
 all:		libbbus.so bbusd
 
 ###############################################################################
+# doc
+###############################################################################
+DOC_DIR =	./doc
+doc:
+	doxygen
+
+###############################################################################
 # clean
 ###############################################################################
 clean:
@@ -79,6 +86,7 @@ clean:
 	rm -f $(LIBBBUS_TARGET)
 	rm -f $(TEST_OBJS)
 	rm -f $(TEST_TARGET)
+	rm -rf $(DOC_DIR)
 
 ###############################################################################
 # help
@@ -103,7 +111,7 @@ help:
 .PRECIOUS:	%.c
 .SUFFIXES:
 .SUFFIXES:	.o .c
-.PHONY:		all clean help test
+.PHONY:		all clean help test doc
 
 .c.o:
 	$(CROSSCC) -c -o $*.o $(CFLAGS) $(DEBUGFLAGS) $*.c
