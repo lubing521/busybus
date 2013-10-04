@@ -21,10 +21,10 @@
  *
  * This is the busybus public API documentation.
  *
- * These functions and macros are all that is needed in order to register
- * and call busybus methods, as well as to create bindings in other languages
- * and even to build fully functional clients and servers. In fact bbusd has
- * been built utilising this public API exclusively.
+ * <p>These functions and macros are all that is needed in order to register
+ * <p>and call busybus methods, as well as to create bindings in other languages
+ * <p>and even to build fully functional clients and servers. In fact bbusd has
+ * <p>been built utilising this public API exclusively.
  */
 
 #ifndef __BUSYBUS__
@@ -113,8 +113,8 @@ void* bbus_memdup(const void* src, size_t size) BBUS_PUBLIC;
  */
 struct bbus_timeval
 {
-	long int sec;
-	long int usec;
+	long int sec;	/**< Number of seconds. */
+	long int usec;	/**< Number of miliseconds. */
 };
 
 /**
@@ -124,7 +124,7 @@ struct bbus_timeval
  *
  * Returned string must be freed using bbus_str_free.
  */
-char* bbus_str_build(const char* fmt, ...) BBUS_PRINTF_FUNC(1, 2) BBUS_PUBLIC;
+char* bbus_str_build(const char* fmt, ...) BBUS_PUBLIC BBUS_PRINTF_FUNC(1, 2);
 
 /**
  * @brief Copy a string.
@@ -156,7 +156,8 @@ uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
  * @defgroup __hashmap__ Hashmap functions
  * @{
  *
- * Busybus hashmap interface.
+ * Busybus hashmap interface. Both keys and values can be pointers to any data
+ * types, hashes are computed directly from memory buffers.
  */
 
 /**
@@ -166,26 +167,81 @@ typedef struct __bbus_hashmap bbus_hashmap;
 
 /**
  * @brief Creates an empty hashmap object.
- * @return Pointer to the new hashmap or NULL in case of an error.
+ * @return Pointer to the new hashmap or NULL if no memory.
  */
 bbus_hashmap* bbus_hmap_create(void) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts an entry or sets a new value for an existing one.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @param ksize Size of 'key'.
+ * @param val New value.
+ * @return 0 on success, -1 if no memory.
+ */
 int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
 		size_t ksize, void* val) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts an entry or sets a new value for an existing one.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @param val New value.
+ * @return 0 on success, -1 if no memory.
+ *
+ * A string is used as key.
+ */
 int bbus_hmap_inserts(bbus_hashmap* hmap,
 		const char* key, void* val) BBUS_PUBLIC;
 
+/**
+ * @brief Looks up the value for a given key.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @param ksize Size of 'key'.
+ * @return Pointer to the looked up entry or NULL if not present.
+ */
 void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
 		size_t ksize) BBUS_PUBLIC;
 
+/**
+ * @brief Looks up the value for a given string.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @return Pointer to the looked up entry or NULL if not present.
+ */
 void* bbus_hmap_finds(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
 
+/**
+ * @brief Removes an entry for a given key.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @param ksize Size of 'key'.
+ * @return Pointer to the looked up value or NULL if not present.
+ *
+ * If value points to dynamically allocated data, it must be freed
+ * separately.
+ */
 void* bbus_hmap_rm(bbus_hashmap* hmap, const void* key,
 		size_t ksize) BBUS_PUBLIC;
 
+/**
+ * @brief Removes an entry for a given string.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @return Pointer to the looked up value or NULL if not present.
+ *
+ * If value points to dynamically allocated data, it must be freed
+ * separately.
+ */
 void* bbus_hmap_rms(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
 
+/**
+ * @brief Deletes all key-value pairs from the hashmap.
+ * @param hmap Hashmap to reset.
+ *
+ * Hmap remains a valid hashmap object and must be freed.
+ */
 void bbus_hmap_reset(bbus_hashmap* hmap) BBUS_PUBLIC;
 
 /**
@@ -248,7 +304,7 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
  */
 
 /**
- * @brief Returns value of the last error in the busybus library.
+ * @brief Returns the value of the last error in the busybus library.
  * @return Error number.
  *
  * All functions in the busybus public API set the externally invisible error
@@ -322,101 +378,238 @@ size_t bbus_obj_rawdata_size(const bbus_object* obj) BBUS_PUBLIC;
 void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
 int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
 
-/**************************************
- * Protocol funcs and defs.
- **************************************/
+/**
+ * @defgroup __protocol__ Protocol definitions
+ * @{
+ *
+ * Contains data structure definitions and constants used in the busybus
+ * message exchange protocol.
+ */
 
- /* TODO Signals will be added in the future. */
+/* TODO Signals and simple messages will be added in the future. */
 
-#define BBUS_MAGIC		"\xBB\xC5"
-#define BBUS_MAGIC_SIZE		2
-#define BBUS_DEF_DIRPATH	"/var/run/bbus/"
-#define BBUS_DEF_SOCKNAME	"bbus.sock"
-#define BBUS_MAXMSGSIZE		4096
+/** @brief Busybus magic number. */
+#define BBUS_MAGIC			"\xBB\xC5"
+/** @brief Size of the magic number. */
+#define BBUS_MAGIC_SIZE			2
+/** @brief Unix socket directory. */
+#define BBUS_DEF_DIRPATH		"/var/run/bbus/"
+/** @brief Unix socket filename. */
+#define BBUS_DEF_SOCKNAME 		"bbus.sock"
+/** @brief Biggest allowed message size. */
+#define BBUS_MAXMSGSIZE			4096
 
-#define BBUS_MSGTYPE_SOCLI	0x01	/* Session open client */
-#define BBUS_MSGTYPE_SOSRVP	0x02	/* Session open service provider */
-#define BBUS_MSGTYPE_SOOK	0x03	/* Session open confirmed */
-#define BBUS_MSGTYPE_SORJCT	0x04	/* Session open rejected */
-#define BBUS_MSGTYPE_SRVREG	0x05	/* Register service */
-#define BBUS_MSGTYPE_SRVUNREG	0x06	/* Unregister service */
-#define BBUS_MSGTYPE_SRVACK	0x07	/* Service registered (or error) */
-#define BBUS_MSGTYPE_CLICALL	0x08	/* Client calls a method */
-#define BBUS_MSGTYPE_CLIREPLY	0x09	/* Server replies to a client */
-#define BBUS_MSGTYPE_SRVCALL	0x0A	/* Server calls a registered method */
-#define BBUS_MSGTYPE_SRVREPLY	0x0B	/* Method provider replies */
-#define BBUS_MSGTYPE_CLOSE	0x0C	/* Client closes session */
+/**
+ * @defgroup __protmsgtypes__ Protocol message types
+ * @{
+ *
+ * Message types carried in the 'msgtype' field of the header.
+ */
+#define BBUS_MSGTYPE_SOCLI	0x01 /**< Session open client. */
+#define BBUS_MSGTYPE_SOSRVP	0x02 /**< Session open service provider. */
+#define BBUS_MSGTYPE_SOOK	0x03 /**< Session open confirmed. */
+#define BBUS_MSGTYPE_SORJCT	0x04 /**< Session open rejected. */
+#define BBUS_MSGTYPE_SRVREG	0x05 /**< Register service. */
+#define BBUS_MSGTYPE_SRVUNREG	0x06 /**< Unregister service. */
+#define BBUS_MSGTYPE_SRVACK	0x07 /**< Service registered (or error). */
+#define BBUS_MSGTYPE_CLICALL	0x08 /**< Client calls a method. */
+#define BBUS_MSGTYPE_CLIREPLY	0x09 /**< Server replies to a client. */
+#define BBUS_MSGTYPE_SRVCALL	0x0A /**< Server calls a registered method. */
+#define BBUS_MSGTYPE_SRVREPLY	0x0B /**< Method provider replies. */
+#define BBUS_MSGTYPE_CLOSE	0x0C /**< Client closes session. */
+/**
+ * @}
+ *
+ * @defgroup __proterrcodes__ Protocol error codes
+ * @{
+ *
+ * Error codes are used to verify, that a method has been properly called.
+ * These codes are carried in the 'errcode' field of the header and matter
+ * only for replies.
+ */
+#define BBUS_PROT_GOOD		0x00 /**< Success. */
+#define BBUS_PROT_NOMETHOD	0x01 /**< No such method. */
+#define BBUS_PROT_METHODERR	0x02 /**< Error calling the method. */
+/**
+ * @}
+ *
+ * @defgroup __protflags__ Protocol flags
+ * @{
+ *
+ * Flags, that can be carried by the message header in the 'flags' field.
+ */
+#define BBUS_PROT_HASMETA	(1 << 1) /**< Message contains metadata. */
+#define BBUS_PROT_HASOBJECT	(1 << 2) /**< Message contains an object. */
+/**
+ * @}
+ */
 
-/* Protocol error codes */
-#define BBUS_PROT_GOOD		0x00
-#define BBUS_PROT_NOMETHOD	0x01
-#define BBUS_PROT_METHODERR	0x02
-
-/* Protocol flags */
-#define BBUS_PROT_HASMETA	(1 << 1)
-#define BBUS_PROT_HASOBJECT	(1 << 2)
-
+/**
+ * @brief Represents the header of every busybus message.
+ */
 struct bbus_msg_hdr
 {
-	uint16_t magic;		/* Busybus magic number */
-	uint8_t msgtype;	/* Message type */
-	uint8_t errcode;	/* Protocol error code */
-	uint32_t token;		/* Used only for method calling */
-	uint16_t psize;		/* Size of the payload */
-	uint8_t flags;		/* Various protocol flags */
-	uint8_t padding;
+	uint16_t magic;		/**< Busybus magic number. */
+	uint8_t msgtype;	/**< Message type. */
+	uint8_t errcode;	/**< Protocol error code. */
+	uint32_t token;		/**< Used only for method calling. */
+	uint16_t psize;		/**< Size of the payload. */
+	uint8_t flags;		/**< Various protocol flags. */
+	uint8_t padding;	/**< Padding space. */
 };
 
+/**
+ * @brief Represents a busybus message.
+ */
 struct bbus_msg
 {
-	struct bbus_msg_hdr hdr;
-	char payload[1];
+	struct bbus_msg_hdr hdr;	/**< Message header. */
+	char payload[1];		/**< Start of the payload data. */
 };
 
+/**
+ * @brief Size of the busybus message header.
+ */
 #define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))
 
-/**************************************
- * Method calling client.
- **************************************/
+/**
+ * @}
+ *
+ * @defgroup __caller__ Client calls
+ * @{
+ *
+ * Functions used by method calling clients.
+ */
 
+/* TODO Asynchronous calls. */
+
+/**
+ * @brief Opaque type representing a client connection.
+ */
 typedef struct __bbus_client_connection bbus_client_connection;
 
+/**
+ * @brief Establishes a client connection with the busybus server.
+ * @return New connection object or NULL in case of an error.
+ */
 bbus_client_connection* bbus_client_connect(void) BBUS_PUBLIC;
+
+/**
+ * @brief Establishes a client connection with custom socket path.
+ * @param path Filename of the socket to connect to.
+ * @return New connection object or NULL in case of an error.
+ */
 bbus_client_connection* bbus_client_connect_wpath(
 		const char* path) BBUS_PUBLIC;
+
+/**
+ * @brief Calls a method synchronously.
+ * @param conn The client connection.
+ * @param method Full service and method name.
+ * @param arg Marshalled arguments.
+ * @return Returned marshalled data or NULL if error.
+ */
 bbus_object* bbus_call_method(bbus_client_connection* conn,
 		char* method, bbus_object* arg) BBUS_PUBLIC;
+
+/**
+ * @brief Closes the client connection.
+ * @param conn The client connection to close.
+ * @return 0 if the connection has been properly closed, -1 on error.
+ */
 int bbus_close_client_conn(bbus_client_connection* conn) BBUS_PUBLIC;
 
-/**************************************
- * Service publishing client.
- **************************************/
+/**
+ * @}
+ *
+ * @defgroup __service__ Service publishing
+ * @{
+ *
+ * Functions and data structures used by service publishing clients.
+ */
 
+ /**
+  * @brief Opaque type representing a service publisher connection.
+  */
 typedef struct __bbus_service_connection bbus_service_connection;
+
+/**
+ * @brief Represents a function that is actually being called on method call.
+ */
 typedef bbus_object* (*bbus_method_func)(const char*, bbus_object*);
 
+/**
+ * @brief Represents a single busybus method.
+ *
+ * Contains all the data, that is needed to properly register a method
+ * within bbusd.
+ */
 struct bbus_method
 {
-	char* name;
-	char* argdscr;
-	char* retdscr;
-	bbus_method_func func;
+	char* name;		/**< Name of the method. */
+	char* argdscr;		/**< Description of the required arguments. */
+	char* retdscr;		/**< Description of the return value. */
+	bbus_method_func func;	/**< Pointer to the method function. */
 };
 
+/**
+ * @brief Establishes a service publisher connection with the busybus server.
+ * @param name Whole path of the service location ie. 'foo.bar.baz'.
+ * @return New connection object or NULL in case of an error.
+ */
 bbus_service_connection* bbus_service_connect(const char* name) BBUS_PUBLIC;
+
+/**
+ * @brief Establishes a service publisher connection with custom socket path.
+ * @param name Whole path of the service location ie. 'foo.bar.baz'.
+ * @param path Filename of the socket to connect to.
+ * @return New connection object or NULL in case of an error.
+ */
 bbus_service_connection* bbus_service_connect_wpath(
 		const char* name, const char* path) BBUS_PUBLIC;
+
+/**
+ * @brief Registers a method within the busybus server.
+ * @param conn The publisher connection.
+ * @param method Method data to register.
+ * @return 0 on successful registration, -1 on error.
+ */
 int bbus_register_method(bbus_service_connection* conn,
 		struct bbus_method* method) BBUS_PUBLIC;
+
+/**
+ * @brief Unregisters a method from the busybus server.
+ * @param conn The publisher connection.
+ * @param method Method data to unregister.
+ * @return 0 on successful unregistration, -1 on error.
+ */
 int bbus_unregister_method(bbus_service_connection* conn,
 		const char* method) BBUS_PUBLIC;
+
+/**
+ * @brief Closes the service publisher connection.
+ * @param conn The publisher connection to close.
+ * @return 0 if the connection has been properly closed, -1 on error.
+ */
 int bbus_close_service_conn(bbus_service_connection* conn) BBUS_PUBLIC;
-/*
+
+/**
+ * @brief Listens for method calls on an open connection.
+ * @param conn The service publisher connection.
+ * @param tv Time after which the function will exit with a timeout status.
+ * @return An integer indicating the result.
+ *
  * Returns 0 if timed out with no method call, -1 in case of an
  * error and 1 if method has been called.
  */
 int bbus_listen_method_calls(bbus_service_connection* conn,
 		struct bbus_timeval* tv) BBUS_PUBLIC;
+
+/* TODO Listening on multiple connections. */
+
+/**
+ * @}
+ */
 
 /**************************************
  * Server stuff.

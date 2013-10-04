@@ -199,12 +199,12 @@ void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
 	return entr->val;
 }
 
-void* bbus_hmap_removes(bbus_hashmap* hmap, const char* key)
+void* bbus_hmap_rms(bbus_hashmap* hmap, const char* key)
 {
-	return bbus_hmap_remove(hmap, key, strlen(key));
+	return bbus_hmap_rm(hmap, key, strlen(key));
 }
 
-void* bbus_hmap_remove(bbus_hashmap* hmap, const void* key, size_t ksize)
+void* bbus_hmap_rm(bbus_hashmap* hmap, const void* key, size_t ksize)
 {
 	struct map_entry* entr;
 	void* ret;
