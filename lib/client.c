@@ -121,12 +121,12 @@ static bbus_object* extract_object(const void* buf, size_t bufsize)
 	return obj;
 }
 
-bbus_client_connection* bbus_client_connect(void)
+bbus_client_connection* bbus_cli_connect(void)
 {
-	return bbus_client_connect_wpath(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
+	return bbus_cli_connectp(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
 }
 
-bbus_client_connection* bbus_client_connect_wpath(const char* path)
+bbus_client_connection* bbus_cli_connectp(const char* path)
 {
 	int sock;
 	bbus_client_connection* conn;
@@ -142,7 +142,7 @@ bbus_client_connection* bbus_client_connect_wpath(const char* path)
 	return conn;
 }
 
-bbus_object* bbus_call_method(bbus_client_connection* conn,
+bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
 		char* method, bbus_object* arg)
 {
 	int r;
@@ -184,7 +184,7 @@ bbus_object* bbus_call_method(bbus_client_connection* conn,
 	}
 }
 
-int bbus_close_client_conn(bbus_client_connection* conn)
+int bbus_cli_closeconn(bbus_client_connection* conn)
 {
 	int r;
 
@@ -196,13 +196,13 @@ int bbus_close_client_conn(bbus_client_connection* conn)
 	return 0;
 }
 
-bbus_service_connection* bbus_service_connect(const char* name)
+bbus_service_connection* bbus_srvc_connect(const char* name)
 {
-	return bbus_service_connect_wpath(name,
+	return bbus_srvc_connectp(name,
 			BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
 }
 
-bbus_service_connection* bbus_service_connect_wpath(const char* name,
+bbus_service_connection* bbus_srvc_connectp(const char* name,
 		const char* path)
 {
 	int sock;
@@ -227,7 +227,7 @@ bbus_service_connection* bbus_service_connect_wpath(const char* name,
 	return conn;
 }
 
-int bbus_register_method(bbus_service_connection* conn,
+int bbus_srvc_regmethod(bbus_service_connection* conn,
 		struct bbus_method* method)
 {
 	struct bbus_msg_hdr hdr;
@@ -283,7 +283,7 @@ int bbus_register_method(bbus_service_connection* conn,
 	return 0;
 }
 
-int bbus_listen_method_calls(bbus_service_connection* conn,
+int bbus_srvc_listencalls(bbus_service_connection* conn,
 		struct bbus_timeval* tv)
 {
 	int r;
@@ -360,7 +360,7 @@ send_reply:
 	return hdr.errcode == 0 ? 0 : -1;
 }
 
-int bbus_close_service_conn(bbus_service_connection* conn)
+int bbus_srvc_closeconn(bbus_service_connection* conn)
 {
 	int r;
 

@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 
 	parse_args(argc, argv);
 
-	conn = bbus_client_connect();
+	conn = bbus_cli_connect();
 	if (conn == NULL)
 		goto err_conn;
 
@@ -110,7 +110,7 @@ int main(int argc, char** argv)
 				goto err_arg;
 			break;
 		default:
-			bbus_close_client_conn(conn);
+			bbus_cli_closeconn(conn);
 			bbus_free_object(arg);
 			die("Invalid argument description character: %c\n",
 					*argdescr);
@@ -118,7 +118,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	ret = bbus_call_method(conn, method, arg);
+	ret = bbus_cli_callmethod(conn, method, arg);
 	if (ret == NULL) {
 		if (bbus_lasterror() == BBUS_NOMETHOD) {
 			/*
@@ -143,19 +143,19 @@ err_conn:
 			bbus_strerror(bbus_lasterror()));
 
 err_arg:
-	bbus_close_client_conn(conn);
+	bbus_cli_closeconn(conn);
 	bbus_free_object(arg);
 	die("Error creating the argument object: %s\n",
 			bbus_strerror(bbus_lasterror()));
 
 err_call:
-	bbus_close_client_conn(conn);
+	bbus_cli_closeconn(conn);
 	bbus_free_object(arg);
 	die("Error calling method \'%s\': %s\n", method,
 			bbus_strerror(bbus_lasterror()));
 
 err_repr:
-	bbus_close_client_conn(conn);
+	bbus_cli_closeconn(conn);
 	bbus_free_object(arg);
 	bbus_free_object(ret);
 	die("Error creating object representation: %s\n",

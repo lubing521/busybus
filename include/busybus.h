@@ -47,7 +47,7 @@
  */
 #define BBUS_PUBLIC __attribute__((visibility("default")))
 
-/** 
+/**
  * @brief Marks function as being "printf-like".
  * @param FORMAT Position of the format parameter in the argument list.
  * @param PARAMS Position of the first of the variadic arguments.
@@ -92,7 +92,7 @@ void* bbus_realloc(void* ptr, size_t size) BBUS_PUBLIC;
 /**
  * @brief Busybus free.
  * @param ptr Memory to be freed.
- * 
+ *
  * Does nothing if ptr is NULL. It's not safe to use bbus_free on memory
  * allocated by regular malloc and vice-versa.
  */
@@ -162,7 +162,7 @@ uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
 /**
  * @brief Opaque hashmap object. Only accessible through interface functions.
- */ 
+ */
 typedef struct __bbus_hashmap bbus_hashmap;
 
 /**
@@ -492,15 +492,14 @@ typedef struct __bbus_client_connection bbus_client_connection;
  * @brief Establishes a client connection with the busybus server.
  * @return New connection object or NULL in case of an error.
  */
-bbus_client_connection* bbus_client_connect(void) BBUS_PUBLIC;
+bbus_client_connection* bbus_cli_connect(void) BBUS_PUBLIC;
 
 /**
  * @brief Establishes a client connection with custom socket path.
  * @param path Filename of the socket to connect to.
  * @return New connection object or NULL in case of an error.
  */
-bbus_client_connection* bbus_client_connect_wpath(
-		const char* path) BBUS_PUBLIC;
+bbus_client_connection* bbus_cli_connectp(const char* path) BBUS_PUBLIC;
 
 /**
  * @brief Calls a method synchronously.
@@ -509,7 +508,7 @@ bbus_client_connection* bbus_client_connect_wpath(
  * @param arg Marshalled arguments.
  * @return Returned marshalled data or NULL if error.
  */
-bbus_object* bbus_call_method(bbus_client_connection* conn,
+bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
 		char* method, bbus_object* arg) BBUS_PUBLIC;
 
 /**
@@ -517,7 +516,7 @@ bbus_object* bbus_call_method(bbus_client_connection* conn,
  * @param conn The client connection to close.
  * @return 0 if the connection has been properly closed, -1 on error.
  */
-int bbus_close_client_conn(bbus_client_connection* conn) BBUS_PUBLIC;
+int bbus_cli_closeconn(bbus_client_connection* conn) BBUS_PUBLIC;
 
 /**
  * @}
@@ -557,7 +556,7 @@ struct bbus_method
  * @param name Whole path of the service location ie. 'foo.bar.baz'.
  * @return New connection object or NULL in case of an error.
  */
-bbus_service_connection* bbus_service_connect(const char* name) BBUS_PUBLIC;
+bbus_service_connection* bbus_srvc_connect(const char* name) BBUS_PUBLIC;
 
 /**
  * @brief Establishes a service publisher connection with custom socket path.
@@ -565,7 +564,7 @@ bbus_service_connection* bbus_service_connect(const char* name) BBUS_PUBLIC;
  * @param path Filename of the socket to connect to.
  * @return New connection object or NULL in case of an error.
  */
-bbus_service_connection* bbus_service_connect_wpath(
+bbus_service_connection* bbus_srvc_connectp(
 		const char* name, const char* path) BBUS_PUBLIC;
 
 /**
@@ -574,7 +573,7 @@ bbus_service_connection* bbus_service_connect_wpath(
  * @param method Method data to register.
  * @return 0 on successful registration, -1 on error.
  */
-int bbus_register_method(bbus_service_connection* conn,
+int bbus_srvc_regmethod(bbus_service_connection* conn,
 		struct bbus_method* method) BBUS_PUBLIC;
 
 /**
@@ -583,7 +582,7 @@ int bbus_register_method(bbus_service_connection* conn,
  * @param method Method data to unregister.
  * @return 0 on successful unregistration, -1 on error.
  */
-int bbus_unregister_method(bbus_service_connection* conn,
+int bbus_srvc_unregmethod(bbus_service_connection* conn,
 		const char* method) BBUS_PUBLIC;
 
 /**
@@ -591,7 +590,7 @@ int bbus_unregister_method(bbus_service_connection* conn,
  * @param conn The publisher connection to close.
  * @return 0 if the connection has been properly closed, -1 on error.
  */
-int bbus_close_service_conn(bbus_service_connection* conn) BBUS_PUBLIC;
+int bbus_srvc_closeconn(bbus_service_connection* conn) BBUS_PUBLIC;
 
 /**
  * @brief Listens for method calls on an open connection.
@@ -602,7 +601,7 @@ int bbus_close_service_conn(bbus_service_connection* conn) BBUS_PUBLIC;
  * Returns 0 if timed out with no method call, -1 in case of an
  * error and 1 if method has been called.
  */
-int bbus_listen_method_calls(bbus_service_connection* conn,
+int bbus_srvc_listencalls(bbus_service_connection* conn,
 		struct bbus_timeval* tv) BBUS_PUBLIC;
 
 /* TODO Listening on multiple connections. */
