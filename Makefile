@@ -103,6 +103,9 @@ help:
 	@echo "Testing:"
 	@echo "  test		- build the test binary and run the test suite"
 	@echo
+	@echo "Documentation:"
+	@echo "  doc		- create doxygen documentation"
+	@echo
 
 ###############################################################################
 # other
