@@ -200,13 +200,13 @@ BEGIN
 	static const char const proper[] = "ius\0\x11\x22\x33\x44\x44"
 						"\x33\x22\x11somethin\0";
 
-	obj = bbus_make_object("ius", 0x11223344, 0x44332211,
+	obj = bbus_obj_build("ius", 0x11223344, 0x44332211,
 						"somethin");
 	ASSERT_NOT_NULL(obj);
 	memset(buf, 0, sizeof(buf));
-	ASSERT_TRUE(bbus_object_to_buf(obj, buf, sizeof(buf)));
+	ASSERT_TRUE(bbus_obj_tobuf(obj, buf, sizeof(buf)));
 	ASSERT_TRUE(memcmp(proper, buf, 21) == 0);
-	bbus_free_object(obj);
+	bbus_obj_free(obj);
 END
 
 DEFINE_TEST(validate_object_format)
@@ -217,11 +217,11 @@ BEGIN
 						"\x33\x11somethin";
 	bbus_object* obj;
 
-	obj = bbus_object_from_buf(bad, 19);
+	obj = bbus_obj_frombuf(bad, 19);
 	ASSERT_NULL(obj);
-	obj = bbus_object_from_buf(good, 21);
+	obj = bbus_obj_frombuf(good, 21);
 	ASSERT_NOT_NULL(obj);
-	bbus_free_object(obj);
+	bbus_obj_free(obj);
 END
 
 DEFINE_TEST(parse_object)
@@ -235,14 +235,14 @@ BEGIN
 	bbus_byte* s;
 	int r;
 
-	obj = bbus_object_from_buf(objbuf, 21);
+	obj = bbus_obj_frombuf(objbuf, 21);
 	ASSERT_NOT_NULL(obj);
-	r = bbus_parse_object(obj, "ius", &i, &u, &s);
+	r = bbus_obj_parse(obj, "ius", &i, &u, &s);
 	ASSERT_EQ(0, r);
 	ASSERT_EQ(0x11223344, i);
 	ASSERT_EQ(0x44332211, u);
 	ASSERT_STREQ((char*)s, "somethin");
-	bbus_free_object(obj);
+	bbus_obj_free(obj);
 END
 
 DEFINE_TEST(socket_accept)

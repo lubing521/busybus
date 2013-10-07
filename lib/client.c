@@ -114,7 +114,7 @@ static bbus_object* extract_object(const void* buf, size_t bufsize)
 		return NULL;
 	buf += (int)(ptr - buf);
 	bufsize -= (int)(ptr - buf);
-	obj = bbus_object_from_buf(buf, bufsize);
+	obj = bbus_obj_frombuf(buf, bufsize);
 	if (obj == NULL)
 		return NULL;
 
@@ -152,7 +152,7 @@ bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
 	char buf[BBUS_MAXMSGSIZE];
 
 	metasize = strlen(method) + 1;
-	objsize = bbus_obj_rawdata_size(arg);
+	objsize = bbus_obj_rawsize(arg);
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	__bbus_hdr_setmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_CLICALL;
@@ -177,7 +177,7 @@ bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
 			__bbus_set_err(__bbus_proterr_to_errnum(hdr.errcode));
 			return NULL;
 		}
-		return bbus_object_from_buf(buf, BBUS_MAXMSGSIZE);
+		return bbus_obj_frombuf(buf, BBUS_MAXMSGSIZE);
 	} else {
 		__bbus_set_err(BBUS_MSGINVTYPERCVD);
 		return NULL;
@@ -349,12 +349,12 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 send_reply:
 		r = __bbus_sendv_msg(conn->sock, &hdr, NULL,
 			objret == NULL ? NULL : bbus_obj_rawdata(objret),
-			objret == NULL ? 0 : bbus_obj_rawdata_size(objret));
+			objret == NULL ? 0 : bbus_obj_rawsize(objret));
 		if (r < 0)
 			return -1;
 
-		bbus_free_object(objret);
-		bbus_free_object(objarg);
+		bbus_obj_free(objret);
+		bbus_obj_free(objarg);
 	}
 
 	return hdr.errcode == 0 ? 0 : -1;

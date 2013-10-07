@@ -221,7 +221,7 @@ err:
 
 static void make_server(void)
 {
-	server = bbus_make_local_server(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
+	server = bbus_srv_create(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
 	if (server == NULL) {
 		die("Error creating the server object: %s\n",
 			bbus_strerror(bbus_lasterror()));
@@ -232,7 +232,7 @@ static void start_server_listen(void)
 {
 	int retval;
 
-	retval = bbus_server_listen(server);
+	retval = bbus_srv_listen(server);
 	if (retval < 0) {
 		die("Error opening server for connections\n",
 			bbus_strerror(bbus_lasterror()));
@@ -241,7 +241,7 @@ static void start_server_listen(void)
 
 static void make_pollset(void)
 {
-	pollset = bbus_make_pollset(server);
+	pollset = bbus_pollset_make(server);
 	if (pollset == NULL) {
 		die("Error creating the poll_set: %s\n",
 			bbus_strerror(bbus_lasterror()));
@@ -354,8 +354,8 @@ static void accept_clients(void)
 	int r;
 	uint32_t token;
 
-	while (bbus_server_has_pending_clients(server)) {
-		cli = bbus_accept_client(server);
+	while (bbus_srv_clientpending(server)) {
+		cli = bbus_srv_accept(server);
 		if (cli == NULL) {
 			log(BBUS_LOG_ERR,
 				"Error accepting incoming client "
@@ -373,7 +373,7 @@ static void accept_clients(void)
 			continue;
 		}
 
-		switch (bbus_get_client_type(cli)) {
+		switch (bbus_client_gettype(cli)) {
 		case BBUS_CLIENT_CALLER:
 			token = make_token();
 			bbus_client_settoken(cli, token);
@@ -418,7 +418,7 @@ static void handle_client(bbus_client* cli)
 	}
 
 	/* TODO Common function for error reporting. */
-	switch (bbus_get_client_type(cli)) {
+	switch (bbus_client_gettype(cli)) {
 	case BBUS_CLIENT_CALLER:
 		switch (((struct bbus_msg_hdr*)msgbuf)->msgtype) {
 		case BBUS_MSGTYPE_CLICALL:
@@ -486,11 +486,11 @@ static void run_main_loop(void)
 	signal(SIGINT, sighandler);
 	while (do_run()) {
 		memset(&tv, 0, sizeof(struct bbus_timeval));
-		bbus_clear_pollset(pollset);
-		bbus_pollset_add_srv(pollset, server);
+		bbus_pollset_clear(pollset);
+		bbus_pollset_addsrv(pollset, server);
 		for (tmpcli = clients_head; tmpcli != NULL;
 				tmpcli = tmpcli->next) {
-			bbus_pollset_add_client(pollset, tmpcli->cli);
+			bbus_pollset_addcli(pollset, tmpcli->cli);
 		}
 		tv.sec = 0;
 		tv.usec = 500000;
@@ -504,12 +504,12 @@ static void run_main_loop(void)
 			continue;
 		} else {
 			// Incoming data
-			if (bbus_pollset_srv_isset(pollset, server)) {
+			if (bbus_pollset_srvisset(pollset, server)) {
 				accept_clients();
 			}
 			for (tmpcli = clients_head; tmpcli != NULL;
 				tmpcli = tmpcli->next) {
-				if (bbus_pollset_cli_isset(pollset, tmpcli)) {
+				if (bbus_pollset_cliisset(pollset, tmpcli)) {
 					handle_client(tmpcli);
 				}
 			}

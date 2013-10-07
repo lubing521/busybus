@@ -134,7 +134,7 @@ static void make_ready_for_extraction(bbus_object* obj)
 	obj->at = obj->buf + ds;
 }
 
-bbus_object* bbus_empty_object(void)
+bbus_object* bbus_obj_mkempty(void)
 {
 	struct __bbus_object* obj;
 
@@ -179,12 +179,12 @@ const char* bbus_obj_getdescr(bbus_object* obj)
 	return (const char*)obj->buf;
 }
 
-int bbus_obj_insert_int(bbus_object* obj, bbus_int val)
+int bbus_obj_insint(bbus_object* obj, bbus_int val)
 {
-	return bbus_obj_insert_unsigned(obj, (bbus_unsigned)val);
+	return bbus_obj_insuint(obj, (bbus_unsigned)val);
 }
 
-int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val)
+int bbus_obj_insuint(bbus_object* obj, bbus_unsigned val)
 {
 	int r;
 
@@ -204,7 +204,7 @@ int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val)
 	return 0;
 }
 
-int bbus_obj_insert_string(bbus_object* obj, uint8_t* val)
+int bbus_obj_insstr(bbus_object* obj, uint8_t* val)
 {
 	int r;
 	size_t len;
@@ -225,7 +225,7 @@ int bbus_obj_insert_string(bbus_object* obj, uint8_t* val)
 	return 0;
 }
 
-int bbus_obj_extract_int(bbus_object* obj, bbus_int* val)
+int bbus_obj_extrint(bbus_object* obj, bbus_int* val)
 {
 	if (obj->state != BBUS_OBJ_EXTRACTING) {
 		if (obj->state != BBUS_OBJ_READY) {
@@ -249,7 +249,7 @@ int bbus_obj_extract_int(bbus_object* obj, bbus_int* val)
 	return 0;
 }
 
-int bbus_obj_extract_unsigned(bbus_object* obj, bbus_unsigned* val)
+int bbus_obj_extruint(bbus_object* obj, bbus_unsigned* val)
 {
 	if (obj->state != BBUS_OBJ_EXTRACTING) {
 		if (obj->state != BBUS_OBJ_READY) {
@@ -273,7 +273,7 @@ int bbus_obj_extract_unsigned(bbus_object* obj, bbus_unsigned* val)
 	return 0;
 }
 
-int bbus_obj_extract_string(bbus_object* obj, uint8_t** val)
+int bbus_obj_extrstr(bbus_object* obj, uint8_t** val)
 {
 	size_t slen;
 
@@ -310,26 +310,26 @@ int bbus_obj_getstate(bbus_object* obj)
 	return obj->state;
 }
 
-bbus_object* bbus_make_object(const char* descr, ...)
+bbus_object* bbus_obj_build(const char* descr, ...)
 {
 	va_list va;
 	bbus_object* obj;
 
 	va_start(va, descr);
-	obj = bbus_make_object_v(descr, va);
+	obj = bbus_obj_vbuild(descr, va);
 	va_end(va);
 
 	return obj;
 }
 
-bbus_object* bbus_make_object_v(const char* descr, va_list va)
+bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
 {
 	unsigned i;
 	size_t dlen;
 	int r;
 	bbus_object* obj;
 
-	obj = bbus_empty_object();
+	obj = bbus_obj_mkempty();
 	if (obj == NULL)
 		goto out;
 	r = bbus_obj_setdescr(obj, descr);
@@ -339,14 +339,14 @@ bbus_object* bbus_make_object_v(const char* descr, va_list va)
 	for (i = 0; i < dlen; ++i) {
 		switch (descr[i]) {
 		case BBUS_TYPE_INT:
-			r = bbus_obj_insert_int(obj, va_arg(va, bbus_int));
+			r = bbus_obj_insint(obj, va_arg(va, bbus_int));
 			break;
 		case BBUS_TYPE_UNSIGNED:
-			r = bbus_obj_insert_unsigned(
+			r = bbus_obj_insuint(
 					obj, va_arg(va, bbus_unsigned));
 			break;
 		case BBUS_TYPE_STRING:
-			r = bbus_obj_insert_string(obj,
+			r = bbus_obj_insstr(obj,
 					va_arg(va, bbus_byte*));
 			break;
 		default:
@@ -362,12 +362,12 @@ bbus_object* bbus_make_object_v(const char* descr, va_list va)
 	return obj;
 
 out:
-	bbus_free_object(obj);
+	bbus_obj_free(obj);
 	obj = NULL;
 	return obj;
 }
 
-bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize)
+bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize)
 {
 	int r;
 	bbus_object* obj;
@@ -389,7 +389,7 @@ bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize)
 	return obj;
 }
 
-ssize_t bbus_object_to_buf(bbus_object* obj, void* buf, size_t bufsize)
+ssize_t bbus_obj_tobuf(bbus_object* obj, void* buf, size_t bufsize)
 {
 	if (obj->state != BBUS_OBJ_READY) {
 		__bbus_set_err(BBUS_OBJINVOP);
@@ -405,19 +405,19 @@ ssize_t bbus_object_to_buf(bbus_object* obj, void* buf, size_t bufsize)
 	return obj->bufused;
 }
 
-int bbus_parse_object(bbus_object* obj, const char* descr, ...)
+int bbus_obj_parse(bbus_object* obj, const char* descr, ...)
 {
 	va_list va;
 	int r;
 
 	va_start(va, descr);
-	r = bbus_parse_object_v(obj, descr, va);
+	r = bbus_obj_vparse(obj, descr, va);
 	va_end(va);
 
 	return r;
 }
 
-int bbus_parse_object_v(bbus_object* obj, const char* descr, va_list va)
+int bbus_obj_vparse(bbus_object* obj, const char* descr, va_list va)
 {
 	unsigned i;
 	size_t dlen;
@@ -427,14 +427,14 @@ int bbus_parse_object_v(bbus_object* obj, const char* descr, va_list va)
 	for (i = 0; i < dlen; ++i) {
 		switch (descr[i]) {
 		case BBUS_TYPE_INT:
-			r = bbus_obj_extract_int(obj, va_arg(va, bbus_int*));
+			r = bbus_obj_extrint(obj, va_arg(va, bbus_int*));
 			break;
 		case BBUS_TYPE_UNSIGNED:
-			r = bbus_obj_extract_unsigned(
+			r = bbus_obj_extruint(
 					obj, va_arg(va, bbus_unsigned*));
 			break;
 		case BBUS_TYPE_STRING:
-			r = bbus_obj_extract_string(obj,
+			r = bbus_obj_extrstr(obj,
 					va_arg(va, bbus_byte**));
 			break;
 		default:
@@ -455,12 +455,12 @@ void* bbus_obj_rawdata(bbus_object* obj)
 	return obj->buf;
 }
 
-size_t bbus_obj_rawdata_size(const bbus_object* obj)
+size_t bbus_obj_rawsize(const bbus_object* obj)
 {
 	return obj->bufused;
 }
 
-void bbus_free_object(bbus_object* obj)
+void bbus_obj_free(bbus_object* obj)
 {
 	if (obj) {
 		bbus_free(obj->buf);
@@ -487,7 +487,7 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen)
 		case BBUS_TYPE_INT:
 			{
 				bbus_int i;
-				r = bbus_obj_extract_int(obj, &i);
+				r = bbus_obj_extrint(obj, &i);
 				if (r < 0)
 					goto out;
 				r = snprintf(buf, buflen, ", %d", i);
@@ -496,7 +496,7 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen)
 		case BBUS_TYPE_UNSIGNED:
 			{
 				bbus_unsigned u;
-				r = bbus_obj_extract_unsigned(obj, &u);
+				r = bbus_obj_extruint(obj, &u);
 				if (r < 0)
 					goto out;
 				r = snprintf(buf, buflen, ", %u", u);
@@ -505,7 +505,7 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen)
 		case BBUS_TYPE_STRING:
 			{
 				bbus_byte* s;
-				r = bbus_obj_extract_string(obj, &s);
+				r = bbus_obj_extrstr(obj, &s);
 				if (r < 0)
 					goto out;
 				r = snprintf(buf, buflen, ", %s", s);

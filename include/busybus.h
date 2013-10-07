@@ -22,9 +22,9 @@
  * This is the busybus public API documentation.
  *
  * <p>These functions and macros are all that is needed in order to register
- * <p>and call busybus methods, as well as to create bindings in other languages
- * <p>and even to build fully functional clients and servers. In fact bbusd has
- * <p>been built utilising this public API exclusively.
+ * and call busybus methods, as well as to create bindings in other languages
+ * and even to build fully functional clients and servers. In fact bbusd has
+ * been built utilising this public API exclusively.
  */
 
 #ifndef __BUSYBUS__
@@ -353,29 +353,28 @@ typedef struct __bbus_object bbus_object;
 #define BBUS_OBJ_READY		3
 #define BBUS_OBJ_EXTRACTING	4
 
-bbus_object* bbus_empty_object(void) BBUS_PUBLIC;
+bbus_object* bbus_obj_mkempty(void) BBUS_PUBLIC;
 int bbus_obj_setdescr(bbus_object* obj, const char* descr) BBUS_PUBLIC;
 const char* bbus_obj_getdescr(bbus_object* obj) BBUS_PUBLIC;
-int bbus_obj_insert_int(bbus_object* obj, bbus_int val) BBUS_PUBLIC;
-int bbus_obj_insert_unsigned(bbus_object* obj, bbus_unsigned val) BBUS_PUBLIC;
-int bbus_obj_insert_string(bbus_object* obj, uint8_t* val) BBUS_PUBLIC;
-int bbus_obj_extract_int(bbus_object* obj, bbus_int* val) BBUS_PUBLIC;
-int bbus_obj_extract_unsigned(bbus_object* obj,
-		bbus_unsigned* val) BBUS_PUBLIC;
-int bbus_obj_extract_string(bbus_object* obj, uint8_t** val) BBUS_PUBLIC;
+int bbus_obj_insint(bbus_object* obj, bbus_int val) BBUS_PUBLIC;
+int bbus_obj_insuint(bbus_object* obj, bbus_unsigned val) BBUS_PUBLIC;
+int bbus_obj_insstr(bbus_object* obj, uint8_t* val) BBUS_PUBLIC;
+int bbus_obj_extrint(bbus_object* obj, bbus_int* val) BBUS_PUBLIC;
+int bbus_obj_extruint(bbus_object* obj, bbus_unsigned* val) BBUS_PUBLIC;
+int bbus_obj_extrstr(bbus_object* obj, uint8_t** val) BBUS_PUBLIC;
 void bbus_obj_reset(bbus_object* obj) BBUS_PUBLIC;
 int bbus_obj_getstate(bbus_object* obj) BBUS_PUBLIC;
-bbus_object* bbus_make_object(const char* descr, ...) BBUS_PUBLIC;
-bbus_object* bbus_make_object_v(const char* descr, va_list va) BBUS_PUBLIC;
-bbus_object* bbus_object_from_buf(const void* buf, size_t bufsize) BBUS_PUBLIC;
-ssize_t bbus_object_to_buf(bbus_object* obj, void* buf,
+bbus_object* bbus_obj_build(const char* descr, ...) BBUS_PUBLIC;
+bbus_object* bbus_obj_vbuild(const char* descr, va_list va) BBUS_PUBLIC;
+bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize) BBUS_PUBLIC;
+ssize_t bbus_obj_tobuf(bbus_object* obj, void* buf,
 		size_t bufsize) BBUS_PUBLIC;
-int bbus_parse_object(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
-int bbus_parse_object_v(bbus_object* obj, const char* descr,
+int bbus_obj_parse(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
+int bbus_obj_vparse(bbus_object* obj, const char* descr,
 		va_list va) BBUS_PUBLIC;
 void* bbus_obj_rawdata(bbus_object* obj) BBUS_PUBLIC;
-size_t bbus_obj_rawdata_size(const bbus_object* obj) BBUS_PUBLIC;
-void bbus_free_object(bbus_object* obj) BBUS_PUBLIC;
+size_t bbus_obj_rawsize(const bbus_object* obj) BBUS_PUBLIC;
+void bbus_obj_free(bbus_object* obj) BBUS_PUBLIC;
 int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
 
 /**
@@ -608,11 +607,10 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 
 /**
  * @}
+ *
+ * @defgroup __server__ Server interface
+ * @{
  */
-
-/**************************************
- * Server stuff.
- **************************************/
 
 /* Opaque server object. */
 typedef struct __bbus_server bbus_server;
@@ -629,27 +627,32 @@ typedef struct __bbus_client bbus_client;
 
 uint32_t bbus_client_gettoken(bbus_client* cli) BBUS_PUBLIC;
 void bbus_client_settoken(bbus_client* cli, uint32_t tok) BBUS_PUBLIC;
-int bbus_get_client_type(bbus_client* cli) BBUS_PUBLIC;
+int bbus_client_gettype(bbus_client* cli) BBUS_PUBLIC;
 
-bbus_server* bbus_make_local_server(void) BBUS_PUBLIC;
-bbus_server* bbus_make_local_server_wpath(const char* path) BBUS_PUBLIC;
-int bbus_server_listen(bbus_server* srv) BBUS_PUBLIC;
-int bbus_server_has_pending_clients(bbus_server* srv) BBUS_PUBLIC;
-bbus_client* bbus_accept_client(bbus_server* srv) BBUS_PUBLIC;
+bbus_server* bbus_srv_create(void) BBUS_PUBLIC;
+bbus_server* bbus_srv_createp(const char* path) BBUS_PUBLIC;
+int bbus_srv_listen(bbus_server* srv) BBUS_PUBLIC;
+int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
+bbus_client* bbus_srv_accept(bbus_server* srv) BBUS_PUBLIC;
 int bbus_srv_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
-int bbus_server_close(bbus_server* srv) BBUS_PUBLIC;
-void bbus_free_server(bbus_server* srv) BBUS_PUBLIC;
+int bbus_srv_sendmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
+int bbus_srv_close(bbus_server* srv) BBUS_PUBLIC;
+void bbus_srv_free(bbus_server* srv) BBUS_PUBLIC;
 
 typedef struct __bbus_pollset bbus_pollset;
 
-bbus_pollset* bbus_make_pollset(void) BBUS_PUBLIC;
-void bbus_clear_pollset(bbus_pollset* pset) BBUS_PUBLIC;
-void bbus_pollset_add_srv(bbus_pollset* pset, bbus_server* src) BBUS_PUBLIC;
-void bbus_pollset_add_client(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
+bbus_pollset* bbus_pollset_make(void) BBUS_PUBLIC;
+void bbus_pollset_clear(bbus_pollset* pset) BBUS_PUBLIC;
+void bbus_pollset_addsrv(bbus_pollset* pset, bbus_server* src) BBUS_PUBLIC;
+void bbus_pollset_addcli(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
 int bbus_poll(bbus_pollset* pset, struct bbus_timeval* tv) BBUS_PUBLIC;
-int bbus_pollset_srv_isset(bbus_pollset* pset, bbus_server* srv) BBUS_PUBLIC;
-int bbus_pollset_cli_isset(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
-void bbus_free_pollset(bbus_pollset* pset) BBUS_PUBLIC;
+int bbus_pollset_srvisset(bbus_pollset* pset, bbus_server* srv) BBUS_PUBLIC;
+int bbus_pollset_cliisset(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
+void bbus_pollset_free(bbus_pollset* pset) BBUS_PUBLIC;
+
+/**
+ * @}
+ */
 
 #endif /* __BUSYBUS__ */
 
