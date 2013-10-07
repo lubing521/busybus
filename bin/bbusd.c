@@ -55,9 +55,31 @@ struct clientlist_elem
 	bbus_client* cli;
 };
 
+#define METHOD_LOCAL	0x01
+#define METHOD_REMOTE	0x02
+
+struct method
+{
+	int type;
+	char data[0];
+};
+
+struct local_method
+{
+	int type;
+	bbus_method_func func;
+};
+
+struct remote_method
+{
+	int type;
+	struct clientlist_elem* srvc;
+};
+
 struct service_map
 {
 	bbus_hashmap* subsrvc;
+	/* Map's values are pointers to struct method. */
 	bbus_hashmap* methods;
 };
 
@@ -260,9 +282,60 @@ static int client_list_add(bbus_client* cli)
 	return 0;
 }
 
-static int register_service(bbus_clien* cli)
+static int call_local_method(bbus_client* cli, const struct bbus_msg* msg,
+				const struct local_method* mthd)
+{
+
+}
+
+static int handle_clientcall(bbus_client* cli, const struct bbus_msg* msg)
+{
+	struct bbus_msg_hdr* hdr = msg->hdr;
+	struct method* mthd;
+	char* mname;
+	int ret;
+
+	mname = msg->payload;
+	mthd = locate_method(mname);
+	if (mthd == NULL) {
+		log(BBUS_ERR, "No such method: %s\n", mname);
+		return -1;
+	} else {
+		if (mthd->type == METHOD_LOCAL) {
+			ret = call_local_method(cli, msg, mthd);
+		} else
+		if (mthd->type == METHOD_REMOTE) {
+			ret = call_remote_method(cli, msg, mthd);
+		} else {
+			die("Internal logic error, invalid method type\n");
+		}
+	}
+
+	return ret;
+}
+
+static int register_service(bbus_client* cli, const struct bbus_msg* msg)
 {
 	return 0;
+}
+
+static int unregister_service(bbus_client* cli, const struct bbus_msg* msg)
+{
+	return 0;
+}
+
+static int pass_srvc_reply(bbus_client* srvc, const struct bbus_msg* msg)
+{
+	struct bbus_msg_hdr* hdr = msg->hdr;
+	struct clientlist_elem* cli;
+
+	cli = (struct bbus_client*)bbus_hmap_find(caller_map, hdr->token);
+	if (cli == NULL) {
+		log(BBUS_LOG_ERR, "Caller not found for reply.\n");
+		return -1;
+	}
+
+	return bbus_srv_sendmsg(cli->cli, msg);
 }
 
 static uint32_t make_token(void)
@@ -327,7 +400,7 @@ static void handle_client(bbus_client* cli)
 {
 	int r;
 
-	memset(msg_buf, 0, BBUS_MAXMSGSIZE);
+	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
 	r = bbus_srv_recvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
 	if (r < 0) {
 		log(BBUS_LOG_ERR,
@@ -336,18 +409,69 @@ static void handle_client(bbus_client* cli)
 		return;
 	}
 
+	r = validate_msg(msgbuf);
+	if (r < 0) {
+		log(BBUS_LOG_ERR,
+			"Invalid message received: %s\n",
+			bbus_strerror(bbus_lasterror()));
+		return;
+	}
+
+	/* TODO Common function for error reporting. */
 	switch (bbus_get_client_type(cli)) {
 	case BBUS_CLIENT_CALLER:
+		switch (((struct bbus_msg_hdr*)msgbuf)->msgtype) {
+		case BBUS_MSGTYPE_CLICALL:
+			r = handle_clientcall(cli, msgbuf);
+			if (r < 0) {
+				log(BBUS_LOG_ERR,
+					"Error on client call: %s\n",
+					bbus_strerror(bbus_lasterror()));
+				return;
+			}
+			break;
+		default:
+			log(BBUS_LOG_ERR, "Unexpected message received.\n");
+		}
 		break;
 	case BBUS_CLIENT_SERVICE:
-		r = register_service(cli);
-		if (r < 0) {
-			log(BBUS_LOG_ERR,
-				"Error registering a service: %s\n",
-				bbus_strerror(bbus_lasterror()));
+		switch (((struct bbus_msg_hdr*)msgbuf)->msgtype) {
+		case BBUS_MSGTYPE_SRVREG:
+			r = register_service(cli, msgbuf);
+			if (r < 0) {
+				log(BBUS_LOG_ERR,
+					"Error registering a service: %s\n",
+					bbus_strerror(bbus_lasterror()));
+				return;
+			}
+			break;
+		case BBUS_MSGTYPE_SRVUNREG:
+			r = unregister_service(cli, msgbuf);
+			if (r < 0) {
+				log(BBUS_LOG_ERR,
+					"Error unregistering a service: %s\n",
+					bbus_strerror(bbus_lasterror()));
+				return;
+			}
+			break;
+		case BBUS_MSGTYPE_SRVREPLY:
+			r = pass_srvc_reply(cli, msgbuf);
+			if (r < 0) {
+				log(BBUS_LOG_ERR,
+					"Error passing a service reply: %s\n",
+					bbus_strerror(bbus_lasterror()));
+				return;
+			}
+			break;
+		default:
+			log(BBUS_LOG_ERR, "Unexpected message received.\n");
 			return;
 		}
 		break;
+	default:
+		log(BBUS_LOG_ERR,
+			"Unhandled client type in the received message.\n");
+		return;
 	}
 }
 
@@ -385,7 +509,9 @@ static void run_main_loop(void)
 			}
 			for (tmpcli = clients_head; tmpcli != NULL;
 				tmpcli = tmpcli->next) {
-				handle_client(tmpcli);
+				if (bbus_pollset_cli_isset(pollset, tmpcli)) {
+					handle_client(tmpcli);
+				}
 			}
 		}
 	}
@@ -415,5 +541,4 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
 
