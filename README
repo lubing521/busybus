@@ -30,9 +30,12 @@ Compilation and installation:
   This will probably change, but for now it's a simple 'make all' in order to
   build the libbbus.so library and all the binaries. Additionally there's
   the 'make test' command, that will run the test suite located in test.c.
-  
+
   There's no installation procedure for now - just make sure your loader can
   locate libbbus.so and put the binaries where you like.
+
+  It is already possible to view partial documentation - just run 'make doc' to
+  generate html, TeX etc. output from doxygen comments in the API header file.
 
 How easy is it?
 
