@@ -306,7 +306,7 @@ BEGIN
 	int r;
 	int i;
 	char keybuf[128];
-	void* key;
+	void* val;
 
 	hmap = bbus_hmap_create();
 	ASSERT_NOT_NULL(hmap);
@@ -318,9 +318,31 @@ BEGIN
 		ASSERT_FALSE(r < 0);
 	}
 
-	key = bbus_hmap_finds(hmap, "40");
-	ASSERT_EQ(40, (int)key);
+	val = bbus_hmap_finds(hmap, "40");
+	ASSERT_EQ(40, (int)val);
 	bbus_hmap_free(hmap);
+END
+
+DEFINE_TEST(hashmap_reassign)
+BEGIN
+	static const int key = 42;
+	static int val1 = 1;
+	static int val2 = 2;
+
+	bbus_hashmap* hmap;
+	int r;
+	void* v;
+
+	hmap = bbus_hmap_create();
+	ASSERT_NOT_NULL(hmap);
+	r = bbus_hmap_set(hmap, &key, sizeof(key), &val1);
+	ASSERT_FALSE(r < 0);
+	v = bbus_hmap_find(hmap, &key, sizeof(key));
+	ASSERT_TRUE(*((int*)v) == 1);
+	r = bbus_hmap_set(hmap, &key, sizeof(key), &val2);
+	ASSERT_FALSE(r < 0);
+	v = bbus_hmap_find(hmap, &key, sizeof(key));
+	ASSERT_TRUE(*((int*)v) == 2);
 END
 
 DEFINE_TEST(memdup)
@@ -392,6 +414,7 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 	REGISTER_TEST(crc32);
 	REGISTER_TEST(hashmap);
 	REGISTER_TEST(memdup);
+	REGISTER_TEST(hashmap_reassign);
 	return run_all_tests();
 }
 

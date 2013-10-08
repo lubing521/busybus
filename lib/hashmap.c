@@ -141,12 +141,10 @@ int bbus_hmap_set(bbus_hashmap* hmap, const void* key,
 		hmap->bucket_heads[ind]->val = val;
 	} else {
 		for (tail = hmap->bucket_heads[ind];
-				tail->next != NULL; tail = tail->next) {
-			if (memcmp(hmap->bucket_heads[ind]->key,
-					key, BBUS_MIN(
-						hmap->bucket_heads[ind]->ksize,
-						ksize)) == 0) {
-				hmap->bucket_heads[ind]->val = val;
+				tail != NULL; tail = tail->next) {
+			if (memcmp(tail->key, key,
+					BBUS_MIN(tail->ksize, ksize)) == 0) {
+				tail->val = val;
 				return 0;
 			}
 		}
@@ -181,7 +179,7 @@ static struct map_entry* locate_entry(bbus_hashmap* hmap,
 
 	for (entr = hmap->bucket_heads[ind];
 			entr != NULL; entr = entr->next) {
-		if (memcmp(entr->key, key, entr->ksize) == 0)
+		if (memcmp(entr->key, key, BBUS_MIN(entr->ksize, ksize)) == 0)
 			return entr;
 	}
 
