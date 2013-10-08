@@ -335,7 +335,7 @@ static int pass_srvc_reply(bbus_client* srvc, const struct bbus_msg* msg)
 		return -1;
 	}
 
-	return bbus_srv_sendmsg(cli->cli, msg);
+	return bbus_client_sendmsg(cli->cli, msg);
 }
 
 static uint32_t make_token(void)

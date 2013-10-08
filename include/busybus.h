@@ -654,8 +654,93 @@ void bbus_client_settoken(bbus_client* cli, uint32_t tok) BBUS_PUBLIC;
 int bbus_client_gettype(bbus_client* cli) BBUS_PUBLIC;
 
 /**
+ * @brief Receive a full message from client.
+ * @param cli The client.
+ * @param buf Buffer for the message to be stored in.
+ * @param bufsize Size of 'buf'.
+ * @return 0 if a full message has been properly read, -1 on error.
+ */
+int bbus_client_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
+
+/**
+ * @brief Send a full message to the client.
+ * @param cli The client.
+ * @param buf Buffer containing the message.
+ * @param bufsize Size of 'buf'.
+ * @return 0 if a full message has been properly sent, -1 on error.
+ */
+int bbus_client_sendmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
+
+/**
+ * @brief Closes the client connection.
+ * @param cli The client.
+ * @return 0 on success, -1 on error.
+ */
+int bbus_client_close(bbus_client* cli) BBUS_PUBLIC;
+
+/**
+ * @brief Frees the client object.
+ * @param cli The client.
+ */
+void bbus_client_free(bbus_client* cli) BBUS_PUBLIC;
+
+/**
  * @}
- *
+ */
+
+/**
+ * @brief Opaque server object.
+ */
+typedef struct __bbus_server bbus_server;
+
+/**
+ * @brief Creates a server instance.
+ * @return Pointer to the newly created server instance or NULL on error.
+ */
+bbus_server* bbus_srv_create(void) BBUS_PUBLIC;
+
+/**
+ * @brief Creates a server instance with custom socket path.
+ * @param path Path to the socket.
+ * @return Pointer to the newly created server instance or NULL on error.
+ */
+bbus_server* bbus_srv_createp(const char* path) BBUS_PUBLIC;
+
+/**
+ * @brief Sets the server into listening mode.
+ * @param srv The server.
+ * @return 0 on success, -1 on error.
+ */
+int bbus_srv_listen(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Indicates whether there are pending connections on the server socket.
+ * @param srv The server.
+ * @return 1 if there are connections incoming, 0 if not, -1 on error.
+ */
+int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Accepts a client connection.
+ * @param srv The server.
+ * @return New client connection or NULL on error.
+ */
+bbus_client* bbus_srv_accept(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Stops listening on a server socket and closes it.
+ * @param srv The server.
+ * @return 0 on success, -1 on error.
+ */
+int bbus_srv_close(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Frees the server object.
+ * @param srv The server.
+ */
+void bbus_srv_free(bbus_server* srv) BBUS_PUBLIC;
+
+/**
  * @defgroup __src_poll__ Polling interface
  * @{
  *
@@ -729,92 +814,7 @@ void bbus_pollset_free(bbus_pollset* pset) BBUS_PUBLIC;
 
 /**
  * @}
- */
-
-/**
- * @brief Opaque server object.
- */
-typedef struct __bbus_server bbus_server;
-
-/**
- * @brief Creates a server instance.
- * @return Pointer to the newly created server instance or NULL on error.
- */
-bbus_server* bbus_srv_create(void) BBUS_PUBLIC;
-
-/**
- * @brief Creates a server instance with custom socket path.
- * @param path Path to the socket.
- * @return Pointer to the newly created server instance or NULL on error.
- */
-bbus_server* bbus_srv_createp(const char* path) BBUS_PUBLIC;
-
-/**
- * @brief Sets the server into listening mode.
- * @param srv The server.
- * @return 0 on success, -1 on error.
- */
-int bbus_srv_listen(bbus_server* srv) BBUS_PUBLIC;
-
-/**
- * @brief Indicates whether there are pending connections on the server socket.
- * @param srv The server.
- * @return 1 if there are connections incoming, 0 if not, -1 on error.
- */
-int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
-
-/**
- * @brief Accepts a client connection.
- * @param srv The server.
- * @return New client connection or NULL on error.
- */
-bbus_client* bbus_srv_accept(bbus_server* srv) BBUS_PUBLIC;
-
-/**
- * @brief Receive a full message from client.
- * @param cli The client.
- * @param buf Buffer for the message to be stored in.
- * @param bufsize Size of 'buf'.
- * @return 0 if a full message has been properly read, -1 on error.
- */
-int bbus_srv_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
-
-/**
- * @brief Send a full message to the client.
- * @param cli The client.
- * @param buf Buffer containing the message.
- * @param bufsize Size of 'buf'.
- * @return 0 if a full message has been properly sent, -1 on error.
- */
-int bbus_srv_sendmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
-
-/**
- * @brief Closes the client connection.
- * @param cli The client.
- * @return 0 on success, -1 on error.
- */
-int bbus_srv_cliclose(bbus_client* cli) BBUS_PUBLIC;
-
-/**
- * @brief Frees the client object.
- * @param cli The client.
- */
-void bbus_srv_clifree(bbus_client* cli) BBUS_PUBLIC;
-
-/**
- * @brief Stops listening on a server socket and closes it.
- * @param srv The server.
- * @return 0 on success, -1 on error.
- */
-int bbus_srv_close(bbus_server* srv) BBUS_PUBLIC;
-
-/**
- * @brief Frees the server object.
- * @param srv The server.
- */
-void bbus_srv_free(bbus_server* srv) BBUS_PUBLIC;
-
-/**
+ *
  * @}
  */
 
