@@ -275,7 +275,7 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 		return -1;
 	}
 
-	r = bbus_hmap_inserts(conn->methods, method->name,
+	r = bbus_hmap_sets(conn->methods, method->name,
 			(void*)method->func);
 	if (r < 0)
 		return -1;

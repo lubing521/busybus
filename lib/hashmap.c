@@ -83,7 +83,7 @@ static int enlarge_map(bbus_hashmap* hmap)
 		return -1;
 	for (i = 0; i < hmap->size; ++i) {
 		for (el = hmap->bucket_heads[i]; el != NULL; el = el->next) {
-			r = bbus_hmap_insert(newmap, el->key,
+			r = bbus_hmap_set(newmap, el->key,
 						el->ksize, el->val);
 			if (r < 0) {
 				bbus_hmap_free(newmap);
@@ -102,12 +102,12 @@ static int enlarge_map(bbus_hashmap* hmap)
 	return 0;
 }
 
-int bbus_hmap_inserts(bbus_hashmap* hmap, const char* key, void* val)
+int bbus_hmap_sets(bbus_hashmap* hmap, const char* key, void* val)
 {
-	return bbus_hmap_insert(hmap, key, strlen(key), val);
+	return bbus_hmap_set(hmap, key, strlen(key), val);
 }
 
-int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
+int bbus_hmap_set(bbus_hashmap* hmap, const void* key,
 		size_t ksize, void* val)
 {
 	uint32_t crc;

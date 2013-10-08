@@ -314,7 +314,7 @@ BEGIN
 	for (i = 0; i < 140; ++i) {
 		memset(keybuf, 0, sizeof(keybuf));
 		snprintf(keybuf, sizeof(keybuf), "%d", i);
-		r = bbus_hmap_inserts(hmap, keybuf, (void*)i);
+		r = bbus_hmap_sets(hmap, keybuf, (void*)i);
 		ASSERT_FALSE(r < 0);
 	}
 

@@ -378,7 +378,7 @@ static void accept_clients(void)
 			token = make_token();
 			bbus_client_settoken(cli, token);
 			/* This client is the list's tail at this point. */
-			r = bbus_hmap_insert(caller_map, &token,
+			r = bbus_hmap_set(caller_map, &token,
 						sizeof(token), clients_tail);
 			if (r < 0) {
 				log(BBUS_LOG_ERR,

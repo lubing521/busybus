@@ -186,7 +186,7 @@ bbus_hashmap* bbus_hmap_create(void) BBUS_PUBLIC;
  * @param val New value.
  * @return 0 on success, -1 if no memory.
  */
-int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
+int bbus_hmap_set(bbus_hashmap* hmap, const void* key,
 		size_t ksize, void* val) BBUS_PUBLIC;
 
 /**
@@ -198,7 +198,7 @@ int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
  *
  * A string is used as key.
  */
-int bbus_hmap_inserts(bbus_hashmap* hmap,
+int bbus_hmap_sets(bbus_hashmap* hmap,
 		const char* key, void* val) BBUS_PUBLIC;
 
 /**
