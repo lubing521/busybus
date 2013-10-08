@@ -113,6 +113,8 @@ int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
 	uint32_t crc;
 	unsigned ind;
 	int r;
+	struct map_entry* tail;
+	struct map_entry* newel;
 
 	if (hmap->numstored == hmap->size) {
 		r = enlarge_map(hmap);
@@ -138,11 +140,16 @@ int bbus_hmap_insert(bbus_hashmap* hmap, const void* key,
 		hmap->bucket_heads[ind]->ksize = ksize;
 		hmap->bucket_heads[ind]->val = val;
 	} else {
-		struct map_entry* tail;
-		struct map_entry* newel;
-
 		for (tail = hmap->bucket_heads[ind];
-			tail->next != NULL; tail = tail->next);
+				tail->next != NULL; tail = tail->next) {
+			if (memcmp(hmap->bucket_heads[ind]->key,
+					key, BBUS_MIN(
+						hmap->bucket_heads[ind]->ksize,
+						ksize)) == 0) {
+				hmap->bucket_heads[ind]->val = val;
+				return 0;
+			}
+		}
 		newel = bbus_malloc(sizeof(struct map_entry));
 		if (newel == NULL)
 			return -1;
