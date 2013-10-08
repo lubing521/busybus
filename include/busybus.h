@@ -610,45 +610,209 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
  *
  * @defgroup __server__ Server interface
  * @{
+ *
+ * The busybus server API contains functions providing an interface to
+ * the library's internals for the server implementation.
+ *
+ * @defgroup __srv_cliobj__ Client representation
+ * @{
+ *
+ * Functions and data structures representing clients within the bbusd.
  */
 
-/* Opaque server object. */
-typedef struct __bbus_server bbus_server;
-/*
- * Opaque object corresponding with a single connected client (can
- * be both a method-calling client and a service offering client).
+/**
+ * @brief Opaque object corresponding with a single connected client.
+ *
+ * Can be both a method-calling client and a service offering client.
  */
 typedef struct __bbus_client bbus_client;
 
-#define BBUS_CLIENT_CALLER	1
-#define BBUS_CLIENT_SERVICE	2
-#define BBUS_CLIENT_MON		3
-#define BBUS_CLIENT_CTL		4
+#define BBUS_CLIENT_CALLER	1 /**< Method calling client. */
+#define BBUS_CLIENT_SERVICE	2 /**< Service provider. */
+#define BBUS_CLIENT_MON		3 /**< Busybus monitor. */
+#define BBUS_CLIENT_CTL		4 /**< Busybus control program. */
 
+/**
+ * @brief Gives access to the token of a bbus_client object.
+ * @param cli The client.
+ * @return The token.
+ */
 uint32_t bbus_client_gettoken(bbus_client* cli) BBUS_PUBLIC;
+
+/**
+ * @brief Assigns a new token value within a bbus_client object.
+ * @param cli The client.
+ * @param tok New token.
+ */
 void bbus_client_settoken(bbus_client* cli, uint32_t tok) BBUS_PUBLIC;
+
+/**
+ * @brief Returns the internal client type of a bbus_client object.
+ * @param cli The client.
+ * @return One of the possible client types.
+ */
 int bbus_client_gettype(bbus_client* cli) BBUS_PUBLIC;
 
-bbus_server* bbus_srv_create(void) BBUS_PUBLIC;
-bbus_server* bbus_srv_createp(const char* path) BBUS_PUBLIC;
-int bbus_srv_listen(bbus_server* srv) BBUS_PUBLIC;
-int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
-bbus_client* bbus_srv_accept(bbus_server* srv) BBUS_PUBLIC;
-int bbus_srv_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
-int bbus_srv_sendmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
-int bbus_srv_close(bbus_server* srv) BBUS_PUBLIC;
-void bbus_srv_free(bbus_server* srv) BBUS_PUBLIC;
+/**
+ * @}
+ *
+ * @defgroup __src_poll__ Polling interface
+ * @{
+ *
+ * Set of functions and data structures allowing for easy polling for events
+ * on multiple server and client objects. Used by the busybus daemon
+ * implementation to limit it to a single thread only.
+ */
 
+/**
+ * @brief Opaque pollset object.
+ *
+ * Stores server and client objects in a form suitable for polling.
+ */
 typedef struct __bbus_pollset bbus_pollset;
 
+/**
+ * @brief Creates and empty pollset object.
+ * @return Pointer to a new pollset object or NULL if no memory.
+ */
 bbus_pollset* bbus_pollset_make(void) BBUS_PUBLIC;
+
+/**
+ * @brief Clears an existing pollset object.
+ * @param pset The pollset.
+ */
 void bbus_pollset_clear(bbus_pollset* pset) BBUS_PUBLIC;
+
+/**
+ * @brief Adds a server object to the pollset.
+ * @param pset The pollset.
+ * @param src The server.
+ */
 void bbus_pollset_addsrv(bbus_pollset* pset, bbus_server* src) BBUS_PUBLIC;
+
+/**
+ * @brief Adds a client to the pollset.
+ * @param pset The pollset.
+ * @param cli The client.
+ */
 void bbus_pollset_addcli(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
+
+/**
+ * @brief Performs a pollset on all the objects set within 'pset'.
+ * @param pset The pollset.
+ * @param tv Time value that is a struct bbus_timeval.
+ * @return 1 for at least one object ready for I/O, 0 on timeout, -1 on error.
+ */
 int bbus_poll(bbus_pollset* pset, struct bbus_timeval* tv) BBUS_PUBLIC;
+
+/**
+ * @brief Checks whether a server object whithin this pollset is ready for I/O.
+ * @param pset The pollset.
+ * @param srv The server.
+ * @return 1 if the server is ready, 0 otherwise.
+ */
 int bbus_pollset_srvisset(bbus_pollset* pset, bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Checks whether a client object whithin this pollset is ready for I/O.
+ * @param pset The pollset.
+ * @param cli The client.
+ * @return 1 if the client is ready, 0 otherwise.
+ */
 int bbus_pollset_cliisset(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
+
+/**
+ * @brief Disposes of a pollset object.
+ * @param pset The pollset to free.
+ */
 void bbus_pollset_free(bbus_pollset* pset) BBUS_PUBLIC;
+
+/**
+ * @}
+ */
+
+/**
+ * @brief Opaque server object.
+ */
+typedef struct __bbus_server bbus_server;
+
+/**
+ * @brief Creates a server instance.
+ * @return Pointer to the newly created server instance or NULL on error.
+ */
+bbus_server* bbus_srv_create(void) BBUS_PUBLIC;
+
+/**
+ * @brief Creates a server instance with custom socket path.
+ * @param path Path to the socket.
+ * @return Pointer to the newly created server instance or NULL on error.
+ */
+bbus_server* bbus_srv_createp(const char* path) BBUS_PUBLIC;
+
+/**
+ * @brief Sets the server into listening mode.
+ * @param srv The server.
+ * @return 0 on success, -1 on error.
+ */
+int bbus_srv_listen(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Indicates whether there are pending connections on the server socket.
+ * @param srv The server.
+ * @return 1 if there are connections incoming, 0 if not, -1 on error.
+ */
+int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Accepts a client connection.
+ * @param srv The server.
+ * @return New client connection or NULL on error.
+ */
+bbus_client* bbus_srv_accept(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Receive a full message from client.
+ * @param cli The client.
+ * @param buf Buffer for the message to be stored in.
+ * @param bufsize Size of 'buf'.
+ * @return 0 if a full message has been properly read, -1 on error.
+ */
+int bbus_srv_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
+
+/**
+ * @brief Send a full message to the client.
+ * @param cli The client.
+ * @param buf Buffer containing the message.
+ * @param bufsize Size of 'buf'.
+ * @return 0 if a full message has been properly sent, -1 on error.
+ */
+int bbus_srv_sendmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
+
+/**
+ * @brief Closes the client connection.
+ * @param cli The client.
+ * @return 0 on success, -1 on error.
+ */
+int bbus_srv_cliclose(bbus_client* cli) BBUS_PUBLIC;
+
+/**
+ * @brief Frees the client object.
+ * @param cli The client.
+ */
+void bbus_srv_clifree(bbus_client* cli) BBUS_PUBLIC;
+
+/**
+ * @brief Stops listening on a server socket and closes it.
+ * @param srv The server.
+ * @return 0 on success, -1 on error.
+ */
+int bbus_srv_close(bbus_server* srv) BBUS_PUBLIC;
+
+/**
+ * @brief Frees the server object.
+ * @param srv The server.
+ */
+void bbus_srv_free(bbus_server* srv) BBUS_PUBLIC;
 
 /**
  * @}
