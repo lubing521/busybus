@@ -151,6 +151,13 @@ void bbus_str_free(char* str) BBUS_PUBLIC;
 uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
 /**
+ * @brief Returns the smallest of two values.
+ * @param X First value.
+ * @param Y Second value.
+ */
+#define BBUS_MIN(X, Y) ((X) >= (Y) ? (Y) : (X))
+
+/**
  * @}
  *
  * @defgroup __hashmap__ Hashmap functions
