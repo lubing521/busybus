@@ -17,6 +17,218 @@
  */
 
 #include <busybus.h>
+#include "error.h"
+#include "socket.h"
+#include "protocol.h"
+#include <string.h>
+#include <sys/select.h>
+#include <errno.h>
 
+#define DEF_LISTEN_QUEUE 5
 
+struct __bbus_client
+{
+	int sock;
+	int type;
+	uint32_t token;
+};
+
+struct __bbus_server
+{
+	int sock;
+};
+
+struct __bbus_pollset
+{
+	fd_set fdset;
+	int highsock;
+};
+
+uint32_t bbus_client_gettoken(bbus_client* cli)
+{
+	return cli->token;
+}
+
+void bbus_client_settoken(bbus_client* cli, uint32_t tok)
+{
+	cli->token = tok;
+}
+
+int bbus_client_gettype(bbus_client* cli)
+{
+	return cli->type;
+}
+
+int bbus_client_rcvmsg(bbus_client* cli, void* buf, size_t bufsize)
+{
+	return 0;
+}
+
+int bbus_client_sendmsg(bbus_client* cli, void* buf, size_t bufsize)
+{
+	return 0;
+}
+
+int bbus_client_close(bbus_client* cli)
+{
+	return 0;
+}
+
+void bbus_client_free(bbus_client* cli)
+{
+	bbus_free(cli);
+}
+
+bbus_server* bbus_srv_create(void)
+{
+	return bbus_srv_createp(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
+}
+
+bbus_server* bbus_srv_createp(const char* path)
+{
+	bbus_server* srv;
+	int sock;
+	int ret;
+
+	sock = __bbus_local_socket();
+	if (sock < 0)
+		goto err;
+
+	ret = __bbus_bind_local_sock(sock, path);
+	if (ret < 0)
+		goto err;
+
+	srv = bbus_malloc(sizeof(struct __bbus_server));
+	if (srv == NULL)
+		goto err;
+
+	srv->sock = sock;
+	return srv;
+
+err:
+	__bbus_sock_close(sock);
+	return NULL;
+}
+
+int bbus_srv_listen(bbus_server* srv)
+{
+	return __bbus_sock_listen(srv->sock, DEF_LISTEN_QUEUE);
+}
+
+int bbus_srv_clientpending(bbus_server* srv)
+{
+	struct bbus_timeval tv;
+
+	memset(&tv, 0, sizeof(struct bbus_timeval));
+	tv.sec = 0;
+	tv.usec = 0;
+
+	return __bbus_sock_rd_ready(srv->sock, &tv);
+}
+
+bbus_client* bbus_srv_accept(bbus_server* srv)
+{
+	char addrbuf[128];
+	size_t addrsize;
+	int sock;
+	int ret;
+	bbus_client* cli;
+	struct bbus_msg_hdr hdr;
+
+	sock = __bbus_local_accept(srv->sock, addrbuf,
+					sizeof(addrbuf), &addrsize);
+	if (sock < 0)
+		return NULL;
+
+	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
+	ret = __bbus_recvv_msg(sock, &hdr, NULL, 0);
+	if (ret < 0) {
+		__bbus_sock_close(sock);
+		return NULL;
+	}
+
+	return cli;
+}
+
+int bbus_srv_close(bbus_server* srv)
+{
+	return __bbus_sock_close(srv->sock);
+}
+
+void bbus_srv_free(bbus_server* srv)
+{
+	bbus_free(srv);
+}
+
+bbus_pollset* bbus_pollset_make(void)
+{
+	bbus_pollset* pset;
+
+	pset = bbus_malloc0(sizeof(struct __bbus_pollset));
+	if (pset == NULL)
+		return NULL;
+	bbus_pollset_clear(pset);
+
+	return pset;
+}
+
+void bbus_pollset_clear(bbus_pollset* pset)
+{
+	FD_ZERO(&pset->fdset);
+	pset->highsock = 0;
+}
+
+static inline void update_highsock(bbus_pollset* pset, int sock)
+{
+	if (pset->highsock < (sock+1))
+		pset->highsock = sock+1;
+}
+
+void bbus_pollset_addsrv(bbus_pollset* pset, bbus_server* src)
+{
+	FD_SET(src->sock, &pset->fdset);
+	update_highsock(pset, src->sock);
+}
+
+void bbus_pollset_addcli(bbus_pollset* pset, bbus_client* cli)
+{
+	FD_SET(cli->sock, &pset->fdset);
+	update_highsock(pset, cli->sock);
+}
+
+int bbus_poll(bbus_pollset* pset, struct bbus_timeval* tv)
+{
+	struct timeval stv;
+	int ret;
+
+	memset(&stv, 0, sizeof(struct timeval));
+	stv.tv_sec = tv->sec;
+	stv.tv_usec = tv->usec;
+
+	ret = select(pset->highsock, &pset->fdset, NULL, NULL, &stv);
+	tv->sec = stv.tv_sec;
+	tv->usec = stv.tv_usec;
+
+	if (ret < 0) {
+		__bbus_set_err(errno);
+		return -1;
+	}
+
+	return ret;
+}
+
+int bbus_pollset_srvisset(bbus_pollset* pset, bbus_server* srv)
+{
+	return FD_ISSET(srv->sock, &pset->fdset);
+}
+
+int bbus_pollset_cliisset(bbus_pollset* pset, bbus_client* cli)
+{
+	return FD_ISSET(cli->sock, &pset->fdset);
+}
+
+void bbus_pollset_free(bbus_pollset* pset)
+{
+	bbus_free(pset);
+}
 
