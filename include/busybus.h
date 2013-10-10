@@ -423,6 +423,7 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
 #define BBUS_MSGTYPE_SRVCALL	0x0A /**< Server calls a registered method. */
 #define BBUS_MSGTYPE_SRVREPLY	0x0B /**< Method provider replies. */
 #define BBUS_MSGTYPE_CLOSE	0x0C /**< Client closes session. */
+#define BBUS_MSGTYPE_CTRL	0x0D /**< Impl. specific Control message. */
 /**
  * @}
  *
