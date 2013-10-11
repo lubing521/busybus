@@ -142,12 +142,16 @@ bbus_client* bbus_srv_accept(bbus_server* srv)
 
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	ret = __bbus_recvv_msg(sock, &hdr, NULL, 0);
-	if (ret < 0) {
-		__bbus_sock_close(sock);
-		return NULL;
-	}
+	if (ret < 0)
+		goto errout;
+	if (hdr.msgtype != BBUS_MSGTYPE_SOCLI)
+		goto errout;
 
 	return cli;
+
+errout:
+	__bbus_sock_close(sock);
+	return NULL;
 }
 
 int bbus_srv_close(bbus_server* srv)

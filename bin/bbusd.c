@@ -86,6 +86,8 @@ struct service_map
 static bbus_server* server;
 static struct bbus_clientlist_elem* clients_head;
 static struct bbus_clientlist_elem* clients_tail;
+static struct bbus_clientlist_elem* monitors_head;
+static struct bbus_clientlist_elem* monitors_tail;
 static bbus_pollset* pollset;
 static int run;
 /* TODO in the future syslog will be the default. */
@@ -268,7 +270,7 @@ static void sighandler(int signum)
 	}
 }
 
-static int client_list_add(bbus_client* cli)
+static int client_list_add(bbus_client* cli, struct clientlist_elem* tail)
 {
 	struct clientlist_elem* el;
 
@@ -277,7 +279,7 @@ static int client_list_add(bbus_client* cli)
 		return -1;
 
 	el->cli = cli;
-	insque(el, clients_tail);
+	insque(el, tail);
 
 	return 0;
 }
@@ -285,7 +287,9 @@ static int client_list_add(bbus_client* cli)
 static int call_local_method(bbus_client* cli, const struct bbus_msg* msg,
 				const struct local_method* mthd)
 {
+	bbus_object* obj;
 
+	return 0;
 }
 
 static int handle_clientcall(bbus_client* cli, const struct bbus_msg* msg)
@@ -364,11 +368,10 @@ static void accept_clients(void)
 			continue;
 		}
 
-		r = client_list_add(cli);
-		if (r == NULL) {
+		r = client_list_add(cli, clients_tail);
+		if (r < 0) {
 			log(BBUS_LOG_ERR,
-				"Error adding new client to "
-				"the list: %s\n",
+				"Error adding new client to the list: %s\n",
 				bbus_strerror(bbus_lasterror()));
 			continue;
 		}
@@ -387,8 +390,22 @@ static void accept_clients(void)
 					bbus_strerror(bbus_lasterror()));
 			}
 			break;
+		case BBUS_CLIENT_MON:
+			r = client_list_add(cli, monitors_tail);
+			if (r < 0) {
+				log(BBUS_LOG_ERR,
+					"Error adding new monitor to "
+					"the list: %s\n",
+					bbus_strerror(bbus_lasterror()));
+				continue;
+			}
+			break;
 		case BBUS_CLIENT_SERVICE:
-			/* Don't do anything else. */
+		case BBUS_CLIENT_CTL:
+			/*
+			 * Don't do anything else other than adding these
+			 * clients to the main client list.
+			 */
 			break;
 		default:
 			break;
@@ -408,6 +425,7 @@ static void handle_client(bbus_client* cli)
 			bbus_strerror(bbus_lasterror()));
 		return;
 	}
+	send_to_monitors(msgbuf);
 
 	r = validate_msg(msgbuf);
 	if (r < 0) {
@@ -467,6 +485,21 @@ static void handle_client(bbus_client* cli)
 			log(BBUS_LOG_ERR, "Unexpected message received.\n");
 			return;
 		}
+		break;
+	case BBUS_CLIENT_CTRL:
+		switch (((struct bbus_msg_hdr*)msgbuf)->msgtype) {
+		case BBUS_MSGTYPE_CTRL:
+			handle_control_message(cli, msgbuf);
+			break;
+		default:
+			log(BBUS_LOG_ERR, "Unexpected message received.\n");
+			return;
+		}
+		break;
+	case BBUS_CLIENT_MON:
+		log(BBUS_LOG_WARN "Message received from a monitor which"
+			"should not be sending any messages - discarding.\n");
+		return;
 		break;
 	default:
 		log(BBUS_LOG_ERR,
