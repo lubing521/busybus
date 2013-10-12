@@ -121,12 +121,12 @@ static bbus_object* extract_object(const void* buf, size_t bufsize)
 	return obj;
 }
 
-bbus_client_connection* bbus_cli_connect(void)
+bbus_client_connection* bbus_connect(void)
 {
-	return bbus_cli_connectp(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
+	return bbus_connectp(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
 }
 
-bbus_client_connection* bbus_cli_connectp(const char* path)
+bbus_client_connection* bbus_connectp(const char* path)
 {
 	int sock;
 	bbus_client_connection* conn;
@@ -142,7 +142,7 @@ bbus_client_connection* bbus_cli_connectp(const char* path)
 	return conn;
 }
 
-bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
+bbus_object* bbus_callmethod(bbus_client_connection* conn,
 		char* method, bbus_object* arg)
 {
 	int r;
@@ -184,7 +184,7 @@ bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
 	}
 }
 
-int bbus_cli_closeconn(bbus_client_connection* conn)
+int bbus_closeconn(bbus_client_connection* conn)
 {
 	int r;
 

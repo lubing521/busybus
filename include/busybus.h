@@ -499,14 +499,14 @@ typedef struct __bbus_client_connection bbus_client_connection;
  * @brief Establishes a client connection with the busybus server.
  * @return New connection object or NULL in case of an error.
  */
-bbus_client_connection* bbus_cli_connect(void) BBUS_PUBLIC;
+bbus_client_connection* bbus_connect(void) BBUS_PUBLIC;
 
 /**
  * @brief Establishes a client connection with custom socket path.
  * @param path Filename of the socket to connect to.
  * @return New connection object or NULL in case of an error.
  */
-bbus_client_connection* bbus_cli_connectp(const char* path) BBUS_PUBLIC;
+bbus_client_connection* bbus_connectp(const char* path) BBUS_PUBLIC;
 
 /**
  * @brief Calls a method synchronously.
@@ -515,7 +515,7 @@ bbus_client_connection* bbus_cli_connectp(const char* path) BBUS_PUBLIC;
  * @param arg Marshalled arguments.
  * @return Returned marshalled data or NULL if error.
  */
-bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
+bbus_object* bbus_callmethod(bbus_client_connection* conn,
 		char* method, bbus_object* arg) BBUS_PUBLIC;
 
 /**
@@ -523,7 +523,7 @@ bbus_object* bbus_cli_callmethod(bbus_client_connection* conn,
  * @param conn The client connection to close.
  * @return 0 if the connection has been properly closed, -1 on error.
  */
-int bbus_cli_closeconn(bbus_client_connection* conn) BBUS_PUBLIC;
+int bbus_closeconn(bbus_client_connection* conn) BBUS_PUBLIC;
 
 /**
  * @}
