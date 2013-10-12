@@ -791,10 +791,12 @@ void bbus_pollset_addsrv(bbus_pollset* pset, bbus_server* src) BBUS_PUBLIC;
 void bbus_pollset_addcli(bbus_pollset* pset, bbus_client* cli) BBUS_PUBLIC;
 
 /**
- * @brief Performs a pollset on all the objects set within 'pset'.
+ * @brief Performs an I/O poll on all the objects set within 'pset'.
  * @param pset The pollset.
  * @param tv Time value that is a struct bbus_timeval.
- * @return 1 for at least one object ready for I/O, 0 on timeout, -1 on error.
+ * @return Number of descriptors ready for I/O, 0 on timeout or -1 on error.
+ *
+ * Checks only whether there are descriptors ready for reading.
  */
 int bbus_poll(bbus_pollset* pset, struct bbus_timeval* tv) BBUS_PUBLIC;
 
