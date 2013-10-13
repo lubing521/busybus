@@ -67,7 +67,7 @@ test:		$(TEST_OBJS) $(LIBBBUS_OBJS)
 ###############################################################################
 # all
 ###############################################################################
-all:		libbbus.so bbusd
+all:		libbbus.so bbusd bbus-call
 
 ###############################################################################
 # doc
@@ -82,6 +82,8 @@ doc:
 clean:
 	rm -f $(BBUSD_OBJS)
 	rm -f $(BBUSD_TARGET)
+	rm -f $(BBUSCALL_OBJS)
+	rm -f $(BBUSCALL_TARGET)
 	rm -f $(LIBBBUS_OBJS)
 	rm -f $(LIBBBUS_TARGET)
 	rm -f $(TEST_OBJS)

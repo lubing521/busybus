@@ -17,15 +17,25 @@
  */
 
 #include <busybus.h>
+#include "common.h"
 #include <getopt.h>
 #include <stdio.h>
+#include <string.h>
 
+struct option_flags
+{
+	int print_help;
+	int print_version;
+};
+
+static char* sockpath = BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME;
 static char* method = NULL;
 static char* argdescr = NULL;
 static char** argstart = NULL;
 static char** argend = NULL;
+static struct option_flags options = { 0, 0 };
 
-static parse_args(int argc, char** argv)
+static void parse_args(int argc, char** argv)
 {
 	static const struct option longopts[] = {
 		{ "help", no_argument, &options.print_help, 1 },
@@ -42,7 +52,7 @@ static parse_args(int argc, char** argv)
 				longopts, &index)) != -1) {
 		switch (opt) {
 		case 's':
-			bbus_setsockpath(optarg);
+			sockpath = optarg;
 			break;
 		case '?':
 			break;
@@ -61,7 +71,7 @@ static parse_args(int argc, char** argv)
 		if (argdescr == NULL) {
 			argdescr = argv[index];
 		} else {
-			if ((argc - index) != strlen(argdescr)) {
+			if ((size_t)(argc - index) != strlen(argdescr)) {
 				die("Need to pass arguments matching "
 						"the description");
 			}
@@ -131,8 +141,8 @@ int main(int argc, char** argv)
 	}
 
 	memset(reprbuf, 0, BUFSIZ);
-	ret = bbus_obj_repr(ret, reprbuf, BUFSIZ);
-	if (ret < 0)
+	r = bbus_obj_repr(ret, reprbuf, BUFSIZ);
+	if (r < 0)
 		goto err_repr;
 	fprintf(stdout, "%s\n", reprbuf);
 

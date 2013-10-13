@@ -21,6 +21,6 @@
 
 #include <busybus.h>
 
-void die(const char* format, ...) BBUS_PRINTF_FUNC(1, 2);
+void die(const char* format, ...) BBUS_NORETURN BBUS_PRINTF_FUNC(1, 2);
 
 #endif /* __BBUS_COMMON__ */

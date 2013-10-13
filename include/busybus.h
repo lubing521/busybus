@@ -48,6 +48,11 @@
 #define BBUS_PUBLIC __attribute__((visibility("default")))
 
 /**
+ * @brief Marks function as non-returning.
+ */
+#define BBUS_NORETURN __attribute__((noreturn))
+
+/**
  * @brief Marks function as being "printf-like".
  * @param FORMAT Position of the format parameter in the argument list.
  * @param PARAMS Position of the first of the variadic arguments.
