@@ -668,7 +668,8 @@ int bbus_client_gettype(bbus_client* cli) BBUS_PUBLIC;
  * @param bufsize Size of 'buf'.
  * @return 0 if a full message has been properly read, -1 on error.
  */
-int bbus_client_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
+int bbus_client_rcvmsg(bbus_client* cli, void* buf,
+		size_t bufsize) BBUS_PUBLIC;
 
 /**
  * @brief Send a full message to the client.
@@ -677,7 +678,8 @@ int bbus_client_rcvmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
  * @param bufsize Size of 'buf'.
  * @return 0 if a full message has been properly sent, -1 on error.
  */
-int bbus_client_sendmsg(bbus_client* cli, void* buf, size_t bufsize) BBUS_PUBLIC;
+int bbus_client_sendmsg(bbus_client* cli, void* buf,
+		size_t bufsize) BBUS_PUBLIC;
 
 /**
  * @brief Closes the client connection.

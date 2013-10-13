@@ -61,17 +61,17 @@ int bbus_client_gettype(bbus_client* cli)
 
 int bbus_client_rcvmsg(bbus_client* cli, void* buf, size_t bufsize)
 {
-	return 0;
+	return __bbus_recv_msg(cli->sock, buf, bufsize);
 }
 
 int bbus_client_sendmsg(bbus_client* cli, void* buf, size_t bufsize)
 {
-	return 0;
+	return __bbus_send_msg(cli->sock, buf, bufsize);
 }
 
 int bbus_client_close(bbus_client* cli)
 {
-	return 0;
+	return __bbus_sock_close(cli->sock);
 }
 
 void bbus_client_free(bbus_client* cli)
@@ -134,6 +134,7 @@ bbus_client* bbus_srv_accept(bbus_server* srv)
 	int ret;
 	bbus_client* cli;
 	struct bbus_msg_hdr hdr;
+	int clitype;
 
 	sock = __bbus_local_accept(srv->sock, addrbuf,
 					sizeof(addrbuf), &addrsize);
@@ -144,8 +145,24 @@ bbus_client* bbus_srv_accept(bbus_server* srv)
 	ret = __bbus_recvv_msg(sock, &hdr, NULL, 0);
 	if (ret < 0)
 		goto errout;
-	if (hdr.msgtype != BBUS_MSGTYPE_SOCLI)
+	if ((hdr.msgtype != BBUS_MSGTYPE_SOCLI)
+			&& (hdr.msgtype != BBUS_MSGTYPE_SOSRVP))
 		goto errout;
+
+	clitype = hdr.msgtype == BBUS_MSGTYPE_SOCLI
+			? BBUS_CLIENT_CALLER : BBUS_CLIENT_SERVICE;
+
+	hdr.msgtype = BBUS_MSGTYPE_SOOK;
+	ret = __bbus_sendv_msg(sock, &hdr, NULL, NULL, 0);
+	if (ret < 0)
+		goto errout;
+
+	cli = bbus_malloc(sizeof(struct __bbus_client));
+	if (cli == NULL)
+		goto errout;
+	cli->sock = sock;
+	cli->token = 0;
+	cli->type = clitype;
 
 	return cli;
 
