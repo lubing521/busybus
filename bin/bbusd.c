@@ -384,6 +384,7 @@ static void accept_clients(void)
 				bbus_strerror(bbus_lasterror()));
 			continue;
 		}
+		logmsg(BBUS_LOG_INFO, "Client connected.\n");
 
 		r = client_list_add(cli, clients_tail);
 		if (r < 0) {
