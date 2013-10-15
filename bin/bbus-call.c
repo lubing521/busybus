@@ -77,7 +77,7 @@ static void parse_args(int argc, char** argv)
 			}
 
 			if (argstart == NULL) {
-				argstart = &argv[index];
+				argstart = argend = &argv[index];
 			} else {
 				argend = &argv[index];
 			}
@@ -111,7 +111,7 @@ int main(int argc, char** argv)
 	if (r < 0)
 		goto err_arg;
 
-	for (curarg = argstart; argdescr != NULL; ++argdescr, ++curarg) {
+	for (curarg = argstart; *argdescr != '\0'; ++argdescr, ++curarg) {
 		switch (*argdescr) {
 		/* TODO other formats */
 		case BBUS_TYPE_STRING:
