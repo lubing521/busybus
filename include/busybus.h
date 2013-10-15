@@ -404,7 +404,8 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
 /** @brief Size of the magic number. */
 #define BBUS_MAGIC_SIZE			2
 /** @brief Unix socket directory. */
-#define BBUS_DEF_DIRPATH		"/var/run/bbus/"
+/* TODO should be /var/run/bbus/ in the future. */
+#define BBUS_DEF_DIRPATH		"/tmp/"
 /** @brief Unix socket filename. */
 #define BBUS_DEF_SOCKNAME 		"bbus.sock"
 /** @brief Biggest allowed message size. */
