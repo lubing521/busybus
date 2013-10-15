@@ -549,8 +549,12 @@ static void run_main_loop(void)
 		tv.usec = 500000;
 		retval = bbus_poll(pollset, &tv);
 		if (retval < 0) {
-			die("Error polling connections: %s",
-				bbus_strerror(bbus_lasterror()));
+			if (bbus_lasterror() == BBUS_EPOLLINTR) {
+				continue;
+			} else {
+				die("Error polling connections: %s",
+					bbus_strerror(bbus_lasterror()));
+			}
 		} else
 		if (retval == 0) {
 			// Timeout
@@ -592,6 +596,7 @@ int main(int argc, char** argv)
 	run_main_loop();
 	cleanup();
 
+	logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
 	return 0;
 }
 
