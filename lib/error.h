@@ -19,6 +19,6 @@
 #ifndef __BBUS_ERROR__
 #define __BBUS_ERROR__
 
-void __bbus_set_err(int errnum);
+void __bbus_seterr(int errnum);
 
 #endif /* __BBUS_ERROR__ */

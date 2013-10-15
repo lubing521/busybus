@@ -25,7 +25,7 @@
  * pthread_setspecific() and use strerror_r for thread-safety.
  */
 
-static volatile int last_error = BBUS_SUCCESS;
+static volatile int last_error = BBUS_ESUCCESS;
 
 static const char* const error_descr[] = {
 	"success",
@@ -54,7 +54,7 @@ int bbus_lasterror(void)
 
 const char* bbus_strerror(int errnum)
 {
-	if (errnum < BBUS_SUCCESS)
+	if (errnum < BBUS_ESUCCESS)
 		return strerror(errnum);
 	else if (errnum >= __BBUS_MAX_ERR)
 		return "invalid error code";
@@ -62,7 +62,7 @@ const char* bbus_strerror(int errnum)
 		return error_descr[errnum-10000];
 }
 
-void __bbus_set_err(int errnum)
+void __bbus_seterr(int errnum)
 {
 	last_error = errnum;
 }

@@ -130,7 +130,7 @@ int main(int argc, char** argv)
 
 	ret = bbus_callmethod(conn, method, arg);
 	if (ret == NULL) {
-		if (bbus_lasterror() == BBUS_NOMETHOD) {
+		if (bbus_lasterror() == BBUS_ENOMETHOD) {
 			/*
 			 * TODO check if it's a service and display
 			 * available methods.

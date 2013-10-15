@@ -28,7 +28,7 @@ void* bbus_malloc(size_t size)
 		size = 1;
 	p = malloc(size);
 	if (p == NULL)
-		__bbus_set_err(BBUS_NOMEM);
+		__bbus_seterr(BBUS_ENOMEM);
 	return p;
 }
 
@@ -51,7 +51,7 @@ void* bbus_realloc(void* ptr, size_t size)
 		size = 1;
 	p = realloc(ptr, size);
 	if (p == NULL)
-		__bbus_set_err(BBUS_NOMEM);
+		__bbus_seterr(BBUS_ENOMEM);
 	return p;
 }
 

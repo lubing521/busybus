@@ -35,17 +35,17 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 		return -1;
 	} else
 	if (r == 0) {
-		__bbus_set_err(BBUS_CONNCLOSED);
+		__bbus_seterr(BBUS_ECONNCLOSED);
 		return -1;
 	} else
 	if (r < (ssize_t)BBUS_MSGHDR_SIZE) {
-		__bbus_set_err(BBUS_MSGINVFMT);
+		__bbus_seterr(BBUS_EMSGINVFMT);
 		return -1;
 	}
 
 	msgsize = ((struct bbus_msg_hdr*)buf)->psize + BBUS_MSGHDR_SIZE;
 	if (msgsize > bufsize) {
-		__bbus_set_err(BBUS_NOSPACE);
+		__bbus_seterr(BBUS_ENOSPACE);
 		return -1;
 	}
 
@@ -57,7 +57,7 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 			return -1;
 		} else
 		if (r == 0) {
-			__bbus_set_err(BBUS_CONNCLOSED);
+			__bbus_seterr(BBUS_ECONNCLOSED);
 			return -1;
 		}
 		rcvd += r;
@@ -65,7 +65,7 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 	}
 
 	if (!__bbus_hdr_checkmagic((struct bbus_msg_hdr*)buf)) {
-		__bbus_set_err(BBUS_MSGMAGIC);
+		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
 
@@ -80,7 +80,7 @@ int __bbus_send_msg(int sock, const void* buf, size_t bufsize)
 
 	msgsize = BBUS_MSGHDR_SIZE + ((struct bbus_msg_hdr*)buf)->psize;
 	if (msgsize > bufsize) {
-		__bbus_set_err(BBUS_INVALARG);
+		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
 	}
 	sent = 0;
@@ -118,16 +118,16 @@ int __bbus_recvv_msg(int sock, struct bbus_msg_hdr* hdr,
 		return -1;
 	} else
 	if (r < (ssize_t)BBUS_MSGHDR_SIZE) {
-		__bbus_set_err(BBUS_MSGINVFMT);
+		__bbus_seterr(BBUS_EMSGINVFMT);
 		return -1;
 	} else
 	if (r < (ssize_t)(BBUS_MSGHDR_SIZE + hdr->psize)) {
-		__bbus_set_err(BBUS_RCVDLESS);
+		__bbus_seterr(BBUS_ERCVDLESS);
 		return -1;
 	}
 
 	if (!__bbus_hdr_checkmagic(hdr)) {
-		__bbus_set_err(BBUS_MSGMAGIC);
+		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
 
@@ -146,7 +146,7 @@ int __bbus_sendv_msg(int sock, struct bbus_msg_hdr* hdr,
 	metasize = meta == NULL ? 0 : strlen(meta)+1;
 	msgsize = BBUS_MSGHDR_SIZE + metasize + objsize;
 	if (msgsize != (BBUS_MSGHDR_SIZE + hdr->psize)) {
-		__bbus_set_err(BBUS_INVALARG);
+		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
 	}
 
@@ -171,7 +171,7 @@ int __bbus_sendv_msg(int sock, struct bbus_msg_hdr* hdr,
 	} else
 	if (r != (ssize_t)msgsize) {
 		/* TODO Retry? */
-		__bbus_set_err(BBUS_SENTLESS);
+		__bbus_seterr(BBUS_ESENTLESS);
 		return -1;
 	}
 
@@ -194,17 +194,17 @@ int __bbus_proterr_to_errnum(uint8_t errcode)
 
 	switch (errcode)
 	{
-	case BBUS_PROT_GOOD:
-		errnum = BBUS_SUCCESS;
+	case BBUS_PROT_EGOOD:
+		errnum = BBUS_ESUCCESS;
 		break;
-	case BBUS_PROT_NOMETHOD:
-		errnum = BBUS_NOMETHOD;
+	case BBUS_PROT_ENOMETHOD:
+		errnum = BBUS_ENOMETHOD;
 		break;
-	case BBUS_PROT_METHODERR:
-		errnum = BBUS_METHODERR;
+	case BBUS_PROT_EMETHODERR:
+		errnum = BBUS_EMETHODERR;
 		break;
 	default:
-		errnum = BBUS_INVALARG;
+		errnum = BBUS_EINVALARG;
 		break;
 	}
 

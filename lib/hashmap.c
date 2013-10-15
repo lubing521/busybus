@@ -187,7 +187,7 @@ static struct map_entry* locate_entry(bbus_hashmap* hmap,
 	}
 
 noelem:
-	__bbus_set_err(BBUS_HMAPNOELEM);
+	__bbus_seterr(BBUS_EHMAPNOELEM);
 	return NULL;
 }
 
@@ -263,7 +263,7 @@ static int BBUS_PRINTF_FUNC(3, 4) dump_append(char** buf,
 	va_start(va, fmt);
 	r = vsnprintf(*buf, *bufsize, fmt, va);
 	if (r >= (int)(*bufsize)) {
-		__bbus_set_err(BBUS_NOSPACE);
+		__bbus_seterr(BBUS_ENOSPACE);
 		return -1;
 	}
 	*buf += r;

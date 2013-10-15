@@ -292,23 +292,23 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
  * All error codes, that can be set by busybus API functions.
  */
 
-#define BBUS_SUCCESS		10000 /**< No error */
-#define BBUS_NOMEM		10001 /**< Out of memory */
-#define BBUS_INVALARG		10002 /**< Invalid argument */
-#define BBUS_OBJINVOP		10003 /**< Invalid operation on an object */
-#define BBUS_OBJINVFMT		10004 /**< Invalid format of an object */
-#define BBUS_NOSPACE		10005 /**< No space in buffer */
-#define BBUS_CONNCLOSED		10006 /**< Connection closed */
-#define BBUS_MSGINVFMT		10007 /**< Invalid message format */
-#define BBUS_MSGMAGIC		10008 /**< Invalid magic number in a message */
-#define BBUS_MSGINVTYPERCVD	10009 /**< Invalid message type */
-#define BBUS_SORJCTD		10010 /**< Session open rejected */
-#define BBUS_SENTLESS		10011 /**< Sent less data, than expected */
-#define BBUS_RCVDLESS		10012 /**< Received less data, than expected */
-#define BBUS_LOGICERR		10013 /**< Logic error */
-#define BBUS_NOMETHOD		10014 /**< No method with given name */
-#define BBUS_HMAPNOELEM		10015 /**< No such key in the hashmap */
-#define BBUS_METHODERR		10016 /**< Error calling method */
+#define BBUS_ESUCCESS		10000 /**< No error */
+#define BBUS_ENOMEM		10001 /**< Out of memory */
+#define BBUS_EINVALARG		10002 /**< Invalid argument */
+#define BBUS_EOBJINVOP		10003 /**< Invalid operation on an object */
+#define BBUS_EOBJINVFMT		10004 /**< Invalid format of an object */
+#define BBUS_ENOSPACE		10005 /**< No space in buffer */
+#define BBUS_ECONNCLOSED	10006 /**< Connection closed */
+#define BBUS_EMSGINVFMT		10007 /**< Invalid message format */
+#define BBUS_EMSGMAGIC		10008 /**< Invalid magic number in a message */
+#define BBUS_EMSGINVTYPRCVD	10009 /**< Invalid message type */
+#define BBUS_ESORJCTD		10010 /**< Session open rejected */
+#define BBUS_ESENTLESS		10011 /**< Sent less data, than expected */
+#define BBUS_ERCVDLESS		10012 /**< Received less data, than expected */
+#define BBUS_ELOGICERR		10013 /**< Logic error */
+#define BBUS_ENOMETHOD		10014 /**< No method with given name */
+#define BBUS_EHMAPNOELEM	10015 /**< No such key in the hashmap */
+#define BBUS_EMETHODERR		10016 /**< Error calling method */
 #define __BBUS_MAX_ERR		10017 /**< Highest error code */
 
 /**
@@ -439,9 +439,9 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
  * These codes are carried in the 'errcode' field of the header and matter
  * only for replies.
  */
-#define BBUS_PROT_GOOD		0x00 /**< Success. */
-#define BBUS_PROT_NOMETHOD	0x01 /**< No such method. */
-#define BBUS_PROT_METHODERR	0x02 /**< Error calling the method. */
+#define BBUS_PROT_EGOOD		0x00 /**< Success. */
+#define BBUS_PROT_ENOMETHOD	0x01 /**< No such method. */
+#define BBUS_PROT_EMETHODERR	0x02 /**< Error calling the method. */
 /**
  * @}
  *

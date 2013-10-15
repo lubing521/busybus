@@ -36,7 +36,7 @@ int __bbus_local_socket(void)
 
 	s = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (s < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -51,7 +51,7 @@ int __bbus_bind_local_sock(int sock, const char* path)
 
 	r = unlink(path);
 	if ((r < 0) && (errno != ENOENT)) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -61,7 +61,7 @@ int __bbus_bind_local_sock(int sock, const char* path)
 	addrlen = saun_famlen + strnlen(addr.sun_path, saun_pathlen);
 	r = bind(sock, (struct sockaddr*)&addr, addrlen);
 	if (r < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -74,7 +74,7 @@ int __bbus_sock_listen(int sock, int backlog)
 
 	r = listen(sock, backlog);
 	if (r < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 	return 0;
@@ -91,7 +91,7 @@ int __bbus_local_accept(int sock, char* pathbuf,
 	memset(&addrlen, 0, sizeof(socklen_t));
 	s = accept(sock, (struct sockaddr*)&addr, &addrlen);
 	if (s < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -113,7 +113,7 @@ int __bbus_local_connect(int sock, const char* path)
 	addrlen = saun_famlen + strnlen(addr.sun_path, saun_pathlen);
 	r = connect(sock, (struct sockaddr*)&addr, addrlen);
 	if (r < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -126,7 +126,7 @@ int __bbus_sock_close(int sock)
 
 	r = close(sock);
 	if (r < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 	return 0;
@@ -135,7 +135,7 @@ int __bbus_sock_close(int sock)
 int __bbus_rm_sock(const char* path)
 {
 	if (unlink(path) < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 	return 0;
@@ -147,7 +147,7 @@ ssize_t __bbus_send(int sock, const void* buf, size_t size)
 
 	b = send(sock, buf, size, MSG_DONTWAIT);
 	if (b < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -160,7 +160,7 @@ ssize_t __bbus_recv(int sock, void* buf, size_t size)
 
 	b = recv(sock, buf, size, MSG_DONTWAIT);
 	if (b < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -173,7 +173,7 @@ ssize_t __bbus_sendv(int sock, const struct iovec* iov, int numiov)
 
 	b = writev(sock, iov, numiov);
 	if (b < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -186,7 +186,7 @@ ssize_t __bbus_recvv(int sock, struct iovec* iov, int numiov)
 
 	b = readv(sock, iov, numiov);
 	if (b < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -205,7 +205,7 @@ int __bbus_sock_wr_ready(int sock, struct bbus_timeval* tv)
 	timeout.tv_usec = tv->usec;
 	r = select(sock+1, NULL, &wr_set, NULL, &timeout);
 	if (r < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 
@@ -226,7 +226,7 @@ int __bbus_sock_rd_ready(int sock, struct bbus_timeval* tv)
 	timeout.tv_usec = tv->usec;
 	r = select(sock+1, &rd_set, NULL, NULL, &timeout);
 	if (r < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 

@@ -231,7 +231,7 @@ int bbus_poll(bbus_pollset* pset, struct bbus_timeval* tv)
 	tv->usec = stv.tv_usec;
 
 	if (ret < 0) {
-		__bbus_set_err(errno);
+		__bbus_seterr(errno);
 		return -1;
 	}
 

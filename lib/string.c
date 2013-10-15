@@ -57,7 +57,7 @@ char* bbus_str_build(const char* fmt, ...)
 				break;
 		}
 		if (r >= newbufsize) {
-			__bbus_set_err(BBUS_NOSPACE);
+			__bbus_seterr(BBUS_ENOSPACE);
 			goto errout_free;
 		}
 	}

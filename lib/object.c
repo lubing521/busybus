@@ -152,14 +152,14 @@ int bbus_obj_setdescr(bbus_object* obj, const char* descr)
 	size_t ds;
 
 	if (obj->state != BBUS_OBJ_EMPTY) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return -1;
 	}
 
 	ds = strlen(descr);
 	r = make_enough_space(obj, ds);
 	if (r < 0) {
-		__bbus_set_err(BBUS_NOMEM);
+		__bbus_seterr(BBUS_ENOMEM);
 		return -1;
 	}
 
@@ -172,7 +172,7 @@ int bbus_obj_setdescr(bbus_object* obj, const char* descr)
 const char* bbus_obj_getdescr(bbus_object* obj)
 {
 	if (obj->state != BBUS_OBJ_READY) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return NULL;
 	}
 
@@ -189,14 +189,14 @@ int bbus_obj_insuint(bbus_object* obj, bbus_unsigned val)
 	int r;
 
 	if (obj->state != BBUS_OBJ_INSERTING) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return -1;
 	}
 
 	val = htonl(val);
 	r = make_enough_space(obj, sizeof(bbus_unsigned));
 	if (r < 0) {
-		__bbus_set_err(BBUS_NOMEM);
+		__bbus_seterr(BBUS_ENOMEM);
 		return -1;
 	}
 	memcpy(BUFFER_AT(obj), &val, sizeof(bbus_unsigned));
@@ -210,14 +210,14 @@ int bbus_obj_insstr(bbus_object* obj, uint8_t* val)
 	size_t len;
 
 	if (obj->state != BBUS_OBJ_INSERTING) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return -1;
 	}
 
 	len = strlen((char*)val)+1;
 	r = make_enough_space(obj, len);
 	if (r < 0) {
-		__bbus_set_err(BBUS_NOMEM);
+		__bbus_seterr(BBUS_ENOMEM);
 		return -1;
 	}
 	memcpy(BUFFER_AT(obj), val, len);
@@ -229,7 +229,7 @@ int bbus_obj_extrint(bbus_object* obj, bbus_int* val)
 {
 	if (obj->state != BBUS_OBJ_EXTRACTING) {
 		if (obj->state != BBUS_OBJ_READY) {
-			__bbus_set_err(BBUS_OBJINVOP);
+			__bbus_seterr(BBUS_EOBJINVOP);
 			return -1;
 		} else {
 			make_ready_for_extraction(obj);
@@ -237,7 +237,7 @@ int bbus_obj_extrint(bbus_object* obj, bbus_int* val)
 	}
 
 	if (*(obj->dc) != BBUS_TYPE_INT) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return -1;
 	}
 
@@ -253,7 +253,7 @@ int bbus_obj_extruint(bbus_object* obj, bbus_unsigned* val)
 {
 	if (obj->state != BBUS_OBJ_EXTRACTING) {
 		if (obj->state != BBUS_OBJ_READY) {
-			__bbus_set_err(BBUS_OBJINVOP);
+			__bbus_seterr(BBUS_EOBJINVOP);
 			return -1;
 		} else {
 			make_ready_for_extraction(obj);
@@ -261,7 +261,7 @@ int bbus_obj_extruint(bbus_object* obj, bbus_unsigned* val)
 	}
 
 	if (*(obj->dc) != BBUS_TYPE_UNSIGNED) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return -1;
 	}
 
@@ -279,7 +279,7 @@ int bbus_obj_extrstr(bbus_object* obj, uint8_t** val)
 
 	if (obj->state != BBUS_OBJ_EXTRACTING) {
 		if (obj->state != BBUS_OBJ_READY) {
-			__bbus_set_err(BBUS_OBJINVOP);
+			__bbus_seterr(BBUS_EOBJINVOP);
 			return -1;
 		} else {
 			make_ready_for_extraction(obj);
@@ -287,7 +287,7 @@ int bbus_obj_extrstr(bbus_object* obj, uint8_t** val)
 	}
 
 	if (*(obj->dc) != BBUS_TYPE_STRING) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return -1;
 	}
 
@@ -350,7 +350,7 @@ bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
 					va_arg(va, bbus_byte*));
 			break;
 		default:
-			__bbus_set_err(BBUS_OBJINVFMT);
+			__bbus_seterr(BBUS_EOBJINVFMT);
 			goto out;
 			break;
 		}
@@ -374,7 +374,7 @@ bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize)
 
 	r = validate_object_fmt(buf, bufsize);
 	if (r < 0) {
-		__bbus_set_err(BBUS_OBJINVFMT);
+		__bbus_seterr(BBUS_EOBJINVFMT);
 		return NULL;
 	}
 
@@ -392,12 +392,12 @@ bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize)
 ssize_t bbus_obj_tobuf(bbus_object* obj, void* buf, size_t bufsize)
 {
 	if (obj->state != BBUS_OBJ_READY) {
-		__bbus_set_err(BBUS_OBJINVOP);
+		__bbus_seterr(BBUS_EOBJINVOP);
 		return -1;
 	}
 
 	if (bufsize < obj->bufsize) {
-		__bbus_set_err(BBUS_NOSPACE);
+		__bbus_seterr(BBUS_ENOSPACE);
 		return -1;
 	}
 
@@ -439,7 +439,7 @@ int bbus_obj_vparse(bbus_object* obj, const char* descr, va_list va)
 			break;
 		default:
 			r = -1;
-			__bbus_set_err(BBUS_OBJINVFMT);
+			__bbus_seterr(BBUS_EOBJINVFMT);
 			goto out;
 			break;
 		}
@@ -512,7 +512,7 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen)
 			}
 			break;
 		default:
-			__bbus_set_err(BBUS_OBJINVFMT);
+			__bbus_seterr(BBUS_EOBJINVFMT);
 			r = -1;
 			break;
 		}
@@ -527,7 +527,7 @@ out:
 	return r;
 
 nospace:
-	__bbus_set_err(BBUS_NOSPACE);
+	__bbus_seterr(BBUS_ENOSPACE);
 	return r;
 }
 

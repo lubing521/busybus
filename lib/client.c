@@ -64,10 +64,10 @@ static int do_session_open(const char* path, int sotype)
 		return sock;
 	} else
 	if (hdr.msgtype == BBUS_MSGTYPE_SORJCT) {
-		__bbus_set_err(BBUS_SORJCTD);
+		__bbus_seterr(BBUS_ESORJCTD);
 		goto errout_close;
 	} else {
-		__bbus_set_err(BBUS_MSGINVTYPERCVD);
+		__bbus_seterr(BBUS_EMSGINVTYPRCVD);
 		goto errout_close;
 	}
 
@@ -174,12 +174,12 @@ bbus_object* bbus_callmethod(bbus_client_connection* conn,
 
 	if (hdr.msgtype == BBUS_MSGTYPE_CLIREPLY) {
 		if (hdr.errcode != 0) {
-			__bbus_set_err(__bbus_proterr_to_errnum(hdr.errcode));
+			__bbus_seterr(__bbus_proterr_to_errnum(hdr.errcode));
 			return NULL;
 		}
 		return bbus_obj_frombuf(buf, BBUS_MAXMSGSIZE);
 	} else {
-		__bbus_set_err(BBUS_MSGINVTYPERCVD);
+		__bbus_seterr(BBUS_EMSGINVTYPRCVD);
 		return NULL;
 	}
 }
@@ -253,7 +253,7 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 	} else
 	if (strlen(meta) != (metasize-1)) {
 		bbus_str_free(meta);
-		__bbus_set_err(BBUS_LOGICERR);
+		__bbus_seterr(BBUS_ELOGICERR);
 		return -1;
 	}
 
@@ -267,11 +267,11 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 		return -1;
 
 	if (hdr.msgtype != BBUS_MSGTYPE_SRVACK) {
-		__bbus_set_err(BBUS_MSGINVTYPERCVD);
+		__bbus_seterr(BBUS_EMSGINVTYPRCVD);
 		return -1;
 	}
 	if (hdr.errcode != 0) {
-		__bbus_set_err(__bbus_proterr_to_errnum(hdr.errcode));
+		__bbus_seterr(__bbus_proterr_to_errnum(hdr.errcode));
 		return -1;
 	}
 
@@ -310,20 +310,20 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		if (r < 0)
 			return -1;
 		if (hdr.msgtype != BBUS_MSGTYPE_SRVCALL) {
-			__bbus_set_err(BBUS_MSGINVTYPERCVD);
+			__bbus_seterr(BBUS_EMSGINVTYPRCVD);
 			return -1;
 		}
 
 		token = hdr.token;
 		meta = extract_meta(buf, BBUS_MAXMSGSIZE);
 		if (meta == NULL) {
-			__bbus_set_err(BBUS_MSGINVFMT);
+			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
 		}
 
 		objarg = extract_object(buf, BBUS_MAXMSGSIZE);
 		if (objarg == NULL) {
-			__bbus_set_err(BBUS_MSGINVFMT);
+			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
 		}
 
@@ -334,15 +334,15 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		objret = NULL;
 		callback = bbus_hmap_finds(conn->methods, meta);
 		if (callback == NULL) {
-			hdr.errcode = BBUS_PROT_NOMETHOD;
-			__bbus_set_err(BBUS_NOMETHOD);
+			hdr.errcode = BBUS_PROT_ENOMETHOD;
+			__bbus_seterr(BBUS_ENOMETHOD);
 			goto send_reply;
 		}
 
 		objret = ((bbus_method_func)callback)(meta, objarg);
 		if (objret == NULL) {
-			hdr.errcode = BBUS_PROT_METHODERR;
-			__bbus_set_err(BBUS_METHODERR);
+			hdr.errcode = BBUS_PROT_EMETHODERR;
+			__bbus_seterr(BBUS_EMETHODERR);
 			goto send_reply;
 		}
 
