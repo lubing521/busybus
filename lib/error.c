@@ -44,7 +44,8 @@ static const char* const error_descr[] = {
 	"internal logic error",
 	"no such method",
 	"no such element in hashmap",
-	"internal method error"
+	"internal method error",
+	"poll interrupted by a signal"
 };
 
 int bbus_lasterror(void)

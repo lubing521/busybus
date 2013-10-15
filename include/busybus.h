@@ -309,7 +309,8 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_ENOMETHOD		10014 /**< No method with given name */
 #define BBUS_EHMAPNOELEM	10015 /**< No such key in the hashmap */
 #define BBUS_EMETHODERR		10016 /**< Error calling method */
-#define __BBUS_MAX_ERR		10017 /**< Highest error code */
+#define BBUS_EPOLLINTR		10017 /**< Poll interrupted by a signal. */
+#define __BBUS_MAX_ERR		10018 /**< Highest error code */
 
 /**
  * @}
