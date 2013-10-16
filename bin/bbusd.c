@@ -313,66 +313,64 @@ static uint32_t make_token(void)
 	return ++curtok;
 }
 
-static void accept_clients(void)
+static void accept_client(void)
 {
 	bbus_client* cli;
 	int r;
 	uint32_t token;
 
-	while (bbus_srv_clientpending(server)) {
-		cli = bbus_srv_accept(server);
-		if (cli == NULL) {
-			logmsg(BBUS_LOG_ERR,
-				"Error accepting incoming client "
-				"connection: %s\n",
-				bbus_strerror(bbus_lasterror()));
-			continue;
-		}
-		logmsg(BBUS_LOG_INFO, "Client connected.\n");
+	cli = bbus_srv_accept(server);
+	if (cli == NULL) {
+		logmsg(BBUS_LOG_ERR,
+			"Error accepting incoming client "
+			"connection: %s\n",
+			bbus_strerror(bbus_lasterror()));
+		return;
+	}
+	logmsg(BBUS_LOG_INFO, "Client connected.\n");
 
-		r = client_list_add(cli, &clients_head, &clients_tail);
+	r = client_list_add(cli, &clients_head, &clients_tail);
+	if (r < 0) {
+		logmsg(BBUS_LOG_ERR,
+			"Error adding new client to the list: %s\n",
+			bbus_strerror(bbus_lasterror()));
+		return;
+	}
+
+	switch (bbus_client_gettype(cli)) {
+	case BBUS_CLIENT_CALLER:
+		token = make_token();
+		bbus_client_settoken(cli, token);
+		/* This client is the list's tail at this point. */
+		r = bbus_hmap_set(caller_map, &token,
+					sizeof(token), clients_tail);
 		if (r < 0) {
 			logmsg(BBUS_LOG_ERR,
-				"Error adding new client to the list: %s\n",
+				"Error adding new client to "
+				"the caller map: %s\n",
 				bbus_strerror(bbus_lasterror()));
-			continue;
 		}
-
-		switch (bbus_client_gettype(cli)) {
-		case BBUS_CLIENT_CALLER:
-			token = make_token();
-			bbus_client_settoken(cli, token);
-			/* This client is the list's tail at this point. */
-			r = bbus_hmap_set(caller_map, &token,
-						sizeof(token), clients_tail);
-			if (r < 0) {
-				logmsg(BBUS_LOG_ERR,
-					"Error adding new client to "
-					"the caller map: %s\n",
-					bbus_strerror(bbus_lasterror()));
-			}
-			break;
-		case BBUS_CLIENT_MON:
-			r = client_list_add(cli, &monitors_head,
-						&monitors_tail);
-			if (r < 0) {
-				logmsg(BBUS_LOG_ERR,
-					"Error adding new monitor to "
-					"the list: %s\n",
-					bbus_strerror(bbus_lasterror()));
-				continue;
-			}
-			break;
-		case BBUS_CLIENT_SERVICE:
-		case BBUS_CLIENT_CTL:
-			/*
-			 * Don't do anything else other than adding these
-			 * clients to the main client list.
-			 */
-			break;
-		default:
-			break;
+		break;
+	case BBUS_CLIENT_MON:
+		r = client_list_add(cli, &monitors_head,
+					&monitors_tail);
+		if (r < 0) {
+			logmsg(BBUS_LOG_ERR,
+				"Error adding new monitor to "
+				"the list: %s\n",
+				bbus_strerror(bbus_lasterror()));
+			return;
 		}
+		break;
+	case BBUS_CLIENT_SERVICE:
+	case BBUS_CLIENT_CTL:
+		/*
+		 * Don't do anything else other than adding these
+		 * clients to the main client list.
+		 */
+		break;
+	default:
+		break;
 	}
 }
 
@@ -567,7 +565,9 @@ int main(int argc, char** argv)
 		} else {
 			// Incoming data
 			if (bbus_pollset_srvisset(pollset, server)) {
-				accept_clients();
+				while (bbus_srv_clientpending(server)) {
+					accept_client();
+				}
 			}
 			for (tmpcli = clients_head; tmpcli != NULL;
 				tmpcli = tmpcli->next) {
