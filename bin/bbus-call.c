@@ -44,22 +44,23 @@ static void parse_args(int argc, char** argv)
 		{ 0, 0, 0, 0 }
 	};
 
-	static const char* const shortopts = "hvs:";
+	static const char* const shortopts = "s:";
 
 	int opt, index;
 
+	opterr = 0;
 	while ((opt = getopt_long(argc, argv, shortopts,
 				longopts, &index)) != -1) {
 		switch (opt) {
 		case 's':
 			sockpath = optarg;
 			break;
-		case '?':
-			break;
 		case 0:
+			/* Do nothing - we have a longopt. */
 			break;
+		case '?':
 		default:
-			die("Invalid argument\n");
+			die("Invalid arguments! Try %s --help\n", argv[0]);
 			break;
 		}
 	}
