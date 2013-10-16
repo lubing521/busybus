@@ -87,10 +87,10 @@ struct service_map
 
 static char* sockpath = BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME;
 static bbus_server* server;
-static struct clientlist_elem* clients_head;
-static struct clientlist_elem* clients_tail;
-//static struct clientlist_elem* monitors_head;
-static struct clientlist_elem* monitors_tail;
+static struct clientlist_elem* clients_head = NULL;
+static struct clientlist_elem* clients_tail = NULL;
+static struct clientlist_elem* monitors_head = NULL;
+static struct clientlist_elem* monitors_tail = NULL;
 static bbus_pollset* pollset;
 static int run;
 /* TODO in the future syslog will be the default. */
@@ -266,7 +266,8 @@ static void sighandler(int signum)
 	}
 }
 
-static int client_list_add(bbus_client* cli, struct clientlist_elem* tail)
+static int client_list_add(bbus_client* cli, struct clientlist_elem** head,
+					struct clientlist_elem** tail)
 {
 	struct clientlist_elem* el;
 
@@ -275,7 +276,13 @@ static int client_list_add(bbus_client* cli, struct clientlist_elem* tail)
 		return -1;
 
 	el->cli = cli;
-	insque(el, tail);
+	if (*tail == NULL) {
+		*head = *tail = el;
+		el->prev = NULL;
+		el->next = NULL;
+	} else {
+		insque(el, *tail);
+	}
 
 	return 0;
 }
@@ -386,7 +393,7 @@ static void accept_clients(void)
 		}
 		logmsg(BBUS_LOG_INFO, "Client connected.\n");
 
-		r = client_list_add(cli, clients_tail);
+		r = client_list_add(cli, &clients_head, &clients_tail);
 		if (r < 0) {
 			logmsg(BBUS_LOG_ERR,
 				"Error adding new client to the list: %s\n",
@@ -409,7 +416,8 @@ static void accept_clients(void)
 			}
 			break;
 		case BBUS_CLIENT_MON:
-			r = client_list_add(cli, monitors_tail);
+			r = client_list_add(cli, &monitors_head,
+						&monitors_tail);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error adding new monitor to "
