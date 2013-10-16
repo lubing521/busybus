@@ -117,7 +117,8 @@ static int loglvl_to_sysloglvl(enum loglevel lvl)
 	return (int)lvl;
 }
 
-static void BBUS_PRINTF_FUNC(2, 3) logmsg(enum loglevel lvl, const char* fmt, ...)
+static void BBUS_PRINTF_FUNC(2, 3) logmsg(enum loglevel lvl,
+						const char* fmt, ...)
 {
 	va_list va;
 
@@ -179,70 +180,6 @@ static void parse_args(int argc, char** argv)
 			die("Invalid argument\n");
 			break;
 		}
-	}
-}
-
-static void make_caller_map(void)
-{
-	caller_map = bbus_hmap_create();
-	if (caller_map == NULL) {
-		die("Error creating the caller hashmap: %s\n",
-			bbus_strerror(bbus_lasterror()));
-	}
-}
-
-static void make_service_map(void)
-{
-	srvc_map = bbus_malloc(sizeof(struct service_map));
-	if (srvc_map == NULL)
-		goto err;
-
-	srvc_map->subsrvc = bbus_hmap_create();
-	if (srvc_map->subsrvc == NULL) {
-		bbus_free(srvc_map);
-		goto err;
-	}
-
-	srvc_map->methods = bbus_hmap_create();
-	if (srvc_map->methods == NULL) {
-		bbus_hmap_free(srvc_map->subsrvc);
-		bbus_free(srvc_map);
-		goto err;
-	}
-
-	return;
-
-err:
-	die("Error creating the service map: %s\n",
-		bbus_strerror(bbus_lasterror()));
-}
-
-static void make_server(void)
-{
-	server = bbus_srv_createp(sockpath);
-	if (server == NULL) {
-		die("Error creating the server object: %s\n",
-			bbus_strerror(bbus_lasterror()));
-	}
-}
-
-static void start_server_listen(void)
-{
-	int retval;
-
-	retval = bbus_srv_listen(server);
-	if (retval < 0) {
-		die("Error opening server for connections: %s\n",
-			bbus_strerror(bbus_lasterror()));
-	}
-}
-
-static void make_pollset(void)
-{
-	pollset = bbus_pollset_make();
-	if (pollset == NULL) {
-		die("Error creating the poll_set: %s\n",
-			bbus_strerror(bbus_lasterror()));
 	}
 }
 
@@ -537,15 +474,74 @@ static void handle_client(bbus_client* cli)
 	}
 }
 
-static void run_main_loop(void)
+int main(int argc, char** argv)
 {
 	int retval;
 	struct clientlist_elem* tmpcli;
 	struct bbus_timeval tv;
 
+	parse_args(argc, argv);
+	if (options.print_help)
+		print_help_and_exit();
+	if (options.print_version)
+		print_version_and_exit();
+
+	/*
+	 * Caller map:
+	 * 	keys -> tokens,
+	 * 	values -> pointers to caller objects.
+	 */
+	caller_map = bbus_hmap_create();
+	if (caller_map == NULL) {
+		die("Error creating the caller hashmap: %s\n",
+			bbus_strerror(bbus_lasterror()));
+	}
+
+	/* Service map. */
+	srvc_map = bbus_malloc(sizeof(struct service_map));
+	if (srvc_map == NULL)
+		goto err_map;
+
+	srvc_map->subsrvc = bbus_hmap_create();
+	if (srvc_map->subsrvc == NULL) {
+		bbus_free(srvc_map);
+		goto err_map;
+	}
+
+	srvc_map->methods = bbus_hmap_create();
+	if (srvc_map->methods == NULL) {
+		bbus_hmap_free(srvc_map->subsrvc);
+		bbus_free(srvc_map);
+		goto err_map;
+	}
+
+	/* Creating the server object. */
+	server = bbus_srv_createp(sockpath);
+	if (server == NULL) {
+		die("Error creating the server object: %s\n",
+			bbus_strerror(bbus_lasterror()));
+	}
+
+	retval = bbus_srv_listen(server);
+	if (retval < 0) {
+		die("Error opening server for connections: %s\n",
+			bbus_strerror(bbus_lasterror()));
+	}
+
+	pollset = bbus_pollset_make();
+	if (pollset == NULL) {
+		die("Error creating the poll_set: %s\n",
+			bbus_strerror(bbus_lasterror()));
+	}
+
+	logmsg(BBUS_LOG_INFO, "Busybus daemon starting!\n");
 	run = 1;
 	signal(SIGTERM, sighandler);
 	signal(SIGINT, sighandler);
+
+	/*
+	 * MAIN LOOP
+	 */
 	while (do_run()) {
 		memset(&tv, 0, sizeof(struct bbus_timeval));
 		bbus_pollset_clear(pollset);
@@ -582,30 +578,17 @@ static void run_main_loop(void)
 			}
 		}
 	}
-}
+	/*
+	 * END OF THE MAIN LOOP
+	 */
 
-static void cleanup(void)
-{
-
-}
-
-int main(int argc, char** argv)
-{
-	parse_args(argc, argv);
-	if (options.print_help)
-		print_help_and_exit();
-	if (options.print_version)
-		print_version_and_exit();
-
-	make_caller_map();
-	make_service_map();
-	make_server();
-	start_server_listen();
-	make_pollset();
-	run_main_loop();
-	cleanup();
+	/* TODO Cleanup. */
 
 	logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
 	return 0;
+
+err_map:
+	die("Error creating the service map: %s\n",
+		bbus_strerror(bbus_lasterror()));
 }
 
