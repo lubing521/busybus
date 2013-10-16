@@ -583,7 +583,16 @@ int main(int argc, char** argv)
 	 * END OF THE MAIN LOOP
 	 */
 
-	/* TODO Cleanup. */
+	/* Cleanup. */
+	bbus_srv_close(server);
+	for (tmpcli = clients_head; tmpcli != NULL; tmpcli = tmpcli->next) {
+		bbus_client_close(tmpcli->cli);
+		bbus_client_free(tmpcli->cli);
+		bbus_free(tmpcli);
+	}
+	for (tmpcli = monitors_head; tmpcli != NULL; tmpcli = tmpcli->next) {
+		bbus_free(tmpcli);
+	}
 
 	logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
 	return 0;
