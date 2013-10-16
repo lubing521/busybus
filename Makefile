@@ -21,7 +21,8 @@ LIBBBUS_OBJS =		./lib/error.o					\
 			./lib/client.o					\
 			./lib/string.o					\
 			./lib/crc32.o					\
-			./lib/hashmap.o
+			./lib/hashmap.o					\
+			./bin/common.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 
@@ -32,8 +33,7 @@ libbbus.so:		$(LIBBBUS_OBJS)
 ###############################################################################
 # bbusd
 ###############################################################################
-BBUSD_OBJS =		./bin/bbusd.o					\
-			./bin/common.o
+BBUSD_OBJS =		./bin/bbusd.o
 BBUSD_TARGET =		./bbusd
 BBUSD_LIBS =		-lbbus
 
@@ -44,8 +44,7 @@ bbusd:			$(BBUSD_OBJS)
 ###############################################################################
 # bbus-call
 ###############################################################################
-BBUSCALL_OBJS =		./bin/bbus-call.o				\
-			./bin/common.o
+BBUSCALL_OBJS =		./bin/bbus-call.o
 BBUSCALL_TARGET =	./bbus-call
 BBUSCALL_LIBS =		-lbbus
 
