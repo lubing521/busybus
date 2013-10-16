@@ -29,6 +29,7 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 	ssize_t r;
 	size_t rcvd;
 	size_t msgsize;
+	struct bbus_msg_hdr* hdr;
 
 	r = __bbus_recv(sock, buf, bufsize);
 	if (r < 0) {
@@ -43,7 +44,8 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 		return -1;
 	}
 
-	msgsize = ((struct bbus_msg_hdr*)buf)->psize + BBUS_MSGHDR_SIZE;
+	hdr = (struct bbus_msg_hdr*)buf;
+	msgsize = hdr->psize + BBUS_MSGHDR_SIZE;
 	if (msgsize > bufsize) {
 		__bbus_seterr(BBUS_ENOSPACE);
 		return -1;
@@ -64,7 +66,7 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 		buf += r;
 	}
 
-	if (!__bbus_hdr_checkmagic((struct bbus_msg_hdr*)buf)) {
+	if (!__bbus_hdr_checkmagic(hdr)) {
 		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
