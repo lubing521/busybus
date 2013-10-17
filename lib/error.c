@@ -39,7 +39,7 @@ static const char* const error_descr[] = {
 	"wrong magic number in received message",
 	"received message of incorrect type",
 	"session open rejected",
-	"didn't menage to send all data",
+	"didn't manage to send all data",
 	"received less data, than expected",
 	"internal logic error",
 	"no such method",
