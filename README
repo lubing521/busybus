@@ -47,14 +47,14 @@ How easy is it?
     bbus_object* ret;
     char* retstr;
 
-    conn = bbus_client_connect();
-    arg = bbus_build_object("s", "Hello world!");
-    ret = bbus_call_method(conn, "bbusd.echo", ret);
-    bbus_parse_object(obj, "s", &retstr);
+    conn = bbus_connect();
+    arg = bbus_obj_build("s", "Hello world!");
+    ret = bbus_callmethod(conn, "bbus.bbusd.echo", ret);
+    bbus_obj_parse(obj, "s", &retstr);
     printf("%s\n", retstr);
-    bbus_close_client_conn(conn);
-    bbus_free_object(ret);
-    bbus_free_object(arg);
+    bbus_closeconn(conn);
+    bbus_obj_free(ret);
+    bbus_obj_free(arg);
 
   Example echo method implementation on the service provider side:
 
@@ -62,8 +62,8 @@ How easy is it?
     {
             char* str;
 
-            bbus_parse_object(arg, "s", &str);
-            return bbus_build_object("s", str);
+            bbus_obj_parse(arg, "s", &str);
+            return bbus_obj_build("s", str);
     }
 
     struct bbus_method method = {
@@ -78,10 +78,10 @@ How easy is it?
 
     tv.sec = 0;
     tv.usec = 500000;
-    conn = bbus_service_connect("some_provider");
-    bbus_register_method(conn, &method);
-    while (bbus_listen_method_calls(conn, &tv) >= 0);
-    bbus_close_service_conn(conn);
+    conn = bbus_srvc_connect("some_provider");
+    bbus_srvc_regmethod(conn, &method);
+    while (bbus_srvc_listencalls(conn, &tv) >= 0);
+    bbus_srvc_closeconn(conn);
 
   Functions used by bbusd are a bit more complex, but user programs don't
   even need to look at them.
