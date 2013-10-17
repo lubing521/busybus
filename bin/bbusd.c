@@ -91,13 +91,12 @@ static struct clientlist_elem* clients_head = NULL;
 static struct clientlist_elem* clients_tail = NULL;
 static struct clientlist_elem* monitors_head = NULL;
 static struct clientlist_elem* monitors_tail = NULL;
-static bbus_pollset* pollset;
-static int run;
+static volatile int run;
 /* TODO in the future syslog will be the default. */
 static struct option_flags options = { 0, 0, 1, 0 };
 static bbus_hashmap* caller_map;
 static struct service_map* srvc_map;
-static char msgbuf[BBUS_MAXMSGSIZE];
+static struct bbus_msg* msgbuf;
 
 static void print_help_and_exit(void)
 {
@@ -320,6 +319,7 @@ static void accept_client(void)
 	int r;
 	uint32_t token;
 
+	/* TODO Client credentials verification. */
 	cli = bbus_srv_accept(server);
 	if (cli == NULL) {
 		logmsg(BBUS_LOG_ERR,
@@ -375,11 +375,12 @@ static void accept_client(void)
 	}
 }
 
-static void handle_client(bbus_client* cli)
+static void handle_client(struct clientlist_elem* cli_elem)
 {
+	bbus_client* cli;
 	int r;
-	struct bbus_msg_hdr hdr;
 
+	cli = cli_elem->cli;
 	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
 	r = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
 	if (r < 0) {
@@ -399,28 +400,31 @@ static void handle_client(bbus_client* cli)
 //	}
 
 	/* TODO Common function for error reporting. */
-	memcpy(&hdr, msgbuf, sizeof(struct bbus_msg_hdr));
 	switch (bbus_client_gettype(cli)) {
 	case BBUS_CLIENT_CALLER:
-		switch (hdr.msgtype) {
+		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLICALL:
-			r = handle_clientcall(cli, (struct bbus_msg*)msgbuf);
+			r = handle_clientcall(cli, msgbuf);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error on client call: %s\n",
 					bbus_strerror(bbus_lasterror()));
-				return;
+				goto cli_close;
 			}
+			break;
+		case BBUS_MSGTYPE_CLOSE:
+			goto cli_close;
 			break;
 		default:
 			logmsg(BBUS_LOG_ERR, "Unexpected message received.\n");
+			goto cli_close;
 			break;
 		}
 		break;
 	case BBUS_CLIENT_SERVICE:
-		switch (hdr.msgtype) {
+		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_SRVREG:
-			r = register_service(cli, (struct bbus_msg*)msgbuf);
+			r = register_service(cli, msgbuf);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error registering a service: %s\n",
@@ -429,7 +433,7 @@ static void handle_client(bbus_client* cli)
 			}
 			break;
 		case BBUS_MSGTYPE_SRVUNREG:
-			r = unregister_service(cli, (struct bbus_msg*)msgbuf);
+			r = unregister_service(cli, msgbuf);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error unregistering a service: %s\n",
@@ -438,7 +442,7 @@ static void handle_client(bbus_client* cli)
 			}
 			break;
 		case BBUS_MSGTYPE_SRVREPLY:
-			r = pass_srvc_reply(cli, (struct bbus_msg*)msgbuf);
+			r = pass_srvc_reply(cli, msgbuf);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error passing a service reply: %s\n",
@@ -446,15 +450,22 @@ static void handle_client(bbus_client* cli)
 				return;
 			}
 			break;
+		case BBUS_MSGTYPE_CLOSE:
+			goto cli_close;
+			break;
 		default:
 			logmsg(BBUS_LOG_ERR, "Unexpected message received.\n");
+			goto cli_close;
 			return;
 		}
 		break;
 	case BBUS_CLIENT_CTL:
-		switch (hdr.msgtype) {
+		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_CTRL:
-			handle_control_message(cli, (struct bbus_msg*)msgbuf);
+			handle_control_message(cli, msgbuf);
+			break;
+		case BBUS_MSGTYPE_CLOSE:
+			goto cli_close;
 			break;
 		default:
 			logmsg(BBUS_LOG_ERR, "Unexpected message received.\n");
@@ -462,15 +473,44 @@ static void handle_client(bbus_client* cli)
 		}
 		break;
 	case BBUS_CLIENT_MON:
-		logmsg(BBUS_LOG_WARN, "Message received from a monitor which"
-			" should not be sending any messages - discarding.\n");
-		return;
+		switch (msgbuf->hdr.msgtype) {
+		case BBUS_MSGTYPE_CLOSE:
+			{
+				struct clientlist_elem* mon;
+
+				for (mon = monitors_head; mon != NULL;
+							mon = mon->next) {
+					if (mon->cli == cli) {
+						remque(mon);
+						bbus_free(mon);
+						goto cli_close;
+					}
+				}
+				logmsg(BBUS_LOG_WARN,
+					"Monitor not found in the list, "
+					"this should not happen.\n");
+				goto cli_close;
+			}
+			break;
+		default:
+			logmsg(BBUS_LOG_WARN,
+				"Message received from a monitor which should "
+				"not be sending any messages - discarding.\n");
+			goto cli_close;
+			break;
+		}
 		break;
 	default:
 		logmsg(BBUS_LOG_ERR,
 			"Unhandled client type in the received message.\n");
 		return;
 	}
+
+cli_close:
+	bbus_client_close(cli);
+	bbus_client_free(cli);
+	remque(cli_elem);
+	bbus_free(cli_elem);
 }
 
 int main(int argc, char** argv)
@@ -478,6 +518,7 @@ int main(int argc, char** argv)
 	int retval;
 	struct clientlist_elem* tmpcli;
 	struct bbus_timeval tv;
+	static bbus_pollset* pollset;
 
 	parse_args(argc, argv);
 	if (options.print_help)
@@ -533,6 +574,12 @@ int main(int argc, char** argv)
 			bbus_strerror(bbus_lasterror()));
 	}
 
+	msgbuf = bbus_malloc(BBUS_MAXMSGSIZE);
+	if (msgbuf == NULL) {
+		die("Error allocating a buffer for messages: %s\n",
+			bbus_strerror(bbus_lasterror()));
+	}
+
 	logmsg(BBUS_LOG_INFO, "Busybus daemon starting!\n");
 	run = 1;
 	signal(SIGTERM, sighandler);
@@ -561,10 +608,10 @@ int main(int argc, char** argv)
 			}
 		} else
 		if (retval == 0) {
-			// Timeout
+			/* Timeout. */
 			continue;
 		} else {
-			// Incoming data
+			/* Incoming data. */
 			if (bbus_pollset_srvisset(pollset, server)) {
 				while (bbus_srv_clientpending(server)) {
 					accept_client();
@@ -574,7 +621,7 @@ int main(int argc, char** argv)
 				tmpcli = tmpcli->next) {
 				if (bbus_pollset_cliisset(pollset,
 							tmpcli->cli)) {
-					handle_client(tmpcli->cli);
+					handle_client(tmpcli);
 				}
 			}
 		}
@@ -585,14 +632,18 @@ int main(int argc, char** argv)
 
 	/* Cleanup. */
 	bbus_srv_close(server);
+
 	for (tmpcli = clients_head; tmpcli != NULL; tmpcli = tmpcli->next) {
 		bbus_client_close(tmpcli->cli);
 		bbus_client_free(tmpcli->cli);
 		bbus_free(tmpcli);
 	}
+
 	for (tmpcli = monitors_head; tmpcli != NULL; tmpcli = tmpcli->next) {
 		bbus_free(tmpcli);
 	}
+
+	bbus_free(msgbuf);
 
 	logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
 	return 0;
