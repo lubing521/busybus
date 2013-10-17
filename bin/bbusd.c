@@ -251,7 +251,7 @@ static struct method* locate_method(const char* mthd)
 	char* mname;
 	struct method* ret;
 
-	mname = bbus_str_dup(mthd);
+	mname = bbus_str_cpy(mthd);
 	if (mname == NULL)
 		return NULL;
 
