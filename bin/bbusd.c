@@ -80,8 +80,9 @@ struct remote_method
 
 struct service_map
 {
+	/* Values are pointers to struct service_map. */
 	bbus_hashmap* subsrvc;
-	/* Map's values are pointers to struct method. */
+	/* Values are pointers to struct method. */
 	bbus_hashmap* methods;
 };
 
@@ -224,9 +225,40 @@ static int client_list_add(bbus_client* cli, struct clientlist_elem** head,
 	return 0;
 }
 
-static struct method* locate_method(const char* method BBUS_UNUSED)
+static struct method* do_locate_method(char* mthd, struct service_map* node)
 {
-	return NULL;
+	char* found;
+	struct service_map* next;
+
+	found = strstr(mthd, ".");
+	if (found == NULL) {
+		/* This is a method. */
+		return bbus_hmap_finds(node->methods, mthd);
+	} else {
+		*found = '\0';
+		/* This is a sub-service. */
+		next = bbus_hmap_finds(node->subsrvc, mthd);
+		if (next == NULL) {
+			return NULL;
+		}
+
+		return do_locate_method(found+1, next);
+	}
+}
+
+static struct method* locate_method(const char* mthd)
+{
+	char* mname;
+	struct method* ret;
+
+	mname = bbus_str_dup(mthd);
+	if (mname == NULL)
+		return NULL;
+
+	ret = do_locate_method(mname, srvc_map);
+	bbus_str_free(mname);
+
+	return ret;
 }
 
 static int call_local_method(bbus_client* cli BBUS_UNUSED,
