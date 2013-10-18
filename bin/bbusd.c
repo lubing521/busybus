@@ -164,11 +164,11 @@ static void parse_args(int argc, char** argv)
 
 	static const char* const shortopts = "s:";
 
-	int opt, index;
+	int opt, ind;
 
 	opterr = 0;
 	while ((opt = getopt_long(argc, argv, shortopts,
-				longopts, &index)) != -1) {
+				longopts, &ind)) != -1) {
 		switch (opt) {
 		case 's':
 			sockpath = optarg;
@@ -230,7 +230,7 @@ static struct method* do_locate_method(char* mthd, struct service_map* node)
 	char* found;
 	struct service_map* next;
 
-	found = strstr(mthd, ".");
+	found = index(mthd, '.');
 	if (found == NULL) {
 		/* This is a method. */
 		return bbus_hmap_finds(node->methods, mthd);
