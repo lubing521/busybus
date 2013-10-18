@@ -213,7 +213,7 @@ static void sighandler(int signum)
 	}
 }
 
-static int client_list_add(bbus_client* cli, struct clientlist_elem** head,
+static int list_add(bbus_client* cli, struct clientlist_elem** head,
 					struct clientlist_elem** tail)
 {
 	struct clientlist_elem* el;
@@ -232,6 +232,16 @@ static int client_list_add(bbus_client* cli, struct clientlist_elem** head,
 	}
 
 	return 0;
+}
+
+static int client_list_add(bbus_client* cli)
+{
+	return list_add(cli, &clients_head, &clients_tail);
+}
+
+static int monitor_list_add(bbus_client* cli)
+{
+	return list_add(cli, &monitors_head, &monitors_tail);
 }
 
 static struct method* do_locate_method(char* mthd, struct service_map* node)
@@ -371,7 +381,7 @@ static void accept_client(void)
 	}
 	logmsg(BBUS_LOG_INFO, "Client connected.\n");
 
-	r = client_list_add(cli, &clients_head, &clients_tail);
+	r = client_list_add(cli);
 	if (r < 0) {
 		logmsg(BBUS_LOG_ERR,
 			"Error adding new client to the list: %s\n",
@@ -394,8 +404,7 @@ static void accept_client(void)
 		}
 		break;
 	case BBUS_CLIENT_MON:
-		r = client_list_add(cli, &monitors_head,
-					&monitors_tail);
+		r = monitor_list_add(cli);
 		if (r < 0) {
 			logmsg(BBUS_LOG_ERR,
 				"Error adding new monitor to "
