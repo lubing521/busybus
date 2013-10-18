@@ -94,33 +94,6 @@ static int send_session_close(int sock)
 	return 0;
 }
 
-static const char* extract_meta(const void* buf, size_t bufsize)
-{
-	char* ptr;
-
-	ptr = memmem(buf, bufsize, "\0", 1);
-	if (ptr == NULL)
-		return NULL;
-	return buf;
-}
-
-static bbus_object* extract_object(const void* buf, size_t bufsize)
-{
-	const void* ptr;
-	bbus_object* obj;
-
-	ptr = extract_meta(buf, bufsize);
-	if (ptr == NULL)
-		return NULL;
-	buf += (int)(ptr - buf);
-	bufsize -= (int)(ptr - buf);
-	obj = bbus_obj_frombuf(buf, bufsize);
-	if (obj == NULL)
-		return NULL;
-
-	return obj;
-}
-
 bbus_client_connection* bbus_connect(void)
 {
 	return bbus_connectp(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
@@ -315,13 +288,15 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		}
 
 		token = hdr.token;
-		meta = extract_meta(buf, BBUS_MAXMSGSIZE);
+		meta = bbus_prot_extractmeta(
+				(struct bbus_msg*)buf, BBUS_MAXMSGSIZE);
 		if (meta == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
 		}
 
-		objarg = extract_object(buf, BBUS_MAXMSGSIZE);
+		objarg = bbus_prot_extractobj(
+				(struct bbus_msg*)buf, BBUS_MAXMSGSIZE);
 		if (objarg == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
