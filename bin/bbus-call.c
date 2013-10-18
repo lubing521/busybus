@@ -17,7 +17,6 @@
  */
 
 #include <busybus.h>
-#include "common.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <string.h>
@@ -34,6 +33,16 @@ static char* argdescr = NULL;
 static char** argstart = NULL;
 static char** argend = NULL;
 static struct option_flags options = { 0, 0 };
+
+static void BBUS_PRINTF_FUNC(1, 2) BBUS_NORETURN die(const char* format, ...)
+{
+	va_list va;
+
+	va_start(va, format);
+	vfprintf(stderr, format, va);
+	va_end(va);
+	exit(EXIT_FAILURE);
+}
 
 static void parse_args(int argc, char** argv)
 {

@@ -17,7 +17,6 @@
  */
 
 #include <busybus.h>
-#include "common.h"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -115,6 +114,16 @@ static int loglvl_to_sysloglvl(enum loglevel lvl)
 {
 	/* TODO Make sure it works properly. */
 	return (int)lvl;
+}
+
+static void BBUS_PRINTF_FUNC(1, 2) BBUS_NORETURN die(const char* format, ...)
+{
+	va_list va;
+
+	va_start(va, format);
+	vfprintf(stderr, format, va);
+	va_end(va);
+	exit(EXIT_FAILURE);
 }
 
 static void BBUS_PRINTF_FUNC(2, 3) logmsg(enum loglevel lvl,
