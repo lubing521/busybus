@@ -482,6 +482,27 @@ struct bbus_msg
 };
 
 /**
+ * @brief Extracts the busybus object from the message buffer.
+ * @param msg The message.
+ * @param msgsize Size of the message.
+ * @return Extracted busybus object or NULL if object not present.
+ *
+ * The returned object has to be freed using bbus_obj_free.
+ */
+bbus_object* bbus_prot_extractobj(struct bbus_msg* msg,
+		size_t msgsize) BBUS_PUBLIC;
+
+/**
+ * @brief Extracts the meta string from the message buffer.
+ * @param msg The message.
+ * @param msgsize Size of the message.
+ * @return Pointer to the meta string or NULL if meta not present.
+ *
+ * The returned pointer points to the area inside 'msg'.
+ */
+char* bbus_prot_extractmeta(struct bbus_msg* msg, size_t msgsize) BBUS_PUBLIC;
+
+/**
  * @brief Size of the busybus message header.
  */
 #define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))

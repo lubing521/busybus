@@ -356,6 +356,84 @@ BEGIN
 	bbus_free(newp);
 END
 
+DEFINE_TEST(extract_meta)
+BEGIN
+	static const char* const metastr = "metastr";
+
+	struct bbus_msg* msg;
+	char* extracted;
+
+	msg = bbus_malloc(BBUS_MAXMSGSIZE);
+	ASSERT_NOT_NULL(msg);
+	memset(msg, 0, BBUS_MAXMSGSIZE);
+	msg->hdr.flags |= BBUS_PROT_HASMETA;
+	strcpy(msg->payload, metastr);
+	extracted = bbus_prot_extractmeta(msg, BBUS_MAXMSGSIZE);
+	ASSERT_NOT_NULL(extracted);
+	ASSERT_TRUE(strcmp(extracted, metastr) == 0);
+	bbus_free(msg);
+END
+
+DEFINE_TEST(extract_object)
+BEGIN
+	static const char* const metastr = "metastr";
+	struct bbus_msg* msg;
+	bbus_object* in;
+	bbus_object* out;
+	int i;
+	char* s;
+
+	in = bbus_obj_build("is", 123, "something");
+	ASSERT_NOT_NULL(in);
+	msg = bbus_malloc(BBUS_MAXMSGSIZE);
+	ASSERT_NOT_NULL(msg);
+	memset(msg, 0, BBUS_MAXMSGSIZE);
+	msg->hdr.flags |= (BBUS_PROT_HASMETA | BBUS_PROT_HASOBJECT);
+	strcpy(msg->payload, metastr);
+	memcpy(msg->payload+strlen(metastr)+1,
+		bbus_obj_rawdata(in),
+		bbus_obj_rawsize(in));
+	out = bbus_prot_extractobj(msg, BBUS_MAXMSGSIZE);
+	ASSERT_NOT_NULL(out);
+	ASSERT_EQ(0, bbus_obj_parse(out, "is", &i, &s));
+	ASSERT_EQ(123, i);
+	ASSERT_EQ(0, strcmp(s, "something"));
+
+	bbus_obj_free(in);
+	bbus_obj_free(out);
+	bbus_free(msg);
+
+END
+
+DEFINE_TEST(extract_object_nometa)
+BEGIN
+	struct bbus_msg* msg;
+	bbus_object* in;
+	bbus_object* out;
+	int i;
+	char* s;
+
+	in = bbus_obj_build("is", 123, "something");
+	ASSERT_NOT_NULL(in);
+	msg = bbus_malloc(BBUS_MAXMSGSIZE);
+	ASSERT_NOT_NULL(msg);
+	memset(msg, 0, BBUS_MAXMSGSIZE);
+	msg->hdr.flags |= BBUS_PROT_HASOBJECT;
+	memcpy(msg->payload,
+		bbus_obj_rawdata(in),
+		bbus_obj_rawsize(in));
+	out = bbus_prot_extractobj(msg, BBUS_MAXMSGSIZE);
+	ASSERT_NOT_NULL(out);
+	ASSERT_EQ(0, bbus_obj_parse(out, "is", &i, &s));
+	ASSERT_EQ(123, i);
+	ASSERT_EQ(0, strcmp(s, "something"));
+
+	bbus_obj_free(in);
+	bbus_obj_free(out);
+	bbus_free(msg);
+
+END
+
 /**************************************
  * \TESTS
  **************************************/
@@ -415,6 +493,9 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 	REGISTER_TEST(hashmap);
 	REGISTER_TEST(memdup);
 	REGISTER_TEST(hashmap_reassign);
+	REGISTER_TEST(extract_meta);
+	REGISTER_TEST(extract_object);
+	REGISTER_TEST(extract_object_nometa);
 	return run_all_tests();
 }
 

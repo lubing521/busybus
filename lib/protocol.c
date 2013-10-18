@@ -213,5 +213,46 @@ int __bbus_proterr_to_errnum(uint8_t errcode)
 	return errnum;
 }
 
+char* bbus_prot_extractmeta(struct bbus_msg* msg, size_t msgsize)
+{
+	void* payload;
 
+	if (msg->hdr.flags & BBUS_PROT_HASMETA) {
+		payload = msg->payload;
+		msgsize -= sizeof(struct bbus_msg_hdr);
+		if (memmem(payload, msgsize, "\0", 1) == NULL) {
+			goto err;
+		} else {
+			return payload;
+		}
+	}
+
+err:
+	return NULL;
+}
+
+bbus_object* bbus_prot_extractobj(struct bbus_msg* msg, size_t msgsize)
+{
+	char* meta;
+	void* payload;
+	size_t psize;
+	size_t offset;
+
+	if (msg->hdr.flags & BBUS_PROT_HASOBJECT) {
+		psize = msgsize - sizeof(struct bbus_msg_hdr);
+		payload = msg->payload;
+		if (msg->hdr.flags & BBUS_PROT_HASMETA) {
+			meta = bbus_prot_extractmeta(msg, msgsize);
+			if (meta != NULL) {
+				offset = strlen(meta)+1;
+				payload += offset;
+				psize -= offset;
+			}
+		}
+	} else {
+		return NULL;
+	}
+
+	return bbus_obj_frombuf(payload, psize);
+}
 
