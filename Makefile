@@ -54,7 +54,7 @@ bbus-call:		$(BBUSCALL_OBJS)
 ###############################################################################
 # test
 ###############################################################################
-TEST_OBJS =	./test/test.o
+TEST_OBJS =	./test/unit/test.o
 TEST_TARGET =	./bbus_test
 
 test:		$(TEST_OBJS) $(LIBBBUS_OBJS)
