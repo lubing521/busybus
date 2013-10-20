@@ -280,45 +280,77 @@ static struct method* locate_method(const char* mthd)
 	return ret;
 }
 
-static int call_local_method(bbus_client* cli BBUS_UNUSED,
-				const struct bbus_msg* msg BBUS_UNUSED,
-				const struct local_method* mthd BBUS_UNUSED)
+static void send_to_monitors(struct bbus_msg* msg BBUS_UNUSED)
 {
-	return 0;
+	return;
 }
 
-static int call_remote_method(bbus_client* cli BBUS_UNUSED,
-				const struct bbus_msg* msg BBUS_UNUSED,
-				const struct remote_method* mthd BBUS_UNUSED)
+static char* mname_from_srvcname(char* srvc)
 {
-	return 0;
+	char* found;
+
+	found = rindex(srvc, '.');
+	if (found == NULL)
+		return srvc;
+	else
+		return found;
 }
 
-static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
+static int handle_clientcall(bbus_client* cli,
+				struct bbus_msg* msg, size_t msgsize)
 {
 	struct method* mthd;
 	char* mname;
 	int ret;
+	bbus_object* argobj;
+	bbus_object* retobj = NULL;
+	struct bbus_msg_hdr hdr;
 
-	mname = msg->payload;
+	mname = bbus_prot_extractmeta(msg, msgsize);
+	if (mname == NULL)
+		return -1;
+
+	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	mthd = locate_method(mname);
 	if (mthd == NULL) {
 		logmsg(BBUS_LOG_ERR, "No such method: %s\n", mname);
-		return -1;
-	} else {
-		if (mthd->type == METHOD_LOCAL) {
-			ret = call_local_method(cli, msg,
-					(struct local_method*)mthd);
-		} else
-		if (mthd->type == METHOD_REMOTE) {
-			ret = call_remote_method(cli, msg,
-					(struct remote_method*)mthd);
-		} else {
-			die("Internal logic error, invalid method type\n");
-		}
+		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+					BBUS_PROT_ENOMETHOD);
+		goto respond;
 	}
 
-	return ret;
+	argobj = bbus_prot_extractobj(msg, msgsize);
+	if (argobj == NULL)
+		return -1;
+
+	if (mthd->type == METHOD_LOCAL) {
+		retobj = ((struct local_method*)mthd)->func(
+					mname_from_srvcname(mname), argobj);
+		if (retobj == NULL) {
+			logmsg(BBUS_LOG_ERR, "Error calling method.\n");
+			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+					BBUS_PROT_EMETHODERR);
+		} else {
+			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+					BBUS_PROT_EGOOD);
+		}
+	} else
+	if (mthd->type == METHOD_REMOTE) {
+		/* Not yet implemented. */
+		return -1;
+	} else {
+		die("Internal logic error, invalid method type\n");
+	}
+
+respond:
+	ret = bbus_client_sendmsg(cli, &hdr, NULL, retobj);
+	if (ret < 0) {
+		logmsg(BBUS_LOG_ERR, "Error sending reply to client: %s\n",
+					bbus_strerror(bbus_lasterror()));
+		return -1;
+	}
+
+	return 0;
 }
 
 static int register_service(bbus_client* cli BBUS_UNUSED,
@@ -439,22 +471,15 @@ static void handle_client(struct clientlist_elem* cli_elem)
 			bbus_strerror(bbus_lasterror()));
 		return;
 	}
-	//send_to_monitors(msgbuf);
 
-//	r = validate_msg(msgbuf);
-//	if (r < 0) {
-//		logmsg(BBUS_LOG_ERR,
-//			"Invalid message received: %s\n",
-//			bbus_strerror(bbus_lasterror()));
-//		return;
-//	}
+	send_to_monitors(msgbuf);
 
 	/* TODO Common function for error reporting. */
 	switch (bbus_client_gettype(cli)) {
 	case BBUS_CLIENT_CALLER:
 		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLICALL:
-			r = handle_clientcall(cli, msgbuf);
+			r = handle_clientcall(cli, msgbuf, BBUS_MAXMSGSIZE);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error on client call: %s\n",
