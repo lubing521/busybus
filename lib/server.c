@@ -59,14 +59,16 @@ int bbus_client_gettype(bbus_client* cli)
 	return cli->type;
 }
 
-int bbus_client_rcvmsg(bbus_client* cli, void* buf, size_t bufsize)
+int bbus_client_rcvmsg(bbus_client* cli, struct bbus_msg* buf, size_t bufsize)
 {
 	return __bbus_recv_msg(cli->sock, buf, bufsize);
 }
 
-int bbus_client_sendmsg(bbus_client* cli, void* buf, size_t bufsize)
+int bbus_client_sendmsg(bbus_client* cli, struct bbus_msg_hdr* hdr,
+		char* meta, bbus_object* obj)
 {
-	return __bbus_send_msg(cli->sock, buf, bufsize);
+	return __bbus_sendv_msg(cli->sock, hdr, meta, bbus_obj_rawdata(obj),
+					bbus_obj_rawsize(obj));
 }
 
 int bbus_client_close(bbus_client* cli)

@@ -696,18 +696,19 @@ int bbus_client_gettype(bbus_client* cli) BBUS_PUBLIC;
  * @param bufsize Size of 'buf'.
  * @return 0 if a full message has been properly read, -1 on error.
  */
-int bbus_client_rcvmsg(bbus_client* cli, void* buf,
+int bbus_client_rcvmsg(bbus_client* cli, struct bbus_msg* buf,
 		size_t bufsize) BBUS_PUBLIC;
 
 /**
  * @brief Send a full message to the client.
  * @param cli The client.
- * @param buf Buffer containing the message.
- * @param bufsize Size of 'buf'.
+ * @param hdr Header of the message to send.
+ * @param meta Meta data of the message (can be NULL).
+ * @param obj Marshalled data to send (can be NULL).
  * @return 0 if a full message has been properly sent, -1 on error.
  */
-int bbus_client_sendmsg(bbus_client* cli, void* buf,
-		size_t bufsize) BBUS_PUBLIC;
+int bbus_client_sendmsg(bbus_client* cli, struct bbus_msg_hdr* hdr,
+		char* meta, bbus_object* obj) BBUS_PUBLIC;
 
 /**
  * @brief Closes the client connection.
