@@ -256,3 +256,11 @@ bbus_object* bbus_prot_extractobj(struct bbus_msg* msg, size_t msgsize)
 	return bbus_obj_frombuf(payload, psize);
 }
 
+void bbus_prot_mkhdr(struct bbus_msg_hdr* hdr, int typ, int err)
+{
+	memset(hdr, 0, sizeof(struct bbus_msg_hdr));
+	__bbus_hdr_setmagic(hdr);
+	hdr->msgtype = (uint8_t)typ;
+	hdr->errcode = (uint8_t)err;
+}
+

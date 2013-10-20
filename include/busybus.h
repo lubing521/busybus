@@ -503,6 +503,14 @@ bbus_object* bbus_prot_extractobj(struct bbus_msg* msg,
 char* bbus_prot_extractmeta(struct bbus_msg* msg, size_t msgsize) BBUS_PUBLIC;
 
 /**
+ * @brief Fills some basic fields in the busybus message header.
+ * @param hdr The header.
+ * @param typ Type of the message.
+ * @param err Error code.
+ */
+void bbus_prot_mkhdr(struct bbus_msg_hdr* hdr, int typ, int err) BBUS_PUBLIC;
+
+/**
  * @brief Size of the busybus message header.
  */
 #define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))
