@@ -127,7 +127,7 @@ int main(int argc, char** argv)
 		switch (*argdescr) {
 		/* TODO other formats */
 		case BBUS_TYPE_STRING:
-			r = bbus_obj_insstr(arg, (bbus_byte*)curarg);
+			r = bbus_obj_insstr(arg, (char*)curarg);
 			if (r < 0)
 				goto err_arg;
 			break;

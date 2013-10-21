@@ -204,7 +204,7 @@ int bbus_obj_insuint(bbus_object* obj, bbus_unsigned val)
 	return 0;
 }
 
-int bbus_obj_insstr(bbus_object* obj, uint8_t* val)
+int bbus_obj_insstr(bbus_object* obj, const char* val)
 {
 	int r;
 	size_t len;
@@ -214,7 +214,7 @@ int bbus_obj_insstr(bbus_object* obj, uint8_t* val)
 		return -1;
 	}
 
-	len = strlen((char*)val)+1;
+	len = strlen(val)+1;
 	r = make_enough_space(obj, len);
 	if (r < 0) {
 		__bbus_seterr(BBUS_ENOMEM);
@@ -273,7 +273,7 @@ int bbus_obj_extruint(bbus_object* obj, bbus_unsigned* val)
 	return 0;
 }
 
-int bbus_obj_extrstr(bbus_object* obj, uint8_t** val)
+int bbus_obj_extrstr(bbus_object* obj, char** val)
 {
 	size_t slen;
 
@@ -292,7 +292,7 @@ int bbus_obj_extrstr(bbus_object* obj, uint8_t** val)
 	}
 
 	slen = strlen(obj->at);
-	*val = (uint8_t*)obj->at;
+	*val = (char*)obj->at;
 	obj->at += slen;
 	obj->dc += 1;
 
@@ -347,7 +347,7 @@ bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
 			break;
 		case BBUS_TYPE_STRING:
 			r = bbus_obj_insstr(obj,
-					va_arg(va, bbus_byte*));
+					va_arg(va, char*));
 			break;
 		default:
 			__bbus_seterr(BBUS_EOBJINVFMT);
@@ -435,7 +435,7 @@ int bbus_obj_vparse(bbus_object* obj, const char* descr, va_list va)
 			break;
 		case BBUS_TYPE_STRING:
 			r = bbus_obj_extrstr(obj,
-					va_arg(va, bbus_byte**));
+					va_arg(va, char**));
 			break;
 		default:
 			r = -1;
@@ -504,7 +504,7 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen)
 			break;
 		case BBUS_TYPE_STRING:
 			{
-				bbus_byte* s;
+				char* s;
 				r = bbus_obj_extrstr(obj, &s);
 				if (r < 0)
 					goto out;
