@@ -232,7 +232,7 @@ BEGIN
 	bbus_object* obj;
 	bbus_int i;
 	bbus_unsigned u;
-	bbus_byte* s;
+	char* s;
 	int r;
 
 	obj = bbus_obj_frombuf(objbuf, 21);
