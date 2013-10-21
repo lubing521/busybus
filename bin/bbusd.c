@@ -576,7 +576,7 @@ static void handle_client(struct clientlist_elem* cli_elem)
 		logmsg(BBUS_LOG_ERR,
 			"Error receiving message from client: %s\n",
 			bbus_strerror(bbus_lasterror()));
-		return;
+		goto cli_close;
 	}
 
 	send_to_monitors(msgbuf);
