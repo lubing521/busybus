@@ -306,18 +306,35 @@ static int do_insert_method(const char* path, struct method* mthd,
 			/* Insert new service. */
 			next = bbus_malloc(sizeof(struct service_map));
 			if (next == NULL)
-				return -1;
+				goto err_mknext;
 
-			memset(next, 0, sizeof(struct service_map));
+			next->subsrvc = bbus_hmap_create();
+			if (next->subsrvc == NULL)
+				goto err_mksubsrvc;
+
+			next->methods = bbus_hmap_create();
+			if (next->subsrvc == NULL)
+				goto err_mkmethods;
+
 			ret = bbus_hmap_sets(node->subsrvc, path, next);
-			if (ret < 0) {
-				bbus_free(next);
-				return -1;
-			}
+			if (ret < 0)
+				goto err_setsrvc;
 		}
 
 		return do_insert_method(found+1, mthd, next);
 	}
+
+err_setsrvc:
+	bbus_hmap_free(next->methods);
+
+err_mkmethods:
+	bbus_hmap_free(next->subsrvc);
+
+err_mksubsrvc:
+	bbus_free(next);
+
+err_mknext:
+	return -1;
 }
 
 static int insert_method(const char* path, struct method* mthd)
