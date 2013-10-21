@@ -398,10 +398,9 @@ static char* mname_from_srvcname(char* srvc)
 	char* found;
 
 	found = rindex(srvc, '.');
-	if (found == NULL)
-		return srvc;
-	else
-		return found;
+	if (found != NULL)
+		++found;
+	return found;
 }
 
 static int handle_clientcall(bbus_client* cli,
