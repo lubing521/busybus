@@ -767,8 +767,8 @@ int main(int argc, char** argv)
 
 	logmsg(BBUS_LOG_INFO, "Busybus daemon starting!\n");
 	run = 1;
-	signal(SIGTERM, sighandler);
-	signal(SIGINT, sighandler);
+	(void)signal(SIGTERM, sighandler);
+	(void)signal(SIGINT, sighandler);
 
 	/*
 	 * MAIN LOOP
