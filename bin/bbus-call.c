@@ -20,6 +20,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 
 struct option_flags
 {
@@ -108,6 +109,7 @@ int main(int argc, char** argv)
 	char reprbuf[BUFSIZ];
 
 	parse_args(argc, argv);
+	(void)signal(SIGPIPE, SIG_IGN);
 
 	conn = bbus_connect();
 	if (conn == NULL)
