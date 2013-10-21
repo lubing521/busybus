@@ -71,6 +71,20 @@ struct local_method
 	bbus_method_func func;
 };
 
+#define DEF_LOCAL_METHOD(FUNC)						\
+	static struct local_method __m_##FUNC##__ = {			\
+		.type = METHOD_LOCAL,					\
+		.func = FUNC,						\
+	}
+
+#define REG_LOCAL_METHOD(PATH, FUNC)					\
+	do {								\
+		if (insert_method(PATH,					\
+				(struct method*)&__m_##FUNC##__) < 0) {	\
+			die("Error inserting method: '%s'\n", PATH);	\
+		}							\
+	} while (0);
+
 struct remote_method
 {
 	int type;
@@ -192,6 +206,19 @@ static void parse_args(int argc, char** argv)
 		}
 	}
 }
+
+static bbus_object* lm_echo(const char* name BBUS_UNUSED, bbus_object* arg)
+{
+	char* msg;
+	int ret;
+
+	ret = bbus_obj_parse(arg, "s", &msg);
+	if (ret < 0)
+		return NULL;
+	else
+		return bbus_obj_build("s", msg);
+}
+DEF_LOCAL_METHOD(lm_echo);
 
 static int do_run(void)
 {
@@ -718,6 +745,8 @@ int main(int argc, char** argv)
 		die("Error allocating a buffer for messages: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
+
+	REG_LOCAL_METHOD("bbus.bbusd.echo", lm_echo);
 
 	logmsg(BBUS_LOG_INFO, "Busybus daemon starting!\n");
 	run = 1;
