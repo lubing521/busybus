@@ -244,19 +244,83 @@ static int monitor_list_add(bbus_client* cli)
 	return list_add(cli, &monitors_head, &monitors_tail);
 }
 
-static struct method* do_locate_method(char* mthd, struct service_map* node)
+static int do_insert_method(const char* path, struct method* mthd,
+					struct service_map* node)
+{
+	char* found;
+	struct service_map* next;
+	int ret;
+	void* mval;
+
+	found = index(path, '.');
+	if (found == NULL) {
+		/* Path is the method name. */
+		mval = bbus_hmap_finds(node->methods, path);
+		if (mval != NULL) {
+			logmsg(BBUS_LOG_ERR,
+				"Method already exists for this value: %s\n",
+				path);
+			return -1;
+		}
+		ret = bbus_hmap_sets(node->methods, path, mthd);
+		if (ret < 0) {
+			logmsg(BBUS_LOG_ERR,
+				"Error registering new method: %s\n",
+				bbus_strerror(bbus_lasterror()));
+			return -1;
+		}
+
+		return 0;
+	} else {
+		/* Path is the subservice name. */
+		*found = '\0';
+		next = bbus_hmap_finds(node->subsrvc, path);
+		if (next == NULL) {
+			/* Insert new service. */
+			next = bbus_malloc(sizeof(struct service_map));
+			if (next == NULL)
+				return -1;
+
+			memset(next, 0, sizeof(struct service_map));
+			ret = bbus_hmap_sets(node->subsrvc, path, next);
+			if (ret < 0) {
+				bbus_free(next);
+				return -1;
+			}
+		}
+
+		return do_insert_method(found+1, mthd, next);
+	}
+}
+
+static int insert_method(const char* path, struct method* mthd)
+{
+	char* mname;
+	int ret;
+
+	mname = bbus_str_cpy(path);
+	if (mname == NULL)
+		return -1;
+
+	ret = do_insert_method(mname, mthd, srvc_map);
+	bbus_str_free(mname);
+
+	return ret;
+}
+
+static struct method* do_locate_method(char* path, struct service_map* node)
 {
 	char* found;
 	struct service_map* next;
 
-	found = index(mthd, '.');
+	found = index(path, '.');
 	if (found == NULL) {
 		/* This is a method. */
-		return bbus_hmap_finds(node->methods, mthd);
+		return bbus_hmap_finds(node->methods, path);
 	} else {
 		*found = '\0';
 		/* This is a sub-service. */
-		next = bbus_hmap_finds(node->subsrvc, mthd);
+		next = bbus_hmap_finds(node->subsrvc, path);
 		if (next == NULL) {
 			return NULL;
 		}
@@ -265,12 +329,12 @@ static struct method* do_locate_method(char* mthd, struct service_map* node)
 	}
 }
 
-static struct method* locate_method(const char* mthd)
+static struct method* locate_method(const char* path)
 {
 	char* mname;
 	struct method* ret;
 
-	mname = bbus_str_cpy(mthd);
+	mname = bbus_str_cpy(path);
 	if (mname == NULL)
 		return NULL;
 
