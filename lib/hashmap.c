@@ -289,7 +289,7 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize)
 	memset(buf, 0, bufsize);
 	r = dump_append(&buf, &bufsize,
 			"Hashmap size: %u, objects stored: %u\n",
-			hmap->size, hmap->numstored);
+			(unsigned)hmap->size, (unsigned)hmap->numstored);
 	if (r < 0)
 		return -1;
 
@@ -301,10 +301,10 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize)
 		el = hmap->bucket_heads[i];
 		while (el != NULL) {
 			r = dump_append(&buf, &bufsize,
-				" [\"%s\"]->[0x%08x] |%s",
+				" [\"%s\"]->[0x%p] |%s",
 				keyrepr(el->key, el->ksize, reprbuf,
 						sizeof(reprbuf)),
-				(unsigned)el->val,
+				el->val,
 				el->next == NULL ? "\n" : "");
 			if (r < 0)
 				return -1;

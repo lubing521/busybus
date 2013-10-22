@@ -304,7 +304,7 @@ DEFINE_TEST(hashmap)
 BEGIN
 	bbus_hashmap* hmap;
 	int r;
-	int i;
+	long i;
 	char keybuf[128];
 	void* val;
 
@@ -313,13 +313,13 @@ BEGIN
 
 	for (i = 0; i < 140; ++i) {
 		memset(keybuf, 0, sizeof(keybuf));
-		snprintf(keybuf, sizeof(keybuf), "%d", i);
+		snprintf(keybuf, sizeof(keybuf), "%ld", i);
 		r = bbus_hmap_sets(hmap, keybuf, (void*)i);
 		ASSERT_FALSE(r < 0);
 	}
 
 	val = bbus_hmap_finds(hmap, "40");
-	ASSERT_EQ(40, (int)val);
+	ASSERT_EQ(40, (long)val);
 	bbus_hmap_free(hmap);
 END
 
