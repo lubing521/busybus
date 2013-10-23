@@ -261,6 +261,21 @@ static int list_add(bbus_client* cli, struct clientlist_elem** head,
 	return 0;
 }
 
+static void list_rm(struct clientlist_elem** elem,
+			struct clientlist_elem** head,
+			struct clientlist_elem** tail)
+{
+	if (*head == *tail) {
+		/* Last element left. */
+		*head = *tail = NULL;
+	} else {
+		remque(*elem);
+	}
+
+	bbus_free(*elem);
+	*elem = NULL;
+}
+
 static int client_list_add(bbus_client* cli)
 {
 	return list_add(cli, &clients_head, &clients_tail);
@@ -564,12 +579,12 @@ static void accept_client(void)
 	}
 }
 
-static void handle_client(struct clientlist_elem* cli_elem)
+static void handle_client(struct clientlist_elem** cli_elem)
 {
 	bbus_client* cli;
 	int r;
 
-	cli = cli_elem->cli;
+	cli = (*cli_elem)->cli;
 	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
 	r = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
 	if (r < 0) {
@@ -663,8 +678,9 @@ static void handle_client(struct clientlist_elem* cli_elem)
 				for (mon = monitors_head; mon != NULL;
 							mon = mon->next) {
 					if (mon->cli == cli) {
-						remque(mon);
-						bbus_free(mon);
+						list_rm(&mon,
+							&monitors_head,
+							&monitors_tail);
 						goto cli_close;
 					}
 				}
@@ -691,8 +707,11 @@ static void handle_client(struct clientlist_elem* cli_elem)
 cli_close:
 	bbus_client_close(cli);
 	bbus_client_free(cli);
+/*
 	remque(cli_elem);
 	bbus_free(cli_elem);
+*/
+	list_rm(cli_elem, &clients_head, &clients_tail);
 }
 
 int main(int argc, char** argv)
@@ -800,13 +819,17 @@ int main(int argc, char** argv)
 				while (bbus_srv_clientpending(server)) {
 					accept_client();
 				}
+				--retval;
 			}
-			for (tmpcli = clients_head; tmpcli != NULL;
-				tmpcli = tmpcli->next) {
+
+			tmpcli = clients_head;
+			for (; retval > 0; --retval) {
 				if (bbus_pollset_cliisset(pollset,
 							tmpcli->cli)) {
-					handle_client(tmpcli);
+					handle_client(&tmpcli);
 				}
+				if (tmpcli != NULL)
+					tmpcli = tmpcli->next;
 			}
 		}
 	}
