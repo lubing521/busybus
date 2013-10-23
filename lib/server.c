@@ -67,8 +67,9 @@ int bbus_client_rcvmsg(bbus_client* cli, struct bbus_msg* buf, size_t bufsize)
 int bbus_client_sendmsg(bbus_client* cli, struct bbus_msg_hdr* hdr,
 		char* meta, bbus_object* obj)
 {
-	return __bbus_sendv_msg(cli->sock, hdr, meta, bbus_obj_rawdata(obj),
-					bbus_obj_rawsize(obj));
+	return __bbus_sendv_msg(cli->sock, hdr, meta,
+				obj == NULL ? NULL : bbus_obj_rawdata(obj),
+				obj == NULL ? 0 : bbus_obj_rawsize(obj));
 }
 
 int bbus_client_close(bbus_client* cli)
