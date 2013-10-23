@@ -222,12 +222,12 @@ DEF_LOCAL_METHOD(lm_echo);
 
 static int do_run(void)
 {
-	return __sync_fetch_and_or(&run, 0);
+	return BBUS_ATOMIC_GET(run);
 }
 
 static void do_stop(void)
 {
-	__sync_lock_test_and_set(&run, 0);
+	BBUS_ATOMIC_SET(run, 0);
 }
 
 static void sighandler(int signum)

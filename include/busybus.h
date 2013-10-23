@@ -114,6 +114,19 @@ void bbus_free(void* ptr) BBUS_PUBLIC;
 void* bbus_memdup(const void* src, size_t size) BBUS_PUBLIC;
 
 /**
+ * @brief Atomically accesses the value of a variable and returns it.
+ * @param VAR The variable to access.
+ */
+#define BBUS_ATOMIC_GET(VAR) __sync_fetch_and_or(&VAR, 0)
+
+/**
+ * @brief Atomically sets new value for a variable.
+ * @param VAR The variable to access.
+ * @param VAL New value.
+ */
+#define BBUS_ATOMIC_SET(VAR, VAL) (void)__sync_lock_test_and_set(&VAR, VAL)
+
+/**
  * @brief Represents an elapsed time.
  */
 struct bbus_timeval
