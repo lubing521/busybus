@@ -424,7 +424,7 @@ static int handle_clientcall(bbus_client* cli,
 	struct method* mthd;
 	char* mname;
 	int ret;
-	bbus_object* argobj;
+	bbus_object* argobj = NULL;
 	bbus_object* retobj = NULL;
 	struct bbus_msg_hdr hdr;
 
@@ -438,7 +438,8 @@ static int handle_clientcall(bbus_client* cli,
 		logmsg(BBUS_LOG_ERR, "No such method: %s\n", mname);
 		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_ENOMETHOD);
-		goto errnofree;
+		ret = -1;
+		goto respond;
 	}
 
 	argobj = bbus_prot_extractobj(msg, msgsize);
@@ -481,8 +482,6 @@ respond:
 
 dontrespond:
 	bbus_obj_free(argobj);
-
-errnofree:
 	return ret;
 }
 
