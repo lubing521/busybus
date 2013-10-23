@@ -109,13 +109,13 @@ int __bbus_recvv_msg(int sock, struct bbus_msg_hdr* hdr,
 	iov[numiov].iov_base = hdr;
 	iov[numiov].iov_len = BBUS_MSGHDR_SIZE;
 	++numiov;
-	if (payload == NULL) {
+	if (payload != NULL) {
 		iov[numiov].iov_base = payload;
 		iov[numiov].iov_len = psize;
 		++numiov;
 	}
 
-	r = __bbus_recvv(sock, iov, 2);
+	r = __bbus_recvv(sock, iov, numiov);
 	if (r < 0) {
 		return -1;
 	} else

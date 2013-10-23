@@ -83,7 +83,7 @@ struct local_method
 				(struct method*)&__m_##FUNC##__) < 0) {	\
 			die("Error inserting method: '%s'\n", PATH);	\
 		}							\
-	} while (0);
+	} while (0)
 
 struct remote_method
 {
@@ -455,6 +455,7 @@ static int handle_clientcall(bbus_client* cli,
 		} else {
 			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EGOOD);
+			hdr.psize = bbus_obj_rawsize(retobj);
 		}
 	} else
 	if (mthd->type == METHOD_REMOTE) {
@@ -704,14 +705,13 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		return;
 	}
 
+	return;
+
 cli_close:
 	bbus_client_close(cli);
 	bbus_client_free(cli);
-/*
-	remque(cli_elem);
-	bbus_free(cli_elem);
-*/
 	list_rm(cli_elem, &clients_head, &clients_tail);
+	logmsg(BBUS_LOG_INFO, "Client disconnected.\n");
 }
 
 int main(int argc, char** argv)
@@ -787,6 +787,7 @@ int main(int argc, char** argv)
 	run = 1;
 	(void)signal(SIGTERM, sighandler);
 	(void)signal(SIGINT, sighandler);
+	(void)signal(SIGPIPE, SIG_IGN);
 
 	/*
 	 * MAIN LOOP
