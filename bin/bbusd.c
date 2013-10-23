@@ -438,7 +438,7 @@ static int handle_clientcall(bbus_client* cli,
 		logmsg(BBUS_LOG_ERR, "No such method: %s\n", mname);
 		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_ENOMETHOD);
-		goto respond;
+		goto errnofree;
 	}
 
 	argobj = bbus_prot_extractobj(msg, msgsize);
@@ -457,23 +457,33 @@ static int handle_clientcall(bbus_client* cli,
 					BBUS_PROT_EGOOD);
 			hdr.psize = bbus_obj_rawsize(retobj);
 		}
+
+		goto respond;
 	} else
 	if (mthd->type == METHOD_REMOTE) {
 		/* Not yet implemented. */
-		return -1;
+		ret = -1;
 	} else {
 		die("Internal logic error, invalid method type\n");
 	}
+
+	goto dontrespond;
 
 respond:
 	ret = bbus_client_sendmsg(cli, &hdr, NULL, retobj);
 	if (ret < 0) {
 		logmsg(BBUS_LOG_ERR, "Error sending reply to client: %s\n",
 					bbus_strerror(bbus_lasterror()));
-		return -1;
+		ret = -1;
 	}
 
-	return 0;
+	bbus_obj_free(retobj);
+
+dontrespond:
+	bbus_obj_free(argobj);
+
+errnofree:
+	return ret;
 }
 
 static int register_service(bbus_client* cli BBUS_UNUSED,

@@ -147,6 +147,7 @@ int main(int argc, char** argv)
 			 * TODO check if it's a service and display
 			 * available methods.
 			 */
+			goto err_call;
 		} else {
 			goto err_call;
 		}
@@ -157,6 +158,10 @@ int main(int argc, char** argv)
 	if (r < 0)
 		goto err_repr;
 	fprintf(stdout, "%s\n", reprbuf);
+
+	bbus_closeconn(conn);
+	bbus_obj_free(arg);
+	bbus_obj_free(ret);
 
 	return 0;
 

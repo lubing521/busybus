@@ -163,10 +163,10 @@ int bbus_closeconn(bbus_client_connection* conn)
 
 	r = send_session_close(conn->sock);
 	if (r < 0)
-		return -1;
+		r = -1;
 	bbus_free(conn);
 
-	return 0;
+	return r;
 }
 
 bbus_service_connection* bbus_srvc_connect(const char* name)
