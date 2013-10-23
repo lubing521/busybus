@@ -49,7 +49,18 @@ BBUSCALL_LIBS =		-lbbus
 
 bbus-call:		$(BBUSCALL_OBJS)
 	$(CROSSCC) -o $(BBUSCALL_TARGET) $(BBUSCALL_OBJS) $(LDFLAGS)	\
-		$(DEBUGFLAGS) $(BBUSD_LIBS) -L./
+		$(DEBUGFLAGS) $(BBUSCALL_LIBS) -L./
+
+###############################################################################
+# bbus-echod
+###############################################################################
+BBUSECHOD_OBJS =	./bin/bbus-echod.o
+BBUSECHOD_TARGET =	./bbus-echod
+BBUSECHOD_LIBS =	-lbbus
+
+bbus-echod:		$(BBUSECHOD_OBJS)
+	$(CROSSCC) -o $(BBUSECHOD_TARGET) $(BBUSECHOD_OBJS) $(LDFLAGS)	\
+		$(DEBUGFLAGS) $(BBUSECHOD_LIBS) -L./
 
 ###############################################################################
 # test
@@ -65,7 +76,7 @@ test:		$(TEST_OBJS) $(LIBBBUS_OBJS)
 ###############################################################################
 # all
 ###############################################################################
-all:		libbbus.so bbusd bbus-call
+all:		libbbus.so bbusd bbus-call bbus-echod
 
 ###############################################################################
 # doc
@@ -82,6 +93,8 @@ clean:
 	rm -f $(BBUSD_TARGET)
 	rm -f $(BBUSCALL_OBJS)
 	rm -f $(BBUSCALL_TARGET)
+	rm -f $(BBUSECHOD_OBJS)
+	rm -f $(BBUSECHOD_TARGET)
 	rm -f $(LIBBBUS_OBJS)
 	rm -f $(LIBBBUS_TARGET)
 	rm -f $(TEST_OBJS)
