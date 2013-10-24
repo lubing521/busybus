@@ -268,7 +268,9 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 	bbus_object* objret;
 	void* callback;
 	uint32_t token;
+	struct bbus_msg* msg;
 
+	msg = (struct bbus_msg*)buf;
 	r = __bbus_sock_rd_ready(conn->sock, tv);
 	if (r < 0) {
 		return -1;
@@ -278,26 +280,23 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		return 0;
 	} else {
 		/* Message incoming */
-		memset(&hdr, 0, BBUS_MSGHDR_SIZE);
 		memset(buf, 0, BBUS_MAXMSGSIZE);
-		r = __bbus_recvv_msg(conn->sock, &hdr, buf, BBUS_MAXMSGSIZE);
+		r = __bbus_recv_msg(conn->sock, buf, BBUS_MAXMSGSIZE);
 		if (r < 0)
 			return -1;
-		if (hdr.msgtype != BBUS_MSGTYPE_SRVCALL) {
+		if (msg->hdr.msgtype != BBUS_MSGTYPE_SRVCALL) {
 			__bbus_seterr(BBUS_EMSGINVTYPRCVD);
 			return -1;
 		}
 
-		token = hdr.token;
-		meta = bbus_prot_extractmeta(
-				(struct bbus_msg*)buf, BBUS_MAXMSGSIZE);
+		token = msg->hdr.token;
+		meta = bbus_prot_extractmeta(msg, BBUS_MAXMSGSIZE);
 		if (meta == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
 		}
 
-		objarg = bbus_prot_extractobj(
-				(struct bbus_msg*)buf, BBUS_MAXMSGSIZE);
+		objarg = bbus_prot_extractobj(msg, BBUS_MAXMSGSIZE);
 		if (objarg == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
@@ -321,6 +320,9 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 			__bbus_seterr(BBUS_EMETHODERR);
 			goto send_reply;
 		}
+
+		hdr.psize = bbus_obj_rawsize(objret);
+		hdr.flags |= BBUS_PROT_HASOBJECT;
 
 send_reply:
 		r = __bbus_sendv_msg(conn->sock, &hdr, NULL,

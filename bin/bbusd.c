@@ -256,6 +256,7 @@ static int list_add(bbus_client* cli, struct clientlist_elem** head,
 		el->next = NULL;
 	} else {
 		insque(el, *tail);
+		*tail = el;
 	}
 
 	return 0;
@@ -270,6 +271,7 @@ static void list_rm(struct clientlist_elem** elem,
 		*head = *tail = NULL;
 	} else {
 		remque(*elem);
+		/* FIXME Set tail? */
 	}
 
 	bbus_free(*elem);
@@ -427,6 +429,7 @@ static int handle_clientcall(bbus_client* cli,
 	bbus_object* argobj = NULL;
 	bbus_object* retobj = NULL;
 	struct bbus_msg_hdr hdr;
+	char* meta;
 
 	mname = bbus_prot_extractmeta(msg, msgsize);
 	if (mname == NULL)
@@ -462,8 +465,25 @@ static int handle_clientcall(bbus_client* cli,
 		goto respond;
 	} else
 	if (mthd->type == METHOD_REMOTE) {
-		/* Not yet implemented. */
-		ret = -1;
+		meta = mname_from_srvcname(mname);
+		if (meta == NULL) {
+			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+					BBUS_PROT_EMETHODERR);
+			goto respond;
+		}
+		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_SRVCALL, BBUS_PROT_EGOOD);
+		hdr.flags |= (BBUS_PROT_HASMETA | BBUS_PROT_HASOBJECT);
+		hdr.psize = strlen(meta) + 1 + bbus_obj_rawsize(argobj);
+		hdr.token = bbus_client_gettoken(cli);
+
+		ret = bbus_client_sendmsg(
+				((struct remote_method*)mthd)->srvc->cli,
+				&hdr, meta, argobj);
+		if (ret < 0) {
+			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+					BBUS_PROT_EMETHODERR);
+			goto respond;
+		}
 	} else {
 		die("Internal logic error, invalid method type\n");
 	}
@@ -594,16 +614,20 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED,
 		logmsg(BBUS_LOG_ERR,
 			"Error extracting the object from message: %s\n",
 			bbus_strerror(bbus_lasterror()));
-		return -1;
+		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+					BBUS_PROT_EMETHODERR);
+		goto respond;
 	}
 
 	bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY, BBUS_PROT_EGOOD);
 	hdr.flags |= BBUS_PROT_HASOBJECT;
+	hdr.psize = bbus_obj_rawsize(obj);
 
+respond:
 	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, obj);
 	if (ret < 0) {
 		logmsg(BBUS_LOG_ERR,
-			"Error sending server reply to client: %s",
+			"Error sending server reply to client: %s\n",
 			bbus_strerror(bbus_lasterror()));
 		ret = -1;
 	}
@@ -687,11 +711,12 @@ static void handle_client(struct clientlist_elem** cli_elem)
 {
 	bbus_client* cli;
 	int r;
+	ssize_t recvd;
 
 	cli = (*cli_elem)->cli;
 	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
-	r = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
-	if (r < 0) {
+	recvd = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
+	if (recvd < 0) {
 		logmsg(BBUS_LOG_ERR,
 			"Error receiving message from client: %s\n",
 			bbus_strerror(bbus_lasterror()));
@@ -705,11 +730,10 @@ static void handle_client(struct clientlist_elem** cli_elem)
 	case BBUS_CLIENT_CALLER:
 		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLICALL:
-			r = handle_clientcall(cli, msgbuf, BBUS_MAXMSGSIZE);
+			r = handle_clientcall(cli, msgbuf, recvd);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
-					"Error on client call: %s\n",
-					bbus_strerror(bbus_lasterror()));
+					"Error on client call\n");
 				goto cli_close;
 			}
 			break;
@@ -725,11 +749,11 @@ static void handle_client(struct clientlist_elem** cli_elem)
 	case BBUS_CLIENT_SERVICE:
 		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_SRVREG:
-			r = register_service(*cli_elem, msgbuf, BBUS_MAXMSGSIZE);
+			r = register_service(*cli_elem,
+						msgbuf, recvd);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
-					"Error registering a service: %s\n",
-					bbus_strerror(bbus_lasterror()));
+					"Error registering a service\n");
 				return;
 			}
 			break;
@@ -743,7 +767,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			}
 			break;
 		case BBUS_MSGTYPE_SRVREPLY:
-			r = pass_srvc_reply(cli, msgbuf, BBUS_MAXMSGSIZE);
+			r = pass_srvc_reply(cli, msgbuf, recvd);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error passing a service reply: %s\n",
@@ -927,10 +951,11 @@ int main(int argc, char** argv)
 			}
 
 			tmpcli = clients_head;
-			for (; retval > 0; --retval) {
+			while (retval > 0) {
 				if (bbus_pollset_cliisset(pollset,
 							tmpcli->cli)) {
 					handle_client(&tmpcli);
+					--retval;
 				}
 				if (tmpcli != NULL)
 					tmpcli = tmpcli->next;

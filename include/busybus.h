@@ -716,9 +716,9 @@ int bbus_client_gettype(bbus_client* cli) BBUS_PUBLIC;
  * @param cli The client.
  * @param buf Buffer for the message to be stored in.
  * @param bufsize Size of 'buf'.
- * @return 0 if a full message has been properly read, -1 on error.
+ * @return Number of bytes read or -1 on error.
  */
-int bbus_client_rcvmsg(bbus_client* cli, struct bbus_msg* buf,
+ssize_t bbus_client_rcvmsg(bbus_client* cli, struct bbus_msg* buf,
 		size_t bufsize) BBUS_PUBLIC;
 
 /**

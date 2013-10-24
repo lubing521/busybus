@@ -24,11 +24,11 @@
 
 #define MAX_NUMIOV 3
 
-int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
+ssize_t __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 {
 	ssize_t r;
-	size_t rcvd;
-	size_t msgsize;
+	ssize_t rcvd;
+	ssize_t msgsize;
 	struct bbus_msg_hdr* hdr;
 
 	r = __bbus_recv(sock, buf, bufsize);
@@ -46,7 +46,7 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 
 	hdr = (struct bbus_msg_hdr*)buf;
 	msgsize = hdr->psize + BBUS_MSGHDR_SIZE;
-	if (msgsize > bufsize) {
+	if (msgsize > (ssize_t)bufsize) {
 		__bbus_seterr(BBUS_ENOSPACE);
 		return -1;
 	}
@@ -71,7 +71,7 @@ int __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 		return -1;
 	}
 
-	return 0;
+	return rcvd;
 }
 
 int __bbus_send_msg(int sock, const void* buf, size_t bufsize)
