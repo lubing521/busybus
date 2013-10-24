@@ -187,7 +187,6 @@ static struct map_entry* locate_entry(bbus_hashmap* hmap,
 	}
 
 noelem:
-	__bbus_seterr(BBUS_EHMAPNOELEM);
 	return NULL;
 }
 

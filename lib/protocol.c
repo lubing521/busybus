@@ -205,6 +205,9 @@ int __bbus_proterr_to_errnum(uint8_t errcode)
 	case BBUS_PROT_EMETHODERR:
 		errnum = BBUS_EMETHODERR;
 		break;
+	case BBUS_PROT_EMREGERR:
+		errnum = BBUS_EMREGERR;
+		break;
 	default:
 		errnum = BBUS_EINVALARG;
 		break;
@@ -228,6 +231,7 @@ char* bbus_prot_extractmeta(struct bbus_msg* msg, size_t msgsize)
 	}
 
 err:
+	__bbus_seterr(BBUS_EOBJINVFMT);
 	return NULL;
 }
 
@@ -250,6 +254,7 @@ bbus_object* bbus_prot_extractobj(struct bbus_msg* msg, size_t msgsize)
 			}
 		}
 	} else {
+		__bbus_seterr(BBUS_EOBJINVFMT);
 		return NULL;
 	}
 

@@ -485,10 +485,81 @@ dontrespond:
 	return ret;
 }
 
-static int register_service(bbus_client* cli BBUS_UNUSED,
-		const struct bbus_msg* msg BBUS_UNUSED)
+static int register_service(struct clientlist_elem* cli,
+				struct bbus_msg* msg, size_t msgsize)
 {
-	return 0;
+	char* meta;
+	int ret;
+	char* comma;
+	char* path;
+	struct remote_method* mthd;
+	struct bbus_msg_hdr hdr;
+
+	meta = bbus_prot_extractmeta(msg, msgsize);
+	if (meta == NULL) {
+		ret = -1;
+		goto respond;
+	}
+
+	meta = bbus_str_cpy(meta);
+	if (meta == NULL) {
+		ret = -1;
+		goto metafree;
+	}
+
+	comma = index(meta, ',');
+	if (comma == NULL) {
+		ret = -1;
+		goto metafree;
+	}
+	*comma = '\0';
+
+	path = bbus_str_build("bbus.%s", meta);
+	if (path == NULL) {
+		ret = -1;
+		goto metafree;
+	}
+
+	mthd = bbus_malloc0(sizeof(struct remote_method));
+	if (mthd == NULL) {
+		ret = -1;
+		goto pathfree;
+	}
+
+	mthd->type = METHOD_REMOTE;
+	mthd->srvc = cli;
+
+	ret = insert_method(path, (struct method*)mthd);
+	if (ret < 0) {
+		ret = -1;
+		goto mthdfree;
+	} else {
+		logmsg(BBUS_LOG_INFO,
+			"Method '%s' successfully registered.\n", path);
+		ret = 0;
+		goto pathfree;
+	}
+
+mthdfree:
+	bbus_free(mthd);
+
+pathfree:
+	bbus_str_free(path);
+
+metafree:
+	bbus_str_free(meta);
+
+respond:
+	bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_SRVACK, ret == 0
+				? BBUS_PROT_EGOOD : BBUS_PROT_EMREGERR);
+	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, NULL);
+	if (ret < 0) {
+		logmsg(BBUS_LOG_ERR, "Error sending reply to client: %s\n",
+					bbus_strerror(bbus_lasterror()));
+		ret = -1;
+	}
+
+	return ret;
 }
 
 static int unregister_service(bbus_client* cli BBUS_UNUSED,
@@ -503,19 +574,42 @@ static int handle_control_message(bbus_client* cli BBUS_UNUSED,
 	return 0;
 }
 
-static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED, struct bbus_msg* msg)
+static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED,
+				struct bbus_msg* msg, size_t msgsize)
 {
-	struct bbus_msg_hdr* hdr = &msg->hdr;
+	struct bbus_msg_hdr hdr;
 	struct clientlist_elem* cli;
+	bbus_object* obj;
+	int ret;
 
-	cli = (struct clientlist_elem*)bbus_hmap_find(caller_map, &hdr->token,
-							sizeof(hdr->token));
+	cli = (struct clientlist_elem*)bbus_hmap_find(caller_map,
+				&msg->hdr.token, sizeof(msg->hdr.token));
 	if (cli == NULL) {
 		logmsg(BBUS_LOG_ERR, "Caller not found for reply.\n");
 		return -1;
 	}
 
-	return -1;
+	obj = bbus_prot_extractobj(msg, msgsize);
+	if (obj == NULL) {
+		logmsg(BBUS_LOG_ERR,
+			"Error extracting the object from message: %s\n",
+			bbus_strerror(bbus_lasterror()));
+		return -1;
+	}
+
+	bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY, BBUS_PROT_EGOOD);
+	hdr.flags |= BBUS_PROT_HASOBJECT;
+
+	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, obj);
+	if (ret < 0) {
+		logmsg(BBUS_LOG_ERR,
+			"Error sending server reply to client: %s",
+			bbus_strerror(bbus_lasterror()));
+		ret = -1;
+	}
+
+	bbus_obj_free(obj);
+	return ret;
 }
 
 static uint32_t make_token(void)
@@ -631,7 +725,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 	case BBUS_CLIENT_SERVICE:
 		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_SRVREG:
-			r = register_service(cli, msgbuf);
+			r = register_service(*cli_elem, msgbuf, BBUS_MAXMSGSIZE);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error registering a service: %s\n",
@@ -649,7 +743,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			}
 			break;
 		case BBUS_MSGTYPE_SRVREPLY:
-			r = pass_srvc_reply(cli, msgbuf);
+			r = pass_srvc_reply(cli, msgbuf, BBUS_MAXMSGSIZE);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error passing a service reply: %s\n",

@@ -43,9 +43,9 @@ static const char* const error_descr[] = {
 	"received less data, than expected",
 	"internal logic error",
 	"no such method",
-	"no such element in hashmap",
 	"internal method error",
-	"poll interrupted by a signal"
+	"poll interrupted by a signal",
+	"error registering the method"
 };
 
 int bbus_lasterror(void)

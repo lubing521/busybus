@@ -320,9 +320,9 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_ERCVDLESS		10012 /**< Received less data, than expected */
 #define BBUS_ELOGICERR		10013 /**< Logic error */
 #define BBUS_ENOMETHOD		10014 /**< No method with given name */
-#define BBUS_EHMAPNOELEM	10015 /**< No such key in the hashmap */
-#define BBUS_EMETHODERR		10016 /**< Error calling method */
-#define BBUS_EPOLLINTR		10017 /**< Poll interrupted by a signal. */
+#define BBUS_EMETHODERR		10015 /**< Error calling method */
+#define BBUS_EPOLLINTR		10016 /**< Poll interrupted by a signal. */
+#define BBUS_EMREGERR		10017 /*** Error registering the method. */
 #define __BBUS_MAX_ERR		10018 /**< Highest error code */
 
 /**
@@ -457,6 +457,7 @@ int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
 #define BBUS_PROT_EGOOD		0x00 /**< Success. */
 #define BBUS_PROT_ENOMETHOD	0x01 /**< No such method. */
 #define BBUS_PROT_EMETHODERR	0x02 /**< Error calling the method. */
+#define BBUS_PROT_EMREGERR	0x03 /**< Error registering the method. */
 /**
  * @}
  *

@@ -94,7 +94,7 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 				bbus_strerror(bbus_lasterror()));
 	}
 
-	run = 0;
+	run = 1;
 	while (do_run())
 	{
 		tv.sec = 0;

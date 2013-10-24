@@ -208,7 +208,7 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 	char* meta;
 	int r;
 
-	metasize = strlen(conn->srvname);
+	metasize = strlen(conn->srvname) + 1; /* +1 for dot */
 	metasize += strlen(method->name) + 1; /* +1 for comma */
 	metasize += strlen(method->argdscr) + 1; /* +1 for comma */
 	metasize += strlen(method->retdscr) + 1; /* +1 for NULL */
@@ -216,7 +216,8 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 	__bbus_hdr_setmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_SRVREG;
 	hdr.psize = metasize;
-	meta = bbus_str_build("%s%s,%s,%s",
+	hdr.flags |= BBUS_PROT_HASMETA;
+	meta = bbus_str_build("%s.%s,%s,%s",
 					conn->srvname,
 					method->name,
 					method->argdscr,
