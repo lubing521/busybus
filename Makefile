@@ -111,6 +111,8 @@ help:
 	@echo "Build:"
 	@echo "  all		- all executables and libraries"
 	@echo "  bbusd		- busybus daemon"
+	@echo "  bbus-call	- program for calling busybus methods"
+	@echo "  bbus-echod	- busybus echo service daemon"
 	@echo "  libbbus.so	- busybus library"
 	@echo
 	@echo "Testing:"
