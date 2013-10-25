@@ -266,12 +266,15 @@ static void list_rm(struct clientlist_elem** elem,
 			struct clientlist_elem** head,
 			struct clientlist_elem** tail)
 {
+	struct clientlist_elem* tmp;
+
 	if (*head == *tail) {
 		/* Last element left. */
 		*head = *tail = NULL;
 	} else {
 		remque(*elem);
-		/* FIXME Set tail? */
+		for (tmp = *head; tmp->next != NULL; tmp = tmp->next);
+		*tail = tmp;
 	}
 
 	bbus_free(*elem);
