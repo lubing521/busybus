@@ -196,6 +196,48 @@ uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_MIN(X, Y) ((X) >= (Y) ? (Y) : (X))
 
 /**
+ * @brief Represents a single element in the doubly-linked list.
+ */
+struct bbus_list_elem
+{
+	struct bbus_list_elem* next;	/**< Next element. */
+	struct bbus_list_elem* prev;	/**< Previous element. */
+	char data[1];			/**< Arbitrary data. */
+};
+
+/**
+ * @brief Represents a doubly-linked list.
+ */
+struct bbus_list
+{
+	struct bbus_list_elem* head;	/**< First element in the list. */
+	struct bbus_list_elem* tail;	/**< Last element in the list. */
+};
+
+/**
+ * @brief Inserts an element at the end of a doubly-linked list.
+ * @param list The list.
+ * @param elem New element.
+ */
+void bbus_list_push(struct bbus_list* list, void* elem) BBUS_PUBLIC;
+
+/**
+ * @brief Inserts an element into a doubly-linked list.
+ * @param list The list.
+ * @param elem New element.
+ * @param prev The element that should precede 'elem'.
+ */
+void bbus_list_insert(struct bbus_list* list,
+		void* elem, void* prev) BBUS_PUBLIC;
+
+/**
+ * @brief Removes an element from a doubly linked list.
+ * @param list The list.
+ * @param elem The element to remove.
+ */
+void bbus_list_rm(struct bbus_list* list, void* elem) BBUS_PUBLIC;
+
+/**
  * @}
  *
  * @defgroup __hashmap__ Hashmap functions
