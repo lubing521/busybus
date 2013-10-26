@@ -18,3 +18,40 @@
 This module contains functions and data structures for easy creating
 of regression tests for the Busybus.
 """
+
+import subprocess
+import re
+
+binaries = { 'bbusd' : './bbusd',
+		'echod' : './bbus-echod',
+		'call' : './bbus-call' }
+
+scenDir = './test/regression/scenarios'
+pyFileRegex = re.compile('.+\.py')
+
+class ScenarioExc(Exception):
+	"""
+	Used to indicate, that a test scenario has failed.
+	"""
+
+	def __init__(self, case, msg):
+		Exception.__init__(self, msg)
+		self.case = case
+
+class Process(subprocess.Popen):
+	"""
+	Used to start and stop external processes.
+	"""
+
+	def __init__(self, prog):
+		subprocess.Popen.__init__(self, [ prog ], shell=False)
+
+	def __del__(self):
+		try:
+			if self.poll() is None:
+				self.kill()
+		except:
+			pass  # Ignore exceptions in destructor.
+
+def isPyFile(file):
+	return pyFileRegex.match(f)
