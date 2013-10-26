@@ -219,7 +219,7 @@ struct bbus_list
  * @param list The list.
  * @param elem New element.
  */
-void bbus_list_push(struct bbus_list* list, void* elem) BBUS_PUBLIC;
+void bbus_list_push(void* list, void* elem) BBUS_PUBLIC;
 
 /**
  * @brief Inserts an element into a doubly-linked list.
@@ -227,15 +227,14 @@ void bbus_list_push(struct bbus_list* list, void* elem) BBUS_PUBLIC;
  * @param elem New element.
  * @param prev The element that should precede 'elem'.
  */
-void bbus_list_insert(struct bbus_list* list,
-		void* elem, void* prev) BBUS_PUBLIC;
+void bbus_list_insert(void* list, void* elem, void* prev) BBUS_PUBLIC;
 
 /**
  * @brief Removes an element from a doubly linked list.
  * @param list The list.
  * @param elem The element to remove.
  */
-void bbus_list_rm(struct bbus_list* list, void* elem) BBUS_PUBLIC;
+void bbus_list_rm(void* list, void* elem) BBUS_PUBLIC;
 
 /**
  * @}

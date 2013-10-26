@@ -18,20 +18,32 @@
 
 #include <busybus.h>
 
-void bbus_list_push(struct bbus_list* list, void* elem)
+void bbus_list_push(void* list, void* elem)
 {
-	bbus_list_insert(list, elem, list->tail);
+	struct bbus_list_elem* el = (struct bbus_list_elem*)elem;
+	struct bbus_list* lst = (struct bbus_list*)list;
+
+	if (lst->head == NULL) {
+		lst->head = lst->tail = el;
+		el->next = NULL;
+		el->prev = NULL;
+	} else {
+		el->next = NULL;
+		el->prev = lst->tail;
+		lst->tail->next = el;
+	}
 }
 
-void bbus_list_insert(struct bbus_list* list, void* elem, void* prev)
+void bbus_list_insert(void* list, void* elem, void* prev)
 {
 	struct bbus_list_elem* el = (struct bbus_list_elem*)elem;
 	struct bbus_list_elem* pr = (struct bbus_list_elem*)prev;
+	struct bbus_list* lst = (struct bbus_list*)list;
 
 	if (pr == NULL) {
 		/* Assume the list is empty. */
 		el->next = el->prev = NULL;
-		list->head = list->tail = NULL;
+		lst->head = lst->tail = NULL;
 	} else {
 		el->prev = pr;
 		el->next = pr->next;
@@ -41,14 +53,15 @@ void bbus_list_insert(struct bbus_list* list, void* elem, void* prev)
 	}
 }
 
-void bbus_list_rm(struct bbus_list* list, void* elem)
+void bbus_list_rm(void* list, void* elem)
 {
 	struct bbus_list_elem* el = (struct bbus_list_elem*)elem;
 	struct bbus_list_elem* next = el->next;
 	struct bbus_list_elem* prev = el->prev;
+	struct bbus_list* lst = (struct bbus_list*)list;
 
-	if (list->head == list->tail) {
-		list->head = list->tail = NULL;
+	if (lst->head == lst->tail) {
+		lst->head = lst->tail = NULL;
 	} else {
 		if (next != NULL)
 			next->prev = prev;
