@@ -197,6 +197,10 @@ uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
 /**
  * @brief Represents a single element in the doubly-linked list.
+ *
+ * Structures passed as list element arguments to the list manipulation
+ * functions must too have their first two fields be pointers to the next
+ * and previous list elements.
  */
 struct bbus_list_elem
 {
@@ -207,6 +211,9 @@ struct bbus_list_elem
 
 /**
  * @brief Represents a doubly-linked list.
+ *
+ * Structures passed as the 'list' argument to the list manipulation functions
+ * must too be composed of two fields that are pointers to list elements.
  */
 struct bbus_list
 {
