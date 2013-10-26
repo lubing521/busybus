@@ -1,0 +1,13 @@
+*.o
+!.gitignore
+*~
+*.orig
+*.rej
+/*.patch
+core
+core.*
+/bbusd
+/bbus-echod
+/bbus-call
+/bbus-unit
+/libbbus.so
