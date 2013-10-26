@@ -173,7 +173,12 @@ uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
  * @param X First value.
  * @param Y Second value.
  */
-#define BBUS_MIN(X, Y) ((X) >= (Y) ? (Y) : (X))
+#define BBUS_MIN(A, B)							\
+	({								\
+		__typeof__(A) _A = (A);					\
+		__typeof__(B) _B = (B);					\
+		_A < _B ? _A : _B;					\
+	})
 
 /**
  * @brief Represents a single element in the doubly-linked list.
