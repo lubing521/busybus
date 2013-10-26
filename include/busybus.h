@@ -69,26 +69,6 @@
 #define BBUS_UNUSED __attribute__((unused))
 
 /**
- * @brief Gives variable the highest initialization priority.
- */
-#define BBUS_INIT_FIRST __attribute__((init_priority(1000)))
-
-/**
- * @brief Gives variable secondary initialization priority.
- */
-#define BBUS_INIT_SECOND __attribute__((init_priority(2000)))
-
-/**
- * @brief Gives variable tertiary initialization priority.
- */
-#define BBUS_INIT_THIRD __attribute__((init_priority(3000)))
-
-/**
- * @brief Gives variable the lowest initialization priority.
- */
-#define BBUS_INIT_LAST __attribute__((init_priority(10000)))
-
-/**
  * @brief Busybus malloc.
  * @param size Number of bytes to allocate.
  * @return Pointer to the allocated memory or NULL in case of an error.
