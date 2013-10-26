@@ -65,13 +65,21 @@ bbus-echod:		$(BBUSECHOD_OBJS)
 ###############################################################################
 # test
 ###############################################################################
-TEST_OBJS =	./test/unit/test.o
-TEST_TARGET =	./bbus_test
+UNIT_OBJS =	./test/unit/test.o
+UNIT_TARGET =	./bbus-unit
+REGR_SCRIPT =	./test/regression/regression.py
 
-test:		$(TEST_OBJS) $(LIBBBUS_OBJS)
-	$(CROSSCC) -o $(TEST_TARGET) $(TEST_OBJS) $(LIBBBUS_OBJS)	\
+bbus-unit:	$(UNIT_OBJS) $(LIBBBUS_OBJS)
+	$(CROSSCC) -o $(UNIT_TARGET) $(UNIT_OBJS) $(LIBBBUS_OBJS)	\
 		$(LDFLAGS) $(DEBUGFLAGS)
-	$(TEST_TARGET)
+
+test_unit:	bbus-unit
+	$(UNIT_TARGET)
+
+test_regr:	all
+	$(REGR_SCRIPT) run
+
+test:		test_unit test_regr
 
 ###############################################################################
 # all
@@ -97,8 +105,8 @@ clean:
 	rm -f $(BBUSECHOD_TARGET)
 	rm -f $(LIBBBUS_OBJS)
 	rm -f $(LIBBBUS_TARGET)
-	rm -f $(TEST_OBJS)
-	rm -f $(TEST_TARGET)
+	rm -f $(UNIT_OBJS)
+	rm -f $(UNIT_TARGET)
 	rm -rf $(DOC_DIR)
 
 ###############################################################################
