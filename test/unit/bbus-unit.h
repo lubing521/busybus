@@ -111,7 +111,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 		}							\
 	} while (0)
 
-#define BBUSUNIT_ASSERT_TRUE(STATEMENT)				\
+#define BBUSUNIT_ASSERT_TRUE(STATEMENT)					\
 	do {								\
 		if (!(STATEMENT)) {					\
 			BBUSUNIT_PRINTASSERTFAIL;			\

@@ -344,6 +344,8 @@ void bbus_hmap_reset(bbus_hashmap* hmap) BBUS_PUBLIC;
  *
  * Does nothing to the value pointers, so it's possible to use
  * statically allocated data structures as hashmap values.
+ *
+ * If 'hmap' is a NULL-pointer, this function does nothing.
  */
 void bbus_hmap_free(bbus_hashmap* hmap) BBUS_PUBLIC;
 

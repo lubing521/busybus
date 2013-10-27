@@ -248,9 +248,11 @@ void bbus_hmap_reset(bbus_hashmap* hmap)
 
 void bbus_hmap_free(bbus_hashmap* hmap)
 {
-	bbus_hmap_reset(hmap);
-	bbus_free(hmap->bucket_heads);
-	bbus_free(hmap);
+	if (hmap) {
+		bbus_hmap_reset(hmap);
+		bbus_free(hmap->bucket_heads);
+		bbus_free(hmap);
+	}
 }
 
 static int BBUS_PRINTF_FUNC(3, 4) dump_append(char** buf,
