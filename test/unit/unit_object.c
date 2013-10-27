@@ -18,3 +18,7 @@
 
 #include "bbus-unit.h"
 
+/*
+ * No tests for now, as there will be a big data
+ * marshalling overhaul coming.
+ */
