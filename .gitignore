@@ -11,3 +11,4 @@ core.*
 /bbus-call
 /bbus-unit
 /libbbus.so
+*.pyc

@@ -21,7 +21,6 @@ Set of regression tests for the Busybus.
 """
 
 import sys
-sys.dont_write_bytecode = True
 import os
 import libregr
 import getopt
