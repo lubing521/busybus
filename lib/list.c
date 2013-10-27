@@ -31,6 +31,7 @@ void bbus_list_push(void* list, void* elem)
 		el->next = NULL;
 		el->prev = lst->tail;
 		lst->tail->next = el;
+		lst->tail = el;
 	}
 }
 
@@ -50,6 +51,8 @@ void bbus_list_insert(void* list, void* elem, void* prev)
 		pr->next = el;
 		if (pr->next != NULL)
 			pr->next->prev = el;
+		if (pr == lst->tail)
+			lst->tail = el;
 	}
 }
 
@@ -67,6 +70,10 @@ void bbus_list_rm(void* list, void* elem)
 			next->prev = prev;
 		if (prev != NULL)
 			prev->next = next;
+		if (el == lst->head)
+			lst->head = el->next;
+		if (el == lst->tail)
+			lst->tail = el->prev;
 	}
 }
 
