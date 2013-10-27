@@ -69,6 +69,22 @@
 #define BBUS_UNUSED __attribute__((unused))
 
 /**
+ * @brief Marks a function as a constructor with high priority.
+ *
+ * Functions marked with this macro will be run before the main() function
+ * and before any other function marked with one of the ATSTART macros.
+ */
+#define BBUS_ATSTART_FIRST __attribute__((constructor(1000)))
+
+/**
+ * @brief Marks a function as a constructor with low priority.
+ *
+ * Functions marked with this macro will be run before the main() function
+ * and after any other function marked with one of the ATSTART macros.
+ */
+#define BBUS_ATSTART_LAST __attribute__((constructor(2000)))
+
+/**
  * @brief Busybus malloc.
  * @param size Number of bytes to allocate.
  * @return Pointer to the allocated memory or NULL in case of an error.
