@@ -49,8 +49,8 @@ def init():
 		raise RuntimeError('Error starting bbusd')
 
 def printExitErr(prog, code):
-	sys.stderr.write(
-		'Warning: \'{0}\' exited with error code: {1}\n'.format(
+	libregr.printerr(
+		'Warning: \'{0}\' exited with error code: {1}'.format(
 								prog, code))
 
 def finalize():
@@ -59,11 +59,11 @@ def finalize():
 		printExitErr(binaries[key], bbusd.returncode)
 
 def printScenErr(ex):
-	sys.stderr.write(
-		'Scenarion \'{0}\' failed: {1}\n'.format(ex.case, ex.msg))
+	libregr.printerr(
+		'Scenario \'{0}\' failed: {1}'.format(ex.case, ex.msg))
 
 def runScenario(scenario):
-	sys.stdout.write('Running scenario \'{0}\''.format(scenario))
+	libregr.printinfo('Running scenario \'{0}\''.format(scenario))
 	import scenario
 	if hasattr(scenario, 'init'):
 		scenario.init()
@@ -77,21 +77,21 @@ def runScenario(scenario):
 	del scenario
 
 def runAll():
-	sys.stdout.write('Running all regression scenarios\n')
+	libregr.printinfo('Running all regression scenarios')
 	files = os.listdir(libregr.scenDir)
 	for f in files:
 		if os.path.isfile(f) and libregr.isPyFile(f):
 			runScenario(f[:-3])
 
 def printResults():
-	sys.stdout.write('Regression ended\n')
+	libregr.printinfo('Regression ended')
 	if scenFailed:
-		sys.stdout.write(
-			'Following {0} tests failed\n'.format(len(scenFailed)))
+		libregr.printinfo(
+			'Following {0} tests failed'.format(len(scenFailed)))
 		for s in scenFailed:
-			sys.stdout.write('{0}\n'.format(s))
+			libregr.printinfo('{0}'.format(s))
 	else:
-		sys.stdout.write('All tests successful\n')
+		libregr.printinfo('All tests successful')
 
 def main(argv):
 	global progName
@@ -99,7 +99,7 @@ def main(argv):
 	progName = argv[0]
 	cmd = argv[1] if len(argv) > 1 else None
 	if len(argv) > 1 and cmd == 'run':
-		sys.stdout.write('Busybus regression test suite\n')
+		libregr.printinfo('Busybus regression test suite')
 		try:
 			init();
 			sys.path.append(os.path.abspath(libregr.scenDir))
@@ -111,7 +111,7 @@ def main(argv):
 			finalize()
 			printResults()
 		except Exception as ex:
-			sys.stderr.write(
+			libregr.printerr(
 				'Fatal regression error: {0}\n'.format(ex))
 			return 1
 	else:

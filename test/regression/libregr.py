@@ -19,6 +19,7 @@ This module contains functions and data structures for easy creating
 of regression tests for the Busybus.
 """
 
+import sys
 import subprocess
 import re
 
@@ -28,6 +29,16 @@ binaries = { 'bbusd' : './bbusd',
 
 scenDir = './test/regression/scenarios'
 pyFileRegex = re.compile('.+\.py')
+
+def printinfo(msg):
+	sys.stdout.write('[INFO]\t')
+	sys.stdout.write(msg)
+	sys.stdout.write('\n')
+
+def printerr(msg):
+	sys.stdout.write('[ERROR]\t\t')
+	sys.stdout.write(msg)
+	sys.stdout.write('\n')
 
 class ScenarioExc(Exception):
 	"""
