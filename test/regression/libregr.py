@@ -65,4 +65,4 @@ class Process(subprocess.Popen):
 			pass  # Ignore exceptions in destructor.
 
 def isPyFile(file):
-	return pyFileRegex.match(f)
+	return pyFileRegex.match(file)
