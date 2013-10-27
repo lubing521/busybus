@@ -66,7 +66,10 @@ bbus-echod:		$(BBUSECHOD_OBJS)
 ###############################################################################
 # test
 ###############################################################################
-UNIT_OBJS =	./test/unit/test.o
+UNIT_OBJS =	./test/unit/bbus-unit.o					\
+		./test/unit/unit_misc.o					\
+		./test/unit/unit_hashmap.o				\
+		./test/unit/unit_object.o
 UNIT_TARGET =	./bbus-unit
 REGR_SCRIPT =	./test/regression/regression.py
 
