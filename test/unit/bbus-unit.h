@@ -91,6 +91,16 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 		}							\
 	} while (0)
 
+#define BBUSUNIT_ASSERT_NOTEQ(EXPECTED, ACTUAL)				\
+	do {								\
+		if ((EXPECTED) == (ACTUAL)) {				\
+			BBUSUNIT_PRINTASSERTFAIL;			\
+			bbusunit_printerr("'%s' is equal to '%s'",	\
+						#EXPECTED, #ACTUAL);	\
+			BBUSUNIT_TESTERRQUIT;				\
+		}							\
+	} while (0)
+
 #define BBUSUNIT_ASSERT_NOT_NULL(PTR)					\
 	do {								\
 		if ((PTR) == NULL) {					\
@@ -118,6 +128,17 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			bbusunit_printerr(				\
 				"Statement '%s' evaluated to false!",	\
 				#STATEMENT);				\
+			BBUSUNIT_TESTERRQUIT;				\
+		}							\
+	} while (0)
+
+#define BBUSUNIT_ASSERT_STREQ(STR1, STR2)				\
+	do {								\
+		if (strcmp(STR1, STR2) != 0) {				\
+			BBUSUNIT_PRINTASSERTFAIL;			\
+			bbusunit_printerr(				\
+				"Strings '%s' and '%s' "		\
+				"are not the same", STR1, STR2);	\
 			BBUSUNIT_TESTERRQUIT;				\
 		}							\
 	} while (0)
