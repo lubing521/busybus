@@ -22,20 +22,96 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#include <errno.h>
 
 struct __bbus_object
 {
-	int state;
 	size_t bufsize;
 	size_t bufused;
 	char* buf;
 	/* These fields are used for data extraction. */
-	char* at;
-	char* dc;
+	int extracting;	/* 0 if not currently extracting, 1 otherwise. */
+	char* at;	/* Current position during extraction. */
+
 };
 
 #define BUFFER_BASE	64
-#define BUFFER_AT(OBJ)	(OBJ->buf + OBJ->bufused)
+#define BUFFER_AT(OBJ)	((OBJ)->buf + (OBJ)->bufused)
+
+bbus_object* bbus_obj_alloc(void)
+{
+	struct __bbus_object* obj;
+
+	obj = bbus_malloc0(sizeof(struct __bbus_object));
+	if (obj == NULL)
+		return NULL;
+
+	return obj;
+}
+
+void bbus_obj_free(bbus_object* obj)
+{
+	if (obj) {
+		bbus_free(obj->buf);
+		bbus_free(obj);
+	}
+}
+
+void bbus_obj_reset(bbus_object* obj)
+{
+	obj->bufused = 0;
+}
+
+void* bbus_obj_rawdata(bbus_object* obj)
+{
+	return obj->buf;
+}
+
+size_t bbus_obj_rawsize(const bbus_object* obj)
+{
+	return obj->bufused;
+}
+
+int bbus_obj_descrvalid(const char* descr)
+{
+	unsigned lbr = 0;
+	unsigned rbr = 0;
+	int empty_struct = 0;
+
+	if (strlen(descr) == 0)
+		return 0;
+
+	while (*descr) {
+		switch (*descr) {
+		case BBUS_TYPE_INT32:
+		case BBUS_TYPE_UINT32:
+		case BBUS_TYPE_BYTE:
+		case BBUS_TYPE_STRING:
+		case BBUS_TYPE_ARRAY:
+			empty_struct = 0;
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			empty_struct = 1;
+			++lbr;
+			break;
+		case BBUS_TYPE_STRUCT_END:
+			if (empty_struct)
+				return 0;
+			++rbr;
+			if (rbr > lbr)
+				return 0;
+			break;
+		default:
+			return 0;
+		}
+		++descr;
+	}
+
+	if (lbr != rbr)
+		return 0;
+
+	return 1;
+}
 
 static int has_needed_space(bbus_object* obj, size_t needed)
 {
@@ -45,7 +121,7 @@ static int has_needed_space(bbus_object* obj, size_t needed)
 static int enlarge_buffer(bbus_object* obj)
 {
 	if (obj->buf == NULL) {
-		obj->buf = bbus_malloc(BUFFER_BASE);
+		obj->buf = bbus_malloc0(BUFFER_BASE);
 		if (obj->buf == NULL)
 			return -1;
 		obj->bufsize = BUFFER_BASE;
@@ -75,239 +151,209 @@ static int make_enough_space(bbus_object* obj, size_t needed)
 	return 0;
 }
 
-static int validate_object_fmt(const void* objbuf, size_t objsize)
+static int insert_data(bbus_object* obj, const void* data, size_t size)
 {
-	const char* descr;
-	char* buf_at;
-	char* buf_src;
-	size_t at;
-	size_t sl;
-	unsigned i;
-	size_t ds;
+	int r;
 
-	buf_src = memmem(objbuf, objsize, "\0", 1);
-	if (buf_src == NULL)
+	r = make_enough_space(obj, size);
+	if (r < 0) {
+		__bbus_seterr(BBUS_ENOMEM);
 		return -1;
-
-	descr = objbuf;
-	buf_at = buf_src+1;
-	ds = strlen(descr);
-	at = ds+1;
-	for (i = 0; i < ds; ++i) {
-		switch (descr[i]) {
-		case BBUS_TYPE_INT:
-		case BBUS_TYPE_UNSIGNED:
-			if ((objsize-at) < sizeof(bbus_int))
-				return -1;
-			at += sizeof(bbus_int);
-			buf_at += sizeof(bbus_int);
-			break;
-		case BBUS_TYPE_BYTE:
-			if ((objsize-at) < sizeof(bbus_byte))
-				return -1;
-			at += sizeof(bbus_byte);
-			buf_at += sizeof(bbus_byte);
-			break;
-		case BBUS_TYPE_STRING:
-			buf_src = memmem(buf_at, objsize-at, "\0", 1);
-			if (buf_src == NULL)
-				return -1;
-			sl = strlen(buf_at)+1;
-			at += sl;
-			buf_at += sl;
-			break;
-		default:
-			return -1;
-			break;
-		}
 	}
+
+	memcpy(BUFFER_AT(obj), data, size);
+	obj->bufused += size;
 
 	return 0;
 }
 
 static void make_ready_for_extraction(bbus_object* obj)
 {
-	size_t ds = strlen(obj->buf)+1;
-
-	obj->state = BBUS_OBJ_EXTRACTING;
-	obj->dc = obj->buf;
-	obj->at = obj->buf + ds;
+	obj->at = obj->buf;
+	obj->extracting = 1;
 }
 
-bbus_object* bbus_obj_mkempty(void)
+static int can_extract_size(bbus_object* obj, size_t size)
 {
-	struct __bbus_object* obj;
-
-	obj = bbus_malloc(sizeof(struct __bbus_object));
-	if (obj == NULL)
-		return NULL;
-	memset(obj, 0, sizeof(struct __bbus_object));
-	obj->state = BBUS_OBJ_EMPTY;
-	return obj;
+	if ((obj->at + size) > (obj->buf + obj->bufused))
+		return 0;
+	else
+		return 1;
 }
 
-int bbus_obj_setdescr(bbus_object* obj, const char* descr)
+static int extract_data(bbus_object* obj, void* buf, size_t size)
 {
-	int r;
-	size_t ds;
+	if (obj->extracting == 0) {
+		make_ready_for_extraction(obj);
+	}
 
-	if (obj->state != BBUS_OBJ_EMPTY) {
-		__bbus_seterr(BBUS_EOBJINVOP);
+	if (!can_extract_size(obj, size)) {
+		__bbus_seterr(BBUS_EOBJINVFMT);
 		return -1;
 	}
 
-	ds = strlen(descr);
-	r = make_enough_space(obj, ds);
-	if (r < 0) {
-		__bbus_seterr(BBUS_ENOMEM);
-		return -1;
-	}
+	memcpy(buf, obj->at, size);
+	obj->at += size;
 
-	strncpy(obj->buf, descr, obj->bufsize);
-	obj->bufused = ds+1;
-	obj->state = BBUS_OBJ_INSERTING;
 	return 0;
 }
 
-const char* bbus_obj_getdescr(bbus_object* obj)
+int bbus_obj_insarray(bbus_object* obj, bbus_size arrsize)
 {
-	if (obj->state != BBUS_OBJ_READY) {
-		__bbus_seterr(BBUS_EOBJINVOP);
-		return NULL;
-	}
+	arrsize = htonl(arrsize);
 
-	return (const char*)obj->buf;
+	return insert_data(obj, &arrsize, sizeof(bbus_size));
 }
 
-int bbus_obj_insint(bbus_object* obj, bbus_int val)
-{
-	return bbus_obj_insuint(obj, (bbus_unsigned)val);
-}
-
-int bbus_obj_insuint(bbus_object* obj, bbus_unsigned val)
+int bbus_obj_extrarray(bbus_object* obj, bbus_size* arrsize)
 {
 	int r;
 
-	if (obj->state != BBUS_OBJ_INSERTING) {
-		__bbus_seterr(BBUS_EOBJINVOP);
+	r = extract_data(obj, arrsize, sizeof(bbus_size));
+	if (r < 0)
 		return -1;
-	}
+	*arrsize = ntohl(*arrsize);
 
+	return 0;
+}
+
+int bbus_obj_insint(bbus_object* obj, bbus_int32 val)
+{
 	val = htonl(val);
-	r = make_enough_space(obj, sizeof(bbus_unsigned));
-	if (r < 0) {
-		__bbus_seterr(BBUS_ENOMEM);
+
+	return insert_data(obj, &val, sizeof(bbus_int32));
+}
+
+int bbus_obj_extrint(bbus_object* obj, bbus_int32* val)
+{
+	int r;
+
+	r = extract_data(obj, val, sizeof(bbus_int32));
+	if (r < 0)
 		return -1;
-	}
-	memcpy(BUFFER_AT(obj), &val, sizeof(bbus_unsigned));
-	obj->bufused += sizeof(bbus_unsigned);
+	*val = ntohl(*val);
+
+	return 0;
+}
+
+int bbus_obj_insuint(bbus_object* obj, bbus_uint32 val)
+{
+	val = htonl(val);
+
+	return insert_data(obj, &val, sizeof(bbus_uint32));
+}
+
+int bbus_obj_extruint(bbus_object* obj, bbus_uint32* val)
+{
+	int r;
+
+	r = extract_data(obj, val, sizeof(bbus_uint32));
+	if (r < 0)
+		return -1;
+	*val = ntohl(*val);
+
 	return 0;
 }
 
 int bbus_obj_insstr(bbus_object* obj, const char* val)
 {
-	int r;
-	size_t len;
-
-	if (obj->state != BBUS_OBJ_INSERTING) {
-		__bbus_seterr(BBUS_EOBJINVOP);
-		return -1;
-	}
-
-	len = strlen(val)+1;
-	r = make_enough_space(obj, len);
-	if (r < 0) {
-		__bbus_seterr(BBUS_ENOMEM);
-		return -1;
-	}
-	memcpy(BUFFER_AT(obj), val, len);
-	obj->bufused += len;
-	return 0;
-}
-
-int bbus_obj_extrint(bbus_object* obj, bbus_int* val)
-{
-	if (obj->state != BBUS_OBJ_EXTRACTING) {
-		if (obj->state != BBUS_OBJ_READY) {
-			__bbus_seterr(BBUS_EOBJINVOP);
-			return -1;
-		} else {
-			make_ready_for_extraction(obj);
-		}
-	}
-
-	if (*(obj->dc) != BBUS_TYPE_INT) {
-		__bbus_seterr(BBUS_EOBJINVOP);
-		return -1;
-	}
-
-	memcpy(val, obj->at, sizeof(bbus_int));
-	*val = ntohl(*val);
-	obj->at += sizeof(bbus_int);
-	obj->dc += 1;
-
-	return 0;
-}
-
-int bbus_obj_extruint(bbus_object* obj, bbus_unsigned* val)
-{
-	if (obj->state != BBUS_OBJ_EXTRACTING) {
-		if (obj->state != BBUS_OBJ_READY) {
-			__bbus_seterr(BBUS_EOBJINVOP);
-			return -1;
-		} else {
-			make_ready_for_extraction(obj);
-		}
-	}
-
-	if (*(obj->dc) != BBUS_TYPE_UNSIGNED) {
-		__bbus_seterr(BBUS_EOBJINVOP);
-		return -1;
-	}
-
-	memcpy(val, obj->at, sizeof(bbus_unsigned));
-	*val = ntohl(*val);
-	obj->at += sizeof(bbus_unsigned);
-	obj->dc += 1;
-
-	return 0;
+	return insert_data(obj, val, strlen(val) + 1);
 }
 
 int bbus_obj_extrstr(bbus_object* obj, char** val)
 {
-	size_t slen;
+	void* end;
 
-	if (obj->state != BBUS_OBJ_EXTRACTING) {
-		if (obj->state != BBUS_OBJ_READY) {
-			__bbus_seterr(BBUS_EOBJINVOP);
-			return -1;
-		} else {
-			make_ready_for_extraction(obj);
-		}
+	if (obj->extracting == 0) {
+		make_ready_for_extraction(obj);
 	}
 
-	if (*(obj->dc) != BBUS_TYPE_STRING) {
-		__bbus_seterr(BBUS_EOBJINVOP);
+	/*
+	 * This one's a bit different than any other data-extracting. We need
+	 * to determine whether a string actually exists in the buffer, and
+	 * make *val point to its beginning.
+	 */
+
+	end = memmem(obj->at, (obj->buf + obj->bufused) - obj->at, "\0", 1);
+	if (end == NULL) {
+		__bbus_seterr(BBUS_EOBJINVFMT);
 		return -1;
 	}
 
-	slen = strlen(obj->at);
-	*val = (char*)obj->at;
-	obj->at += slen;
-	obj->dc += 1;
+	*val = obj->at;
+	obj->at += strlen(obj->at) + 1;
 
 	return 0;
 }
 
-void bbus_obj_reset(bbus_object* obj)
+int bbus_obj_insbyte(bbus_object* obj, bbus_byte val)
 {
-	obj->bufused = 0;
-	obj->state = BBUS_OBJ_EMPTY;
+	return insert_data(obj, &val, 1);
 }
 
-int bbus_obj_getstate(bbus_object* obj)
+int bbus_obj_extrbyte(bbus_object* obj, bbus_byte* val)
 {
-	return obj->state;
+	bbus_uint32 u = 0;
+	int ret;
+
+	ret = extract_data(obj, &u, 1);
+	if (ret < 0)
+		return -1;
+
+	*val = (bbus_byte)u;
+	return 0;
+}
+
+int bbus_obj_insbytes(bbus_object* obj, const void* buf, size_t size)
+{
+	int r;
+
+	r = bbus_obj_insarray(obj, (bbus_size)size);
+	if (r < 0)
+		return -1;
+
+	return insert_data(obj, buf, size);
+}
+
+int bbus_obj_extrbytes(bbus_object* obj, void* buf, size_t size)
+{
+	int r;
+	bbus_size arrsize;
+
+	r = bbus_obj_extrarray(obj, &arrsize);
+	if (r < 0)
+		return -1;
+
+	if (size != (size_t)arrsize) {
+		__bbus_seterr(BBUS_EOBJINVFMT);
+		return -1;
+	}
+
+	return extract_data(obj, buf, size);
+}
+
+void bbus_obj_rewind(bbus_object* obj)
+{
+	obj->extracting = 0;
+}
+
+bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize)
+{
+	bbus_object* obj;
+
+	obj = bbus_malloc0(sizeof(struct __bbus_object));
+	if (obj == NULL)
+		return NULL;
+	obj->buf = bbus_malloc0(bufsize);
+	if (obj->buf == NULL) {
+		bbus_free(obj);
+		return NULL;
+	}
+	memcpy(obj->buf, buf, bufsize);
+	obj->bufsize = bufsize;
+	obj->bufused = bufsize;
+
+	return obj;
 }
 
 bbus_object* bbus_obj_build(const char* descr, ...)
@@ -322,87 +368,133 @@ bbus_object* bbus_obj_build(const char* descr, ...)
 	return obj;
 }
 
-bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
+static int build_simple_type(char descr, bbus_object* obj, va_list* va)
 {
-	unsigned i;
-	size_t dlen;
-	int r;
-	bbus_object* obj;
+	int ret;
 
-	obj = bbus_obj_mkempty();
-	if (obj == NULL)
-		goto out;
-	r = bbus_obj_setdescr(obj, descr);
-	if (r < 0)
-		goto out;
-	dlen = strlen(descr);
-	for (i = 0; i < dlen; ++i) {
-		switch (descr[i]) {
-		case BBUS_TYPE_INT:
-			r = bbus_obj_insint(obj, va_arg(va, bbus_int));
+	switch (descr) {
+	case BBUS_TYPE_INT32:
+		ret = bbus_obj_insint(obj, va_arg(*va, bbus_int32));
+		break;
+	case BBUS_TYPE_UINT32:
+		ret = bbus_obj_insuint(obj, va_arg(*va, bbus_uint32));
+		break;
+	case BBUS_TYPE_BYTE:
+		ret = bbus_obj_insbyte(obj, (bbus_byte)va_arg(*va, int));
+		break;
+	case BBUS_TYPE_STRING:
+		ret = bbus_obj_insstr(obj, va_arg(*va, char*));
+		break;
+	default:
+		__bbus_seterr(BBUS_ELOGICERR);
+		return -1;
+	}
+
+	return ret;
+}
+
+/* Prototype for build_struct(). */
+static int build_array(const char** descr, bbus_object* obj, va_list* va);
+
+static int build_struct(const char** descr, bbus_object* obj, va_list* va)
+{
+	int ret;
+
+	while (**descr != BBUS_TYPE_STRUCT_END) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = build_array(descr, obj, va);
 			break;
-		case BBUS_TYPE_UNSIGNED:
-			r = bbus_obj_insuint(
-					obj, va_arg(va, bbus_unsigned));
-			break;
-		case BBUS_TYPE_STRING:
-			r = bbus_obj_insstr(obj,
-					va_arg(va, char*));
+		case BBUS_TYPE_STRUCT_START:
+			++(*descr);
+			ret = build_struct(descr, obj, va);
 			break;
 		default:
-			__bbus_seterr(BBUS_EOBJINVFMT);
-			goto out;
+			ret = build_simple_type(**descr, obj, va);
+			++(*descr);
 			break;
 		}
-		if (r < 0)
+		if (ret < 0)
+			return -1;
+	}
+
+	++(*descr);
+	return 0;
+}
+
+static int build_array(const char** descr, bbus_object* obj, va_list* va)
+{
+	bbus_size arrsize;
+	int ret;
+	const char* pos;
+
+	arrsize = va_arg(*va, bbus_size);
+	ret = bbus_obj_insarray(obj, arrsize);
+	++(*descr);
+	while (--arrsize) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = build_array(descr, obj, va);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			pos = *descr;
+			++(*descr);
+			ret = build_struct(descr, obj, va);
+			*descr = pos;
+			break;
+		default:
+			ret = build_simple_type(**descr, obj, va);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
+bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
+{
+	bbus_object* obj;
+	int ret;
+
+	if (!bbus_obj_descrvalid(descr)) {
+		__bbus_seterr(BBUS_EINVALARG);
+		return NULL;
+	}
+
+	obj = bbus_obj_alloc();
+	if (obj == NULL)
+		goto out;
+
+	while (*descr) {
+		switch (*descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = build_array(&descr, obj, &va);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			++descr;
+			ret = build_struct(&descr, obj, &va);
+			break;
+		case BBUS_TYPE_STRUCT_END:
+			/* This should have been handled by build_struct(). */
+			__bbus_seterr(BBUS_ELOGICERR);
+			ret = -1;
+			break;
+		default:
+			ret = build_simple_type(*descr, obj, &va);
+			++descr;
+			break;
+		}
+		if (ret < 0)
 			goto out;
 	}
 
-	obj->state = BBUS_OBJ_READY;
 	return obj;
 
 out:
 	bbus_obj_free(obj);
-	obj = NULL;
-	return obj;
-}
-
-bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize)
-{
-	int r;
-	bbus_object* obj;
-
-	r = validate_object_fmt(buf, bufsize);
-	if (r < 0) {
-		__bbus_seterr(BBUS_EOBJINVFMT);
-		return NULL;
-	}
-
-	obj = bbus_malloc(sizeof(struct __bbus_object));
-	memset(obj, 0, sizeof(struct __bbus_object));
-	obj->buf = bbus_malloc(bufsize);
-	memcpy(obj->buf, buf, bufsize);
-	obj->state = BBUS_OBJ_READY;
-	obj->bufsize = bufsize;
-	obj->bufused = bufsize;
-
-	return obj;
-}
-
-ssize_t bbus_obj_tobuf(bbus_object* obj, void* buf, size_t bufsize)
-{
-	if (obj->state != BBUS_OBJ_READY) {
-		__bbus_seterr(BBUS_EOBJINVOP);
-		return -1;
-	}
-
-	if (bufsize < obj->bufsize) {
-		__bbus_seterr(BBUS_ENOSPACE);
-		return -1;
-	}
-
-	memcpy(buf, obj->buf, obj->bufused);
-	return obj->bufused;
+	return NULL;
 }
 
 int bbus_obj_parse(bbus_object* obj, const char* descr, ...)
@@ -417,118 +509,342 @@ int bbus_obj_parse(bbus_object* obj, const char* descr, ...)
 	return r;
 }
 
+static int parse_simple_type(char descr, bbus_object* obj, va_list* va)
+{
+	int ret;
+
+	switch (descr) {
+	case BBUS_TYPE_INT32:
+		ret = bbus_obj_extrint(obj, va_arg(*va, bbus_int32*));
+		break;
+	case BBUS_TYPE_UINT32:
+		ret = bbus_obj_extruint(obj, va_arg(*va, bbus_uint32*));
+		break;
+	case BBUS_TYPE_BYTE:
+		ret = bbus_obj_extrbyte(obj, (bbus_byte*)va_arg(*va, int*));
+		break;
+	case BBUS_TYPE_STRING:
+		ret = bbus_obj_extrstr(obj, va_arg(*va, char**));
+		break;
+	default:
+		__bbus_seterr(BBUS_ELOGICERR);
+		return -1;
+	}
+
+	return ret;
+}
+
+/* Prototype for parse_struct(). */
+static int parse_array(const char** descr, bbus_object* obj, va_list* va);
+
+static int parse_struct(const char** descr, bbus_object* obj, va_list* va)
+{
+	int ret;
+
+	while (**descr != BBUS_TYPE_STRUCT_END) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = parse_array(descr, obj, va);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			++(*descr);
+			ret = parse_struct(descr, obj, va);
+			break;
+		default:
+			ret = parse_simple_type(**descr, obj, va);
+			++(*descr);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	++(*descr);
+	return 0;
+}
+
+static int parse_array(const char** descr, bbus_object* obj, va_list* va)
+{
+	bbus_size arrsize;
+	int ret;
+	const char* pos;
+
+	ret = bbus_obj_extrarray(obj, &arrsize);
+	++(*descr);
+	while (--arrsize) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = parse_array(descr, obj, va);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			pos = *descr;
+			++(*descr);
+			ret = parse_struct(descr, obj, va);
+			*descr = pos;
+			break;
+		default:
+			ret = parse_simple_type(**descr, obj, va);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 int bbus_obj_vparse(bbus_object* obj, const char* descr, va_list va)
 {
-	unsigned i;
-	size_t dlen;
-	int r = 0;
+	int ret = 0;
 
-	dlen = strlen(descr);
-	for (i = 0; i < dlen; ++i) {
-		switch (descr[i]) {
-		case BBUS_TYPE_INT:
-			r = bbus_obj_extrint(obj, va_arg(va, bbus_int*));
+	if (!bbus_obj_descrvalid(descr)) {
+		__bbus_seterr(BBUS_EINVALARG);
+		return -1;
+	}
+
+	while (*descr) {
+		switch (*descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = parse_array(&descr, obj, &va);
 			break;
-		case BBUS_TYPE_UNSIGNED:
-			r = bbus_obj_extruint(
-					obj, va_arg(va, bbus_unsigned*));
+		case BBUS_TYPE_STRUCT_START:
+			++descr;
+			ret = parse_struct(&descr, obj, &va);
 			break;
-		case BBUS_TYPE_STRING:
-			r = bbus_obj_extrstr(obj,
-					va_arg(va, char**));
+		case BBUS_TYPE_STRUCT_END:
+			/* This should have been handled by parse_struct(). */
+			__bbus_seterr(BBUS_ELOGICERR);
+			ret = -1;
 			break;
 		default:
-			r = -1;
-			__bbus_seterr(BBUS_EOBJINVFMT);
-			goto out;
+			ret = parse_simple_type(*descr, obj, &va);
+			++descr;
 			break;
 		}
-		if (r < 0)
+		if (ret < 0)
 			goto out;
 	}
+
 out:
-	return r;
+	obj->extracting = 0;
+	return ret;
 }
 
-void* bbus_obj_rawdata(bbus_object* obj)
-{
-	return obj->buf;
-}
-
-size_t bbus_obj_rawsize(const bbus_object* obj)
-{
-	return obj->bufused;
-}
-
-void bbus_obj_free(bbus_object* obj)
-{
-	if (obj) {
-		bbus_free(obj->buf);
-		bbus_free(obj);
-	}
-}
-
-static inline void shrinkbuf(char** buf, size_t* buflen, size_t numbytes)
+static inline void shrinkbuf(char** buf, size_t* bufsize, size_t numbytes)
 {
 	*buf += numbytes;
-	*buflen -= numbytes;
+	*bufsize -= numbytes;
 }
 
-int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen)
+static int repr_simple_type(char descr, bbus_object* obj,
+				char** buf, size_t* bufsize)
 {
-	const char* descr;
-	int r;
+	int ret;
 
-	descr = bbus_obj_getdescr(obj);
-	r = snprintf(buf, buflen, "bbus_object([%s]", descr);
-	shrinkbuf(&buf, &buflen, r);
-	do {
-		switch (*descr) {
-		case BBUS_TYPE_INT:
-			{
-				bbus_int i;
-				r = bbus_obj_extrint(obj, &i);
-				if (r < 0)
-					goto out;
-				r = snprintf(buf, buflen, ", %d", i);
-			}
-			break;
-		case BBUS_TYPE_UNSIGNED:
-			{
-				bbus_unsigned u;
-				r = bbus_obj_extruint(obj, &u);
-				if (r < 0)
-					goto out;
-				r = snprintf(buf, buflen, ", %u", u);
-			}
-			break;
-		case BBUS_TYPE_STRING:
-			{
-				char* s;
-				r = bbus_obj_extrstr(obj, &s);
-				if (r < 0)
-					goto out;
-				r = snprintf(buf, buflen, ", %s", s);
-			}
-			break;
-		default:
-			__bbus_seterr(BBUS_EOBJINVFMT);
-			r = -1;
-			break;
+	switch (descr) {
+	case BBUS_TYPE_INT32:
+		{
+			bbus_int32 v;
+			ret = bbus_obj_extrint(obj, &v);
+			if (ret < 0)
+				goto out;
+			ret = snprintf(*buf, *bufsize, "%d, ", v);
 		}
-		if (r < 0)
-			goto nospace;
-		shrinkbuf(&buf, &buflen, r);
-	} while (*(++descr));
-	snprintf(buf, buflen, ")");
-	r = strlen(buf);
+		break;
+	case BBUS_TYPE_UINT32:
+		{
+			bbus_uint32 v;
+			ret = bbus_obj_extruint(obj, &v);
+			if (ret < 0)
+				goto out;
+			ret = snprintf(*buf, *bufsize, "%u, ", v);
+		}
+		break;
+	case BBUS_TYPE_BYTE:
+		{
+			bbus_byte v;
+			ret = bbus_obj_extrbyte(obj, &v);
+			if (ret < 0)
+				goto out;
+			ret = snprintf(*buf, *bufsize, "0x%x, ", v);
+		}
+		break;
+	case BBUS_TYPE_STRING:
+		{
+			char* v;
+			ret = bbus_obj_extrstr(obj, &v);
+			if (ret < 0)
+				goto out;
+			ret = snprintf(*buf, *bufsize, "%s, ", v);
+		}
+		break;
+	default:
+		__bbus_seterr(BBUS_ELOGICERR);
+		return -1;
+	}
+
+	if (ret < 0) {
+		__bbus_seterr(BBUS_ENOSPACE);
+		return -1;
+	}
+
+	shrinkbuf(buf, bufsize, ret);
 
 out:
-	return r;
-
-nospace:
-	__bbus_seterr(BBUS_ENOSPACE);
-	return r;
+	return ret;
 }
 
+/* Prototype for repr_struct(). */
+static int repr_array(const char** descr, bbus_object* obj,
+				char** buf, size_t* bufsize);
+
+static int repr_struct(const char** descr, bbus_object* obj,
+				char** buf, size_t* bufsize)
+{
+	int ret;
+
+	ret = snprintf(*buf, *bufsize, "(");
+	if (ret < 0) {
+		__bbus_seterr(errno);
+		return -1;
+	}
+	shrinkbuf(buf, bufsize, ret);
+
+	while (**descr != BBUS_TYPE_STRUCT_END) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = repr_array(descr, obj, buf, bufsize);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			++(*descr);
+			ret = repr_struct(descr, obj, buf, bufsize);
+			break;
+		default:
+			ret = repr_simple_type(**descr, obj, buf, bufsize);
+			++(*descr);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	if (strncmp((*buf)-2, ", ", 1) == 0) {
+		*buf -= 2;
+		*bufsize += 2;
+	}
+
+	ret = snprintf(*buf, *bufsize, ")");
+	if (ret < 0) {
+		__bbus_seterr(errno);
+		return -1;
+	}
+	shrinkbuf(buf, bufsize, ret);
+
+	++(*descr);
+	return 0;
+}
+
+static int repr_array(const char** descr, bbus_object* obj,
+				char** buf, size_t* bufsize)
+{
+	bbus_size arrsize;
+	int ret;
+	const char* strstart;
+	const char* strend = NULL;;
+
+	ret = snprintf(*buf, *bufsize, "A[");
+	if (ret < 0) {
+		__bbus_seterr(errno);
+		return -1;
+	}
+	shrinkbuf(buf, bufsize, ret);
+
+	ret = bbus_obj_extrarray(obj, &arrsize);
+	++(*descr);
+	while (arrsize--) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = repr_array(descr, obj, buf, bufsize);
+			strend = NULL;
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			strstart = *descr;
+			++(*descr);
+			ret = repr_struct(descr, obj, buf, bufsize);
+			strend = *descr;
+			*descr = strstart;
+			break;
+		default:
+			ret = repr_simple_type(**descr, obj, buf, bufsize);
+			strend = NULL;
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	ret = snprintf(*buf, *bufsize, "]");
+	if (ret < 0) {
+		__bbus_seterr(errno);
+		return -1;
+	}
+	shrinkbuf(buf, bufsize, ret);
+	if (strend)
+		*descr = strend;
+
+	return 0;
+}
+
+int bbus_obj_repr(bbus_object* obj, const char* descr,
+		char* buf, size_t bufsize)
+{
+	int ret;
+	char* bufstart = buf;
+
+	if (!bbus_obj_descrvalid(descr)) {
+		__bbus_seterr(BBUS_EINVALARG);
+		return -1;
+	}
+
+	ret = snprintf(buf, bufsize, "bbus_object(");
+	if (ret < 0) {
+		__bbus_seterr(errno);
+		return -1;
+	}
+	shrinkbuf(&buf, &bufsize, ret);
+
+	while (*descr) {
+		switch (*descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = repr_array(&descr, obj, &buf, &bufsize);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			++descr;
+			ret = repr_struct(&descr, obj, &buf, &bufsize);
+			break;
+		case BBUS_TYPE_STRUCT_END:
+			/* This should have been handled by repr_struct(). */
+			__bbus_seterr(BBUS_ELOGICERR);
+			ret = -1;
+			break;
+		default:
+			ret = repr_simple_type(*descr, obj, &buf, &bufsize);
+			++descr;
+			break;
+		}
+		if (ret < 0)
+			goto out;
+	}
+
+	if (strncmp((buf)-2, ", ", 1) == 0) {
+		buf -= 2;
+		bufsize += 2;
+	}
+
+	snprintf(buf, bufsize, ")");
+	ret = strlen(bufstart);
+
+out:
+	return ret;
+}
 
