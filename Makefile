@@ -88,7 +88,7 @@ test:		test_unit test_regr
 ###############################################################################
 # all
 ###############################################################################
-all:		libbbus.so bbusd bbus-call bbus-echod
+all:		libbbus.so bbusd bbus-call bbus-echod bbus-unit
 
 ###############################################################################
 # doc
@@ -126,9 +126,12 @@ help:
 	@echo "  bbus-call	- program for calling busybus methods"
 	@echo "  bbus-echod	- busybus echo service daemon"
 	@echo "  libbbus.so	- busybus library"
+	@echo "  bbus-unit	- busybus unit-test binary"
 	@echo
 	@echo "Testing:"
-	@echo "  test		- build the test binary and run the test suite"
+	@echo "  test_unit	- build the unit-test suite and run it"
+	@echo "  test_regr	- run the regression-tests"
+	@echo "  test		- run all tests"
 	@echo
 	@echo "Documentation:"
 	@echo "  doc		- create doxygen documentation"
