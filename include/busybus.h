@@ -186,8 +186,8 @@ uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
 /**
  * @brief Returns the smallest of two values.
- * @param X First value.
- * @param Y Second value.
+ * @param A First value.
+ * @param B Second value.
  */
 #define BBUS_MIN(A, B)							\
 	({								\
@@ -379,6 +379,7 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_ESUCCESS		10000 /**< No error */
 #define BBUS_ENOMEM		10001 /**< Out of memory */
 #define BBUS_EINVALARG		10002 /**< Invalid argument */
+/* TODO Is BBUS_EOBJINVOP really needed? */
 #define BBUS_EOBJINVOP		10003 /**< Invalid operation on an object */
 #define BBUS_EOBJINVFMT		10004 /**< Invalid format of an object */
 #define BBUS_ENOSPACE		10005 /**< No space in buffer */
@@ -424,57 +425,84 @@ const char* bbus_strerror(int errnum) BBUS_PUBLIC;
 
 /**
  * @}
+ *
+ * @defgroup __marshalling__ Data marshalling
+ * @{
+ *
+ * Functions and data structures for data marshalling.
  */
 
-/**************************************
- * Data marshalling.
- **************************************/
-
-/* TODO This will be extended - more types + arrays and structs. */
-
-#define BBUS_TYPE_INT		'i'
-#define BBUS_TYPE_UNSIGNED	'u'
+#define BBUS_TYPE_INT32		'i'
+#define BBUS_TYPE_UINT32	'u'
 #define BBUS_TYPE_BYTE		'b'
 #define BBUS_TYPE_STRING	's'
+#define BBUS_TYPE_ARRAY		'A'
+#define BBUS_TYPE_STRUCT_START	'('
+#define BBUS_TYPE_STRUCT_END	')'
 
-typedef int32_t bbus_int;
-typedef uint32_t bbus_unsigned;
-typedef uint8_t bbus_byte;
-
-#define BBUS_TYPES		'iubs'
+typedef int32_t		bbus_int32;
+typedef uint32_t	bbus_uint32;
+typedef uint32_t	bbus_size;
+typedef uint8_t		bbus_byte;
 
 typedef struct __bbus_object bbus_object;
 
-#define BBUS_OBJ_EMPTY		1
-#define BBUS_OBJ_INSERTING	2
-#define BBUS_OBJ_READY		3
-#define BBUS_OBJ_EXTRACTING	4
+bbus_object* bbus_obj_alloc(void) BBUS_PUBLIC;
 
-bbus_object* bbus_obj_mkempty(void) BBUS_PUBLIC;
-int bbus_obj_setdescr(bbus_object* obj, const char* descr) BBUS_PUBLIC;
-const char* bbus_obj_getdescr(bbus_object* obj) BBUS_PUBLIC;
-int bbus_obj_insint(bbus_object* obj, bbus_int val) BBUS_PUBLIC;
-int bbus_obj_insuint(bbus_object* obj, bbus_unsigned val) BBUS_PUBLIC;
-int bbus_obj_insstr(bbus_object* obj, const char* val) BBUS_PUBLIC;
-int bbus_obj_extrint(bbus_object* obj, bbus_int* val) BBUS_PUBLIC;
-int bbus_obj_extruint(bbus_object* obj, bbus_unsigned* val) BBUS_PUBLIC;
-int bbus_obj_extrstr(bbus_object* obj, char** val) BBUS_PUBLIC;
+void bbus_obj_free(bbus_object* obj) BBUS_PUBLIC;
+
 void bbus_obj_reset(bbus_object* obj) BBUS_PUBLIC;
-int bbus_obj_getstate(bbus_object* obj) BBUS_PUBLIC;
-bbus_object* bbus_obj_build(const char* descr, ...) BBUS_PUBLIC;
-bbus_object* bbus_obj_vbuild(const char* descr, va_list va) BBUS_PUBLIC;
+
+void* bbus_obj_rawdata(bbus_object* obj) BBUS_PUBLIC;
+
+size_t bbus_obj_rawsize(const bbus_object* obj) BBUS_PUBLIC;
+
+int bbus_obj_descrvalid(const char* descr) BBUS_PUBLIC;
+
+int bbus_obj_insarray(bbus_object* obj, bbus_size arrsize) BBUS_PUBLIC;
+
+int bbus_obj_extrarray(bbus_object* obj, bbus_size* arrsize) BBUS_PUBLIC;
+
+int bbus_obj_insint(bbus_object* obj, bbus_int32 val) BBUS_PUBLIC;
+
+int bbus_obj_extrint(bbus_object* obj, bbus_int32* val) BBUS_PUBLIC;
+
+int bbus_obj_insuint(bbus_object* obj, bbus_uint32 val) BBUS_PUBLIC;
+
+int bbus_obj_extruint(bbus_object* obj, bbus_uint32* val) BBUS_PUBLIC;
+
+int bbus_obj_insstr(bbus_object* obj, const char* val) BBUS_PUBLIC;
+
+int bbus_obj_extrstr(bbus_object* obj, char** val) BBUS_PUBLIC;
+
+int bbus_obj_insbyte(bbus_object* obj, bbus_byte val) BBUS_PUBLIC;
+
+int bbus_obj_extrbyte(bbus_object* obj, bbus_byte* val) BBUS_PUBLIC;
+
+int bbus_obj_insbytes(bbus_object* obj, const void* buf,
+		size_t size) BBUS_PUBLIC;
+
+int bbus_obj_extrbytes(bbus_object* obj, void* buf, size_t size) BBUS_PUBLIC;
+
+void bbus_obj_rewind(bbus_object* obj) BBUS_PUBLIC;
+
 bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize) BBUS_PUBLIC;
-ssize_t bbus_obj_tobuf(bbus_object* obj, void* buf,
-		size_t bufsize) BBUS_PUBLIC;
+
+bbus_object* bbus_obj_build(const char* descr, ...) BBUS_PUBLIC;
+
+bbus_object* bbus_obj_vbuild(const char* descr, va_list va) BBUS_PUBLIC;
+
 int bbus_obj_parse(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
+
 int bbus_obj_vparse(bbus_object* obj, const char* descr,
 		va_list va) BBUS_PUBLIC;
-void* bbus_obj_rawdata(bbus_object* obj) BBUS_PUBLIC;
-size_t bbus_obj_rawsize(const bbus_object* obj) BBUS_PUBLIC;
-void bbus_obj_free(bbus_object* obj) BBUS_PUBLIC;
-int bbus_obj_repr(bbus_object* obj, char* buf, size_t buflen) BBUS_PUBLIC;
+
+int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
+		size_t bufsize) BBUS_PUBLIC;
 
 /**
+ * @}
+ *
  * @defgroup __protocol__ Protocol definitions
  * @{
  *
