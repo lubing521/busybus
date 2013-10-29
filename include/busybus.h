@@ -30,6 +30,10 @@
 #ifndef __BUSYBUS__
 #define __BUSYBUS__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
@@ -979,6 +983,10 @@ void bbus_pollset_free(bbus_pollset* pset) BBUS_PUBLIC;
  *
  * @}
  */
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* __BUSYBUS__ */
 
