@@ -107,6 +107,7 @@ int main(int argc, char** argv)
 	int r;
 	char** curarg;
 	char reprbuf[BUFSIZ];
+	char* descr;
 
 	parse_args(argc, argv);
 	(void)signal(SIGPIPE, SIG_IGN);
@@ -115,14 +116,11 @@ int main(int argc, char** argv)
 	if (conn == NULL)
 		goto err_conn;
 
-	arg = bbus_obj_mkempty();
+	arg = bbus_obj_alloc();
 	if (arg == NULL)
 		goto err_arg;
 
-	r = bbus_obj_setdescr(arg, argdescr);
-	if (r < 0)
-		goto err_arg;
-
+	descr = argdescr;
 	for (curarg = argstart; *argdescr != '\0'; ++argdescr, ++curarg) {
 		switch (*argdescr) {
 		/* TODO other formats */
@@ -154,7 +152,7 @@ int main(int argc, char** argv)
 	}
 
 	memset(reprbuf, 0, BUFSIZ);
-	r = bbus_obj_repr(ret, reprbuf, BUFSIZ);
+	r = bbus_obj_repr(ret, descr, reprbuf, BUFSIZ);
 	if (r < 0)
 		goto err_repr;
 	fprintf(stdout, "%s\n", reprbuf);
