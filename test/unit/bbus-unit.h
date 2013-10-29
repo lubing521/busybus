@@ -36,7 +36,17 @@ struct bbusunit_listelem
 
 void bbusunit_registertest(struct bbusunit_listelem* test);
 
-#define BBUSUNIT_DEFINETEST(NAME) static int __##NAME##_test(void)
+#define BBUSUNIT_DEFINE_TEST(NAME)					\
+	static int __##NAME##_test(void);				\
+	static struct bbusunit_listelem __##NAME##_elem = {		\
+		.name = #NAME,						\
+		.testfunc = __##NAME##_test,				\
+	};								\
+	static void BBUS_ATSTART_LAST __##NAME##_register(void)		\
+	{								\
+		bbusunit_registertest(&__##NAME##_elem);		\
+	}								\
+	static int __##NAME##_test(void)
 
 #define BBUSUNIT_BEGINTEST int __test_retval = 0
 
@@ -56,16 +66,6 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			break;						\
 	} while (0)
 
-#define BBUSUNIT_REGISTER_TEST(NAME)					\
-	static struct bbusunit_listelem __##NAME##_elem = {		\
-		.name = #NAME,						\
-		.testfunc = __##NAME##_test,				\
-	};								\
-	static void BBUS_ATSTART_LAST __##NAME##_register(void)		\
-	{								\
-		bbusunit_registertest(&__##NAME##_elem);		\
-	}								\
-	static int BBUS_UNUSED __dummy
 /*
  * Assertions:
  */

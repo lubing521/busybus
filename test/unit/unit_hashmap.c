@@ -20,7 +20,7 @@
 #include <string.h>
 #include <stdio.h>
 
-BBUSUNIT_DEFINETEST(hashmap_basic)
+BBUSUNIT_DEFINE_TEST(hashmap_basic)
 {
 	BBUSUNIT_BEGINTEST;
 
@@ -49,9 +49,8 @@ BBUSUNIT_DEFINETEST(hashmap_basic)
 
 	BBUSUNIT_ENDTEST;
 }
-BBUSUNIT_REGISTER_TEST(hashmap_basic);
 
-BBUSUNIT_DEFINETEST(hashmap_reassign)
+BBUSUNIT_DEFINE_TEST(hashmap_reassign)
 {
 	BBUSUNIT_BEGINTEST;
 
@@ -80,5 +79,4 @@ BBUSUNIT_DEFINETEST(hashmap_reassign)
 
 	BBUSUNIT_ENDTEST;
 }
-BBUSUNIT_REGISTER_TEST(hashmap_reassign);
 
