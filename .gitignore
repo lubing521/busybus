@@ -12,3 +12,4 @@ core.*
 /bbus-unit
 /libbbus.so
 *.pyc
+/doc
