@@ -70,9 +70,11 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
  */
 
 #define BBUSUNIT_PRINTASSERTFAIL					\
-	bbusunit_printerr(						\
-		"Assertion failed in file %s, line %d!",		\
-		__FILE__, __LINE__)
+	do {								\
+		bbusunit_printerr(					\
+			"Assertion failed in file %s, line %d!",	\
+			__FILE__, __LINE__);				\
+	} while (0)
 
 #define BBUSUNIT_ASSERTION_FAILED					\
 	do {								\

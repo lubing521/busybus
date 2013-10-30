@@ -77,6 +77,7 @@ int __bbus_sock_listen(int sock, int backlog)
 		__bbus_seterr(errno);
 		return -1;
 	}
+
 	return 0;
 }
 
