@@ -434,73 +434,244 @@ const char* bbus_strerror(int errnum) BBUS_PUBLIC;
  * @{
  *
  * Functions and data structures for data marshalling.
+ *
+ * @defgroup __descr__ Marshalled data description
+ * @{
+ *
+ * Characters used to describe the contents of busybus objects.
  */
 
-#define BBUS_TYPE_INT32		'i'
-#define BBUS_TYPE_UINT32	'u'
-#define BBUS_TYPE_BYTE		'b'
-#define BBUS_TYPE_STRING	's'
-#define BBUS_TYPE_ARRAY		'A'
-#define BBUS_TYPE_STRUCT_START	'('
-#define BBUS_TYPE_STRUCT_END	')'
+#define BBUS_TYPE_INT32		'i'	/**< 32 bit signed integer type. */
+#define BBUS_TYPE_UINT32	'u'	/**< 32 bit unsigned integer type. */
+#define BBUS_TYPE_BYTE		'b'	/**< 8 bit unsigned char type. */
+#define BBUS_TYPE_STRING	's'	/**< NULL-terminated string. */
+#define BBUS_TYPE_ARRAY		'A'	/**< An array. */
+#define BBUS_TYPE_STRUCT_START	'('	/**< Start of a struct definition. */
+#define BBUS_TYPE_STRUCT_END	')'	/**< End of a struct definition. */
 
-typedef int32_t		bbus_int32;
-typedef uint32_t	bbus_uint32;
-typedef uint32_t	bbus_size;
-typedef uint8_t		bbus_byte;
+/**
+ * @}
+ *
+ * @defgroup __types__ Busybus data types
+ * @{
+ *
+ * Basic data types that can be marshalled using the object API.
+ */
 
+typedef int32_t		bbus_int32;	/**< 32 bit signed integer type. */
+typedef uint32_t	bbus_uint32;	/**< 32 bit unsigned integer type. */
+typedef uint32_t	bbus_size;	/**< 32 bit unsigned integer type. */
+typedef uint8_t		bbus_byte;	/**< 8 bit unsigned char type. */
+
+/**
+ * @}
+ */
+
+/**
+ * @brief Opaque type representing a single object containing marshalled data.
+ */
 typedef struct __bbus_object bbus_object;
 
+/**
+ * @brief Allocate an empty busybus object.
+ * @return Pointer to a new object or NULL if no memory.
+ */
 bbus_object* bbus_obj_alloc(void) BBUS_PUBLIC;
 
+/**
+ * @brief Free an object.
+ * @param obj The object - can be NULL.
+ */
 void bbus_obj_free(bbus_object* obj) BBUS_PUBLIC;
 
+/**
+ * @brief Resets the state of an object.
+ * @param obj The object.
+ *
+ * Resetting means, that all data already marshalled will be invalidated and
+ * the object will have the state of a newly allocated one.
+ */
 void bbus_obj_reset(bbus_object* obj) BBUS_PUBLIC;
 
+/**
+ * @brief Returns a pointer to the buffer containing the marshalled data.
+ * @param obj The object.
+ * @return Pointer to the internal buffer.
+ */
 void* bbus_obj_rawdata(bbus_object* obj) BBUS_PUBLIC;
 
+/**
+ * @brief Returns the size of the marshalled data.
+ * @param obj The object.
+ * @return Number of bytes stored within the object.
+ */
 size_t bbus_obj_rawsize(const bbus_object* obj) BBUS_PUBLIC;
 
+/**
+ * @brief Checks if given string properly describes a valid object.
+ * @param descr The description.
+ * @return 1 if 'descr' is valid, 0 otherwise.
+ */
 int bbus_obj_descrvalid(const char* descr) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts an array definition into an object.
+ * @param obj The object.
+ * @param arrsize Number of elements the array will contain.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_insarray(bbus_object* obj, bbus_size arrsize) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts an array definition from an object.
+ * @param obj The object.
+ * @param arrsize Place to store the extracted size.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_extrarray(bbus_object* obj, bbus_size* arrsize) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts a 32-bit signed integer into an object.
+ * @param obj The object.
+ * @param val The value to insert.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_insint(bbus_object* obj, bbus_int32 val) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts a 32-bit signed integer from an object.
+ * @param obj The object.
+ * @param val Place to store the extracted value.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_extrint(bbus_object* obj, bbus_int32* val) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts a 32-bit unsigned integer into an object.
+ * @param obj The object.
+ * @param val The value to insert.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_insuint(bbus_object* obj, bbus_uint32 val) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts a 32-bit unsigned integer from an object.
+ * @param obj The object.
+ * @param val Place to store the extracted value.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_extruint(bbus_object* obj, bbus_uint32* val) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts a NULL-terminated string into an object.
+ * @param obj The object.
+ * @param val The string to insert.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_insstr(bbus_object* obj, const char* val) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts a NULL-terminated string from an object.
+ * @param obj The object.
+ * @param val Place to store the extracted string.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_extrstr(bbus_object* obj, char** val) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts a single byte into an object.
+ * @param obj The object.
+ * @param val The value to insert.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_insbyte(bbus_object* obj, bbus_byte val) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts a single byte from an object.
+ * @param obj The object.
+ * @param val Place to store the extracted value.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_extrbyte(bbus_object* obj, bbus_byte* val) BBUS_PUBLIC;
 
+/**
+ * @brief Inserts a byte-array into an object.
+ * @param obj The object.
+ * @param buf The byte array to insert.
+ * @param size Number of bytes to store.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_insbytes(bbus_object* obj, const void* buf,
 		size_t size) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts a byte-array from an object.
+ * @param obj The object.
+ * @param buf Place to store extracted data.
+ * @param size Number of bytes to extract.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_extrbytes(bbus_object* obj, void* buf, size_t size) BBUS_PUBLIC;
 
+/**
+ * @brief Resets the extraction state of an object.
+ * @param obj The object.
+ *
+ * Busybus objects use internal state pointers to store the position of
+ * last extraction - this function resets it to the beginning of the buffer
+ * allowing the data to be extracted multiple times.
+ */
 void bbus_obj_rewind(bbus_object* obj) BBUS_PUBLIC;
 
+/**
+ * @brief Creates an object from data stored in given buffer.
+ * @param buf The buffer.
+ * @param bufsize Size of the buffer.
+ * @return New object or NULL if no memory.
+ */
 bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
+/**
+ * @brief Builds an object according to given description and arguments.
+ * @param descr Valid object description.
+ * @return New object or NULL on error.
+ */
 bbus_object* bbus_obj_build(const char* descr, ...) BBUS_PUBLIC;
 
+/**
+ * @brief Builds an object according to given description and argument list.
+ * @param descr Valid object description.
+ * @param va List of variadic arguments corresponding with 'descr'.
+ * @return New object or NULL on error.
+ */
 bbus_object* bbus_obj_vbuild(const char* descr, va_list va) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts all data from an object according to given description.
+ * @param obj The object.
+ * @param descr Valid object description.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_parse(bbus_object* obj, const char* descr, ...) BBUS_PUBLIC;
 
+/**
+ * @brief Extracts all data from an object according to given description.
+ * @param obj The object.
+ * @param descr Valid object description.
+ * @param va List of data pointers corresponding with 'descr'.
+ * @return 0 on success, -1 on error.
+ */
 int bbus_obj_vparse(bbus_object* obj, const char* descr,
 		va_list va) BBUS_PUBLIC;
 
+/**
+ * @brief Tries to convert an object into a human-readable form.
+ * @param obj The object.
+ * @param descr Valid busybus object description.
+ * @param buf The buffer to store the converted object in.
+ * @param bufsize Size of 'buf'.
+ * @return 0 if the object has been properly stored in 'buf', -1 on error.
+ */
 int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
 		size_t bufsize) BBUS_PUBLIC;
 
