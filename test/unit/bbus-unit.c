@@ -28,6 +28,7 @@ struct testlist
 	struct bbusunit_listelem* tail;
 };
 
+static unsigned tests_registered = 0;
 static unsigned tests_run = 0;
 static unsigned tests_failed = 0;
 static struct testlist tests;
@@ -40,7 +41,15 @@ static BBUS_ATSTART_FIRST void testlist_init(void)
 
 void bbusunit_registertest(struct bbusunit_listelem* test)
 {
-	bbus_list_push(&tests, test);
+	if (tests.tail == NULL) {
+		tests.head = tests.tail = test;
+		test->next = NULL;
+	} else {
+		tests.tail->next = test;
+		test->next = NULL;
+		tests.tail = test;
+	}
+	++tests_registered;
 }
 
 #define PRINT_FROM_VA(STREAM, HDR, FMT)					\
@@ -69,12 +78,6 @@ void bbusunit_printerr(const char* fmt, ...)
 	PRINT_FROM_VA(stderr, "[ERROR]\t", fmt);
 }
 
-static int testList(void)
-{
-	/* TODO Add tests for doubly-linked lists. */
-	return 0;
-}
-
 int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 {
 	struct bbusunit_listelem* el;
@@ -83,11 +86,7 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 	bbusunit_print("##############################");
 	bbusunit_print("####> Busybus unit-tests <####");
 	bbusunit_print("##############################");
-	bbusunit_print("Performing self-tests...");
-	r = testList();
-	if (r < 0)
-		die("Doubly-linked lists do not work as expected.");
-	bbusunit_print("Done!");
+	bbusunit_print("%u tests registered.", tests_registered);
 	bbusunit_print("Running tests...");
 	el = tests.head;
 	while (el != NULL) {

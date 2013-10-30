@@ -29,7 +29,6 @@ typedef int (*bbusunit_testfunc)(void);
 struct bbusunit_listelem
 {
 	struct bbusunit_listelem* next;
-	struct bbusunit_listelem* prev;
 	const char* name;
 	bbusunit_testfunc testfunc;
 };
