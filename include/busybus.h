@@ -383,23 +383,21 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_ESUCCESS		10000 /**< No error */
 #define BBUS_ENOMEM		10001 /**< Out of memory */
 #define BBUS_EINVALARG		10002 /**< Invalid argument */
-/* TODO Is BBUS_EOBJINVOP really needed? */
-#define BBUS_EOBJINVOP		10003 /**< Invalid operation on an object */
-#define BBUS_EOBJINVFMT		10004 /**< Invalid format of an object */
-#define BBUS_ENOSPACE		10005 /**< No space in buffer */
-#define BBUS_ECONNCLOSED	10006 /**< Connection closed */
-#define BBUS_EMSGINVFMT		10007 /**< Invalid message format */
-#define BBUS_EMSGMAGIC		10008 /**< Invalid magic number in a message */
-#define BBUS_EMSGINVTYPRCVD	10009 /**< Invalid message type */
-#define BBUS_ESORJCTD		10010 /**< Session open rejected */
-#define BBUS_ESENTLESS		10011 /**< Sent less data, than expected */
-#define BBUS_ERCVDLESS		10012 /**< Received less data, than expected */
-#define BBUS_ELOGICERR		10013 /**< Logic error */
-#define BBUS_ENOMETHOD		10014 /**< No method with given name */
-#define BBUS_EMETHODERR		10015 /**< Error calling method */
-#define BBUS_EPOLLINTR		10016 /**< Poll interrupted by a signal. */
-#define BBUS_EMREGERR		10017 /**< Error registering the method. */
-#define __BBUS_MAX_ERR		10018 /**< Highest error code */
+#define BBUS_EOBJINVFMT		10003 /**< Invalid format of an object */
+#define BBUS_ENOSPACE		10004 /**< No space in buffer */
+#define BBUS_ECONNCLOSED	10005 /**< Connection closed */
+#define BBUS_EMSGINVFMT		10006 /**< Invalid message format */
+#define BBUS_EMSGMAGIC		10007 /**< Invalid magic number in a message */
+#define BBUS_EMSGINVTYPRCVD	10008 /**< Invalid message type */
+#define BBUS_ESORJCTD		10009 /**< Session open rejected */
+#define BBUS_ESENTLESS		10010 /**< Sent less data, than expected */
+#define BBUS_ERCVDLESS		10011 /**< Received less data, than expected */
+#define BBUS_ELOGICERR		10012 /**< Logic error */
+#define BBUS_ENOMETHOD		10013 /**< No method with given name */
+#define BBUS_EMETHODERR		10014 /**< Error calling method */
+#define BBUS_EPOLLINTR		10015 /**< Poll interrupted by a signal. */
+#define BBUS_EMREGERR		10016 /**< Error registering the method. */
+#define __BBUS_MAX_ERR		10017 /**< Highest error code */
 
 /**
  * @}

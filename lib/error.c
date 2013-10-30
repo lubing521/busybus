@@ -31,7 +31,6 @@ static const char* const error_descr[] = {
 	"success",
 	"out of memory",
 	"invalid argument",
-	"invalid busybus object operation",
 	"invalid busybus object format",
 	"not enough space in buffer",
 	"connection closed by remote peer",
@@ -60,7 +59,7 @@ const char* bbus_strerror(int errnum)
 	else if (errnum >= __BBUS_MAX_ERR)
 		return "invalid error code";
 	else
-		return error_descr[errnum-10000];
+		return error_descr[errnum-BBUS_ESUCCESS];
 }
 
 void __bbus_seterr(int errnum)

@@ -29,7 +29,6 @@ BBUSUNIT_DEFINE_TEST(crc32)
 		BBUSUNIT_ASSERT_EQ(proper, bbus_crc32(data, strlen(data)));
 
 	BBUSUNIT_FINALLY;
-
 	BBUSUNIT_ENDTEST;
 }
 
@@ -49,6 +48,26 @@ BBUSUNIT_DEFINE_TEST(memdup)
 
 		bbus_free(newp);
 
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(error_strings)
+{
+	BBUSUNIT_BEGINTEST;
+
+		/*
+		 * Check some error strings to avoid mistakes when modifying
+		 * error codes and descriptions.
+		 */
+	
+		BBUSUNIT_ASSERT_STREQ("success",
+					bbus_strerror(BBUS_ESUCCESS));
+		BBUSUNIT_ASSERT_STREQ("received message of incorrect type",
+					bbus_strerror(BBUS_EMSGINVTYPRCVD));
+		BBUSUNIT_ASSERT_STREQ("error registering the method",
+					bbus_strerror(BBUS_EMREGERR));
+
+	BBUSUNIT_FINALLY;
 	BBUSUNIT_ENDTEST;
 }
 

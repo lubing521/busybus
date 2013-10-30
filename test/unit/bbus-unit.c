@@ -62,12 +62,6 @@ void bbusunit_registertest(struct bbusunit_listelem* test)
 		va_end(va);						\
 	} while (0)
 
-static void BBUS_PRINTF_FUNC(1, 2) die(const char* fmt, ...)
-{
-	PRINT_FROM_VA(stderr, "[FATAL]\t", fmt);
-	exit(EXIT_FAILURE);
-}
-
 void bbusunit_print(const char* fmt, ...)
 {
 	PRINT_FROM_VA(stdout, "[INFO]", fmt);
