@@ -47,6 +47,16 @@ extern "C" {
  */
 
 /**
+ * @brief Expands to '1'.
+ */
+#define BBUS_TRUE	1
+
+/**
+ * @brief Expands to '0'.
+ */
+#define BBUS_FALSE	0
+
+/**
  * @brief Makes symbol visible.
  */
 #define BBUS_PUBLIC __attribute__((visibility("default")))
