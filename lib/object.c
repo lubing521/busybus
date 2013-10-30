@@ -356,6 +356,101 @@ bbus_object* bbus_obj_frombuf(const void* buf, size_t bufsize)
 	return obj;
 }
 
+struct va_list_box
+{
+	va_list va;
+};
+
+static int build_simple_type(char descr, bbus_object* obj,
+				struct va_list_box* va_box)
+{
+	int ret;
+
+	switch (descr) {
+	case BBUS_TYPE_INT32:
+		ret = bbus_obj_insint(obj, va_arg(va_box->va, bbus_int32));
+		break;
+	case BBUS_TYPE_UINT32:
+		ret = bbus_obj_insuint(obj, va_arg(va_box->va, bbus_uint32));
+		break;
+	case BBUS_TYPE_BYTE:
+		ret = bbus_obj_insbyte(obj,
+				(bbus_byte)va_arg(va_box->va, int));
+		break;
+	case BBUS_TYPE_STRING:
+		ret = bbus_obj_insstr(obj, va_arg(va_box->va, char*));
+		break;
+	default:
+		__bbus_seterr(BBUS_ELOGICERR);
+		return -1;
+	}
+
+	return ret;
+}
+
+/* Prototype for build_struct(). */
+static int build_array(const char** descr, bbus_object* obj,
+					struct va_list_box* va_box);
+
+static int build_struct(const char** descr, bbus_object* obj,
+					struct va_list_box* va_box)
+{
+	int ret;
+
+	while (**descr != BBUS_TYPE_STRUCT_END) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = build_array(descr, obj, va_box);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			++(*descr);
+			ret = build_struct(descr, obj, va_box);
+			break;
+		default:
+			ret = build_simple_type(**descr, obj, va_box);
+			++(*descr);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	++(*descr);
+	return 0;
+}
+
+static int build_array(const char** descr, bbus_object* obj,
+					struct va_list_box* va_box)
+{
+	bbus_size arrsize;
+	int ret;
+	const char* pos;
+
+	arrsize = va_arg(va_box->va, bbus_size);
+	ret = bbus_obj_insarray(obj, arrsize);
+	++(*descr);
+	while (--arrsize) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = build_array(descr, obj, va_box);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			pos = *descr;
+			++(*descr);
+			ret = build_struct(descr, obj, va_box);
+			*descr = pos;
+			break;
+		default:
+			ret = build_simple_type(**descr, obj, va_box);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 bbus_object* bbus_obj_build(const char* descr, ...)
 {
 	va_list va;
@@ -368,95 +463,11 @@ bbus_object* bbus_obj_build(const char* descr, ...)
 	return obj;
 }
 
-static int build_simple_type(char descr, bbus_object* obj, va_list* va)
-{
-	int ret;
-
-	switch (descr) {
-	case BBUS_TYPE_INT32:
-		ret = bbus_obj_insint(obj, va_arg(*va, bbus_int32));
-		break;
-	case BBUS_TYPE_UINT32:
-		ret = bbus_obj_insuint(obj, va_arg(*va, bbus_uint32));
-		break;
-	case BBUS_TYPE_BYTE:
-		ret = bbus_obj_insbyte(obj, (bbus_byte)va_arg(*va, int));
-		break;
-	case BBUS_TYPE_STRING:
-		ret = bbus_obj_insstr(obj, va_arg(*va, char*));
-		break;
-	default:
-		__bbus_seterr(BBUS_ELOGICERR);
-		return -1;
-	}
-
-	return ret;
-}
-
-/* Prototype for build_struct(). */
-static int build_array(const char** descr, bbus_object* obj, va_list* va);
-
-static int build_struct(const char** descr, bbus_object* obj, va_list* va)
-{
-	int ret;
-
-	while (**descr != BBUS_TYPE_STRUCT_END) {
-		switch (**descr) {
-		case BBUS_TYPE_ARRAY:
-			ret = build_array(descr, obj, va);
-			break;
-		case BBUS_TYPE_STRUCT_START:
-			++(*descr);
-			ret = build_struct(descr, obj, va);
-			break;
-		default:
-			ret = build_simple_type(**descr, obj, va);
-			++(*descr);
-			break;
-		}
-		if (ret < 0)
-			return -1;
-	}
-
-	++(*descr);
-	return 0;
-}
-
-static int build_array(const char** descr, bbus_object* obj, va_list* va)
-{
-	bbus_size arrsize;
-	int ret;
-	const char* pos;
-
-	arrsize = va_arg(*va, bbus_size);
-	ret = bbus_obj_insarray(obj, arrsize);
-	++(*descr);
-	while (--arrsize) {
-		switch (**descr) {
-		case BBUS_TYPE_ARRAY:
-			ret = build_array(descr, obj, va);
-			break;
-		case BBUS_TYPE_STRUCT_START:
-			pos = *descr;
-			++(*descr);
-			ret = build_struct(descr, obj, va);
-			*descr = pos;
-			break;
-		default:
-			ret = build_simple_type(**descr, obj, va);
-			break;
-		}
-		if (ret < 0)
-			return -1;
-	}
-
-	return 0;
-}
-
 bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
 {
 	bbus_object* obj;
 	int ret;
+	struct va_list_box va_box;
 
 	if (!bbus_obj_descrvalid(descr)) {
 		__bbus_seterr(BBUS_EINVALARG);
@@ -465,16 +476,18 @@ bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
 
 	obj = bbus_obj_alloc();
 	if (obj == NULL)
-		goto out;
+		return NULL;
+
+	va_copy(va_box.va, va);
 
 	while (*descr) {
 		switch (*descr) {
 		case BBUS_TYPE_ARRAY:
-			ret = build_array(&descr, obj, &va);
+			ret = build_array(&descr, obj, &va_box);
 			break;
 		case BBUS_TYPE_STRUCT_START:
 			++descr;
-			ret = build_struct(&descr, obj, &va);
+			ret = build_struct(&descr, obj, &va_box);
 			break;
 		case BBUS_TYPE_STRUCT_END:
 			/* This should have been handled by build_struct(). */
@@ -482,7 +495,7 @@ bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
 			ret = -1;
 			break;
 		default:
-			ret = build_simple_type(*descr, obj, &va);
+			ret = build_simple_type(*descr, obj, &va_box);
 			++descr;
 			break;
 		}
@@ -493,8 +506,98 @@ bbus_object* bbus_obj_vbuild(const char* descr, va_list va)
 	return obj;
 
 out:
+	va_end(va_box.va);
 	bbus_obj_free(obj);
 	return NULL;
+}
+
+static int parse_simple_type(char descr, bbus_object* obj,
+					struct va_list_box* va_box)
+{
+	int ret;
+
+	switch (descr) {
+	case BBUS_TYPE_INT32:
+		ret = bbus_obj_extrint(obj, va_arg(va_box->va, bbus_int32*));
+		break;
+	case BBUS_TYPE_UINT32:
+		ret = bbus_obj_extruint(obj, va_arg(va_box->va, bbus_uint32*));
+		break;
+	case BBUS_TYPE_BYTE:
+		ret = bbus_obj_extrbyte(obj,
+				(bbus_byte*)va_arg(va_box->va, int*));
+		break;
+	case BBUS_TYPE_STRING:
+		ret = bbus_obj_extrstr(obj, va_arg(va_box->va, char**));
+		break;
+	default:
+		__bbus_seterr(BBUS_ELOGICERR);
+		return -1;
+	}
+
+	return ret;
+}
+
+/* Prototype for parse_struct(). */
+static int parse_array(const char** descr, bbus_object* obj,
+					struct va_list_box* va_box);
+
+static int parse_struct(const char** descr, bbus_object* obj,
+					struct va_list_box* va_box)
+{
+	int ret;
+
+	while (**descr != BBUS_TYPE_STRUCT_END) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = parse_array(descr, obj, va_box);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			++(*descr);
+			ret = parse_struct(descr, obj, va_box);
+			break;
+		default:
+			ret = parse_simple_type(**descr, obj, va_box);
+			++(*descr);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	++(*descr);
+	return 0;
+}
+
+static int parse_array(const char** descr, bbus_object* obj,
+					struct va_list_box* va_box)
+{
+	bbus_size arrsize;
+	int ret;
+	const char* pos;
+
+	ret = bbus_obj_extrarray(obj, &arrsize);
+	++(*descr);
+	while (--arrsize) {
+		switch (**descr) {
+		case BBUS_TYPE_ARRAY:
+			ret = parse_array(descr, obj, va_box);
+			break;
+		case BBUS_TYPE_STRUCT_START:
+			pos = *descr;
+			++(*descr);
+			ret = parse_struct(descr, obj, va_box);
+			*descr = pos;
+			break;
+		default:
+			ret = parse_simple_type(**descr, obj, va_box);
+			break;
+		}
+		if (ret < 0)
+			return -1;
+	}
+
+	return 0;
 }
 
 int bbus_obj_parse(bbus_object* obj, const char* descr, ...)
@@ -509,107 +612,26 @@ int bbus_obj_parse(bbus_object* obj, const char* descr, ...)
 	return r;
 }
 
-static int parse_simple_type(char descr, bbus_object* obj, va_list* va)
-{
-	int ret;
-
-	switch (descr) {
-	case BBUS_TYPE_INT32:
-		ret = bbus_obj_extrint(obj, va_arg(*va, bbus_int32*));
-		break;
-	case BBUS_TYPE_UINT32:
-		ret = bbus_obj_extruint(obj, va_arg(*va, bbus_uint32*));
-		break;
-	case BBUS_TYPE_BYTE:
-		ret = bbus_obj_extrbyte(obj, (bbus_byte*)va_arg(*va, int*));
-		break;
-	case BBUS_TYPE_STRING:
-		ret = bbus_obj_extrstr(obj, va_arg(*va, char**));
-		break;
-	default:
-		__bbus_seterr(BBUS_ELOGICERR);
-		return -1;
-	}
-
-	return ret;
-}
-
-/* Prototype for parse_struct(). */
-static int parse_array(const char** descr, bbus_object* obj, va_list* va);
-
-static int parse_struct(const char** descr, bbus_object* obj, va_list* va)
-{
-	int ret;
-
-	while (**descr != BBUS_TYPE_STRUCT_END) {
-		switch (**descr) {
-		case BBUS_TYPE_ARRAY:
-			ret = parse_array(descr, obj, va);
-			break;
-		case BBUS_TYPE_STRUCT_START:
-			++(*descr);
-			ret = parse_struct(descr, obj, va);
-			break;
-		default:
-			ret = parse_simple_type(**descr, obj, va);
-			++(*descr);
-			break;
-		}
-		if (ret < 0)
-			return -1;
-	}
-
-	++(*descr);
-	return 0;
-}
-
-static int parse_array(const char** descr, bbus_object* obj, va_list* va)
-{
-	bbus_size arrsize;
-	int ret;
-	const char* pos;
-
-	ret = bbus_obj_extrarray(obj, &arrsize);
-	++(*descr);
-	while (--arrsize) {
-		switch (**descr) {
-		case BBUS_TYPE_ARRAY:
-			ret = parse_array(descr, obj, va);
-			break;
-		case BBUS_TYPE_STRUCT_START:
-			pos = *descr;
-			++(*descr);
-			ret = parse_struct(descr, obj, va);
-			*descr = pos;
-			break;
-		default:
-			ret = parse_simple_type(**descr, obj, va);
-			break;
-		}
-		if (ret < 0)
-			return -1;
-	}
-
-	return 0;
-}
-
 int bbus_obj_vparse(bbus_object* obj, const char* descr, va_list va)
 {
 	int ret = 0;
+	struct va_list_box va_box;
 
 	if (!bbus_obj_descrvalid(descr)) {
 		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
 	}
 
+	va_copy(va_box.va, va);
+
 	while (*descr) {
 		switch (*descr) {
 		case BBUS_TYPE_ARRAY:
-			ret = parse_array(&descr, obj, &va);
+			ret = parse_array(&descr, obj, &va_box);
 			break;
 		case BBUS_TYPE_STRUCT_START:
 			++descr;
-			ret = parse_struct(&descr, obj, &va);
+			ret = parse_struct(&descr, obj, &va_box);
 			break;
 		case BBUS_TYPE_STRUCT_END:
 			/* This should have been handled by parse_struct(). */
@@ -617,7 +639,7 @@ int bbus_obj_vparse(bbus_object* obj, const char* descr, va_list va)
 			ret = -1;
 			break;
 		default:
-			ret = parse_simple_type(*descr, obj, &va);
+			ret = parse_simple_type(*descr, obj, &va_box);
 			++descr;
 			break;
 		}
@@ -626,6 +648,7 @@ int bbus_obj_vparse(bbus_object* obj, const char* descr, va_list va)
 	}
 
 out:
+	va_end(va_box.va);
 	obj->extracting = 0;
 	return ret;
 }
