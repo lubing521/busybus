@@ -27,10 +27,10 @@
 #include <unistd.h>
 #include <sys/uio.h>
 
-static const size_t saun_pathlen = sizeof(((struct sockaddr_un*)0)->sun_path);
-static const size_t saun_famlen = sizeof(((struct sockaddr_un*)0)->sun_family);
+#define SAUN_PATHLEN (sizeof(((struct sockaddr_un*)0)->sun_path))
+#define SAUN_FAMLEN (sizeof(((struct sockaddr_un*)0)->sun_family))
 
-int __bbus_local_socket(void)
+int __bbus_sock_mksocket(void)
 {
 	int s;
 
@@ -43,7 +43,7 @@ int __bbus_local_socket(void)
 	return s;
 }
 
-int __bbus_bind_local_sock(int sock, const char* path)
+int __bbus_sock_bind(int sock, const char* path)
 {
 	int r;
 	socklen_t addrlen;
@@ -57,8 +57,8 @@ int __bbus_bind_local_sock(int sock, const char* path)
 
 	memset(&addr, 0, sizeof(struct sockaddr_un));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, path, saun_pathlen);
-	addrlen = saun_famlen + strnlen(addr.sun_path, saun_pathlen);
+	strncpy(addr.sun_path, path, SAUN_PATHLEN);
+	addrlen = SAUN_FAMLEN + strnlen(addr.sun_path, SAUN_PATHLEN);
 	r = bind(sock, (struct sockaddr*)&addr, addrlen);
 	if (r < 0) {
 		__bbus_seterr(errno);
@@ -81,7 +81,7 @@ int __bbus_sock_listen(int sock, int backlog)
 	return 0;
 }
 
-int __bbus_local_accept(int sock, char* pathbuf,
+int __bbus_sock_accept(int sock, char* pathbuf,
 		size_t bufsize, size_t* pathsize)
 {
 	int s;
@@ -102,7 +102,7 @@ int __bbus_local_accept(int sock, char* pathbuf,
 	return s;
 }
 
-int __bbus_local_connect(int sock, const char* path)
+int __bbus_sock_connect(int sock, const char* path)
 {
 	int r;
 	struct sockaddr_un addr;
@@ -110,8 +110,8 @@ int __bbus_local_connect(int sock, const char* path)
 
 	memset(&addr, 0, sizeof(struct sockaddr_un));
 	addr.sun_family = AF_UNIX;
-	strncpy(addr.sun_path, path, saun_pathlen);
-	addrlen = saun_famlen + strnlen(addr.sun_path, saun_pathlen);
+	strncpy(addr.sun_path, path, SAUN_PATHLEN);
+	addrlen = SAUN_FAMLEN + strnlen(addr.sun_path, SAUN_PATHLEN);
 	r = connect(sock, (struct sockaddr*)&addr, addrlen);
 	if (r < 0) {
 		__bbus_seterr(errno);
@@ -133,7 +133,7 @@ int __bbus_sock_close(int sock)
 	return 0;
 }
 
-int __bbus_rm_sock(const char* path)
+int __bbus_sock_rm(const char* path)
 {
 	if (unlink(path) < 0) {
 		__bbus_seterr(errno);
@@ -142,7 +142,7 @@ int __bbus_rm_sock(const char* path)
 	return 0;
 }
 
-ssize_t __bbus_send(int sock, const void* buf, size_t size)
+ssize_t __bbus_sock_send(int sock, const void* buf, size_t size)
 {
 	ssize_t b;
 
@@ -155,7 +155,7 @@ ssize_t __bbus_send(int sock, const void* buf, size_t size)
 	return b;
 }
 
-ssize_t __bbus_recv(int sock, void* buf, size_t size)
+ssize_t __bbus_sock_recv(int sock, void* buf, size_t size)
 {
 	ssize_t b;
 
@@ -168,7 +168,7 @@ ssize_t __bbus_recv(int sock, void* buf, size_t size)
 	return b;
 }
 
-ssize_t __bbus_sendv(int sock, const struct iovec* iov, int numiov)
+ssize_t __bbus_sock_sendv(int sock, const struct iovec* iov, int numiov)
 {
 	ssize_t b;
 
@@ -181,7 +181,7 @@ ssize_t __bbus_sendv(int sock, const struct iovec* iov, int numiov)
 	return b;
 }
 
-ssize_t __bbus_recvv(int sock, struct iovec* iov, int numiov)
+ssize_t __bbus_sock_recvv(int sock, struct iovec* iov, int numiov)
 {
 	ssize_t b;
 
@@ -194,7 +194,7 @@ ssize_t __bbus_recvv(int sock, struct iovec* iov, int numiov)
 	return b;
 }
 
-int __bbus_sock_wr_ready(int sock, struct bbus_timeval* tv)
+int __bbus_sock_wrready(int sock, struct bbus_timeval* tv)
 {
 	fd_set wr_set;
 	struct timeval timeout;
@@ -215,7 +215,7 @@ int __bbus_sock_wr_ready(int sock, struct bbus_timeval* tv)
 	return r;
 }
 
-int __bbus_sock_rd_ready(int sock, struct bbus_timeval* tv)
+int __bbus_sock_rdready(int sock, struct bbus_timeval* tv)
 {
 	fd_set rd_set;
 	struct timeval timeout;

@@ -40,23 +40,23 @@ static int do_session_open(const char* path, int sotype)
 	struct bbus_msg_hdr hdr;
 	int sock;
 
-	sock = __bbus_local_socket();
+	sock = __bbus_sock_mksocket();
 	if (sock < 0)
 		goto errout;
 
-	r = __bbus_local_connect(sock, path);
+	r = __bbus_sock_connect(sock, path);
 	if (r < 0)
 		goto errout;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	__bbus_hdr_setmagic(&hdr);
+	__bbus_prot_hdrsetmagic(&hdr);
 	hdr.msgtype = sotype;
-	r = __bbus_sendv_msg(sock, &hdr, NULL, NULL, 0);
+	r = __bbus_prot_sendvmsg(sock, &hdr, NULL, NULL, 0);
 	if (r < 0)
 		goto errout_close;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	r = __bbus_recvv_msg(sock, &hdr, NULL, 0);
+	r = __bbus_prot_recvvmsg(sock, &hdr, NULL, 0);
 	if (r < 0)
 		goto errout_close;
 
@@ -83,9 +83,9 @@ static int send_session_close(int sock)
 	struct bbus_msg_hdr hdr;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	__bbus_hdr_setmagic(&hdr);
+	__bbus_prot_hdrsetmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_CLOSE;
-	r = __bbus_sendv_msg(sock, &hdr, NULL, NULL, 0);
+	r = __bbus_prot_sendvmsg(sock, &hdr, NULL, NULL, 0);
 	if (r < 0)
 		return -1;
 	r = __bbus_sock_close(sock);
@@ -127,27 +127,27 @@ bbus_object* bbus_callmethod(bbus_client_connection* conn,
 	metasize = strlen(method) + 1;
 	objsize = bbus_obj_rawsize(arg);
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
-	__bbus_hdr_setmagic(&hdr);
+	__bbus_prot_hdrsetmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_CLICALL;
 	hdr.psize = metasize + objsize;
 	hdr.flags |= BBUS_PROT_HASMETA;
 	hdr.flags |= BBUS_PROT_HASOBJECT;
 
-	r = __bbus_sendv_msg(conn->sock, &hdr, method,
+	r = __bbus_prot_sendvmsg(conn->sock, &hdr, method,
 			bbus_obj_rawdata(arg), objsize);
 	if (r < 0)
 		return NULL;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
 	memset(buf, 0, BBUS_MAXMSGSIZE);
-	r = __bbus_recvv_msg(conn->sock, &hdr, buf,
+	r = __bbus_prot_recvvmsg(conn->sock, &hdr, buf,
 			BBUS_MAXMSGSIZE - BBUS_MSGHDR_SIZE);
 	if (r < 0)
 		return NULL;
 
 	if (hdr.msgtype == BBUS_MSGTYPE_CLIREPLY) {
 		if (hdr.errcode != 0) {
-			__bbus_seterr(__bbus_proterr_to_errnum(hdr.errcode));
+			__bbus_seterr(__bbus_prot_errtoerrnum(hdr.errcode));
 			return NULL;
 		}
 		return bbus_obj_frombuf(buf, BBUS_MAXMSGSIZE);
@@ -213,7 +213,7 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 	metasize += strlen(method->argdscr) + 1; /* +1 for comma */
 	metasize += strlen(method->retdscr) + 1; /* +1 for NULL */
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
-	__bbus_hdr_setmagic(&hdr);
+	__bbus_prot_hdrsetmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_SRVREG;
 	hdr.psize = metasize;
 	hdr.flags |= BBUS_PROT_HASMETA;
@@ -231,12 +231,12 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 		return -1;
 	}
 
-	r = __bbus_sendv_msg(conn->sock, &hdr, meta, NULL, 0);
+	r = __bbus_prot_sendvmsg(conn->sock, &hdr, meta, NULL, 0);
 	if (r < 0)
 		return -1;
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
-	r = __bbus_recvv_msg(conn->sock, &hdr, NULL, 0);
+	r = __bbus_prot_recvvmsg(conn->sock, &hdr, NULL, 0);
 	if (r < 0)
 		return -1;
 
@@ -245,7 +245,7 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 		return -1;
 	}
 	if (hdr.errcode != 0) {
-		__bbus_seterr(__bbus_proterr_to_errnum(hdr.errcode));
+		__bbus_seterr(__bbus_prot_errtoerrnum(hdr.errcode));
 		return -1;
 	}
 
@@ -271,7 +271,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 	struct bbus_msg* msg;
 
 	msg = (struct bbus_msg*)buf;
-	r = __bbus_sock_rd_ready(conn->sock, tv);
+	r = __bbus_sock_rdready(conn->sock, tv);
 	if (r < 0) {
 		return -1;
 	} else
@@ -281,7 +281,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 	} else {
 		/* Message incoming */
 		memset(buf, 0, BBUS_MAXMSGSIZE);
-		r = __bbus_recv_msg(conn->sock, buf, BBUS_MAXMSGSIZE);
+		r = __bbus_prot_recvmsg(conn->sock, buf, BBUS_MAXMSGSIZE);
 		if (r < 0)
 			return -1;
 		if (msg->hdr.msgtype != BBUS_MSGTYPE_SRVCALL) {
@@ -303,7 +303,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		}
 
 		memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
-		__bbus_hdr_setmagic(&hdr);
+		__bbus_prot_hdrsetmagic(&hdr);
 		hdr.msgtype = BBUS_MSGTYPE_SRVREPLY;
 		hdr.token = token;
 		objret = NULL;
@@ -325,7 +325,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		hdr.flags |= BBUS_PROT_HASOBJECT;
 
 send_reply:
-		r = __bbus_sendv_msg(conn->sock, &hdr, NULL,
+		r = __bbus_prot_sendvmsg(conn->sock, &hdr, NULL,
 			objret == NULL ? NULL : bbus_obj_rawdata(objret),
 			objret == NULL ? 0 : bbus_obj_rawsize(objret));
 		if (r < 0)

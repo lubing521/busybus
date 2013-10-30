@@ -24,14 +24,14 @@
 
 #define MAX_NUMIOV 3
 
-ssize_t __bbus_recv_msg(int sock, void* buf, size_t bufsize)
+ssize_t __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize)
 {
 	ssize_t r;
 	ssize_t rcvd;
 	ssize_t msgsize;
 	struct bbus_msg_hdr* hdr;
 
-	r = __bbus_recv(sock, buf, bufsize);
+	r = __bbus_sock_recv(sock, buf, bufsize);
 	if (r < 0) {
 		return -1;
 	} else
@@ -54,7 +54,7 @@ ssize_t __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 	rcvd = r;
 	buf += r;
 	while (rcvd != msgsize) {
-		r = __bbus_recv(sock, buf, bufsize-rcvd);
+		r = __bbus_sock_recv(sock, buf, bufsize-rcvd);
 		if (r < 0) {
 			return -1;
 		} else
@@ -66,7 +66,7 @@ ssize_t __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 		buf += r;
 	}
 
-	if (!__bbus_hdr_checkmagic(hdr)) {
+	if (!__bbus_prot_hdrcheckmagic(hdr)) {
 		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
@@ -74,7 +74,7 @@ ssize_t __bbus_recv_msg(int sock, void* buf, size_t bufsize)
 	return rcvd;
 }
 
-int __bbus_send_msg(int sock, const void* buf, size_t bufsize)
+int __bbus_prot_sendmsg(int sock, const void* buf, size_t bufsize)
 {
 	ssize_t r;
 	size_t msgsize;
@@ -88,7 +88,7 @@ int __bbus_send_msg(int sock, const void* buf, size_t bufsize)
 	sent = 0;
 
 	do {
-		r = __bbus_send(sock, buf, msgsize-sent);
+		r = __bbus_sock_send(sock, buf, msgsize-sent);
 		if (r < 0)
 			return -1;
 		sent += r;
@@ -98,8 +98,8 @@ int __bbus_send_msg(int sock, const void* buf, size_t bufsize)
 	return 0;
 }
 
-int __bbus_recvv_msg(int sock, struct bbus_msg_hdr* hdr,
-		void* payload, size_t psize)
+int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
+					void* payload, size_t psize)
 {
 	ssize_t r;
 	struct iovec iov[MAX_NUMIOV];
@@ -115,7 +115,7 @@ int __bbus_recvv_msg(int sock, struct bbus_msg_hdr* hdr,
 		++numiov;
 	}
 
-	r = __bbus_recvv(sock, iov, numiov);
+	r = __bbus_sock_recvv(sock, iov, numiov);
 	if (r < 0) {
 		return -1;
 	} else
@@ -128,7 +128,7 @@ int __bbus_recvv_msg(int sock, struct bbus_msg_hdr* hdr,
 		return -1;
 	}
 
-	if (!__bbus_hdr_checkmagic(hdr)) {
+	if (!__bbus_prot_hdrcheckmagic(hdr)) {
 		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
@@ -136,8 +136,8 @@ int __bbus_recvv_msg(int sock, struct bbus_msg_hdr* hdr,
 	return 0;
 }
 
-int __bbus_sendv_msg(int sock, struct bbus_msg_hdr* hdr,
-		char* meta, char* obj, size_t objsize)
+int __bbus_prot_sendvmsg(int sock, struct bbus_msg_hdr* hdr,
+				char* meta, char* obj, size_t objsize)
 {
 	ssize_t r;
 	size_t msgsize;
@@ -167,7 +167,7 @@ int __bbus_sendv_msg(int sock, struct bbus_msg_hdr* hdr,
 		++numiov;
 	}
 
-	r = __bbus_sendv(sock, iov, numiov);
+	r = __bbus_sock_sendv(sock, iov, numiov);
 	if (r < 0) {
 		return -1;
 	} else
@@ -180,17 +180,17 @@ int __bbus_sendv_msg(int sock, struct bbus_msg_hdr* hdr,
 	return 0;
 }
 
-void __bbus_hdr_setmagic(struct bbus_msg_hdr* hdr)
+void __bbus_prot_hdrsetmagic(struct bbus_msg_hdr* hdr)
 {
 	memcpy(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE);
 }
 
-int __bbus_hdr_checkmagic(struct bbus_msg_hdr* hdr)
+int __bbus_prot_hdrcheckmagic(struct bbus_msg_hdr* hdr)
 {
 	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0 ? 1 : 0;
 }
 
-int __bbus_proterr_to_errnum(uint8_t errcode)
+int __bbus_prot_errtoerrnum(uint8_t errcode)
 {
 	int errnum;
 
@@ -264,7 +264,7 @@ bbus_object* bbus_prot_extractobj(struct bbus_msg* msg, size_t msgsize)
 void bbus_prot_mkhdr(struct bbus_msg_hdr* hdr, int typ, int err)
 {
 	memset(hdr, 0, sizeof(struct bbus_msg_hdr));
-	__bbus_hdr_setmagic(hdr);
+	__bbus_prot_hdrsetmagic(hdr);
 	hdr->msgtype = (uint8_t)typ;
 	hdr->errcode = (uint8_t)err;
 }

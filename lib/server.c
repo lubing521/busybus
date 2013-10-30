@@ -62,13 +62,13 @@ int bbus_client_gettype(bbus_client* cli)
 ssize_t bbus_client_rcvmsg(bbus_client* cli,
 				struct bbus_msg* buf, size_t bufsize)
 {
-	return __bbus_recv_msg(cli->sock, buf, bufsize);
+	return __bbus_prot_recvmsg(cli->sock, buf, bufsize);
 }
 
 int bbus_client_sendmsg(bbus_client* cli, struct bbus_msg_hdr* hdr,
 		char* meta, bbus_object* obj)
 {
-	return __bbus_sendv_msg(cli->sock, hdr, meta,
+	return __bbus_prot_sendvmsg(cli->sock, hdr, meta,
 				obj == NULL ? NULL : bbus_obj_rawdata(obj),
 				obj == NULL ? 0 : bbus_obj_rawsize(obj));
 }
@@ -94,11 +94,11 @@ bbus_server* bbus_srv_createp(const char* path)
 	int sock;
 	int ret;
 
-	sock = __bbus_local_socket();
+	sock = __bbus_sock_mksocket();
 	if (sock < 0)
 		goto err;
 
-	ret = __bbus_bind_local_sock(sock, path);
+	ret = __bbus_sock_bind(sock, path);
 	if (ret < 0)
 		goto err;
 
@@ -127,7 +127,7 @@ int bbus_srv_clientpending(bbus_server* srv)
 	tv.sec = 0;
 	tv.usec = 0;
 
-	return __bbus_sock_rd_ready(srv->sock, &tv);
+	return __bbus_sock_rdready(srv->sock, &tv);
 }
 
 bbus_client* bbus_srv_accept(bbus_server* srv)
@@ -140,13 +140,13 @@ bbus_client* bbus_srv_accept(bbus_server* srv)
 	struct bbus_msg_hdr hdr;
 	int clitype;
 
-	sock = __bbus_local_accept(srv->sock, addrbuf,
+	sock = __bbus_sock_accept(srv->sock, addrbuf,
 					sizeof(addrbuf), &addrsize);
 	if (sock < 0)
 		return NULL;
 
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
-	ret = __bbus_recvv_msg(sock, &hdr, NULL, 0);
+	ret = __bbus_prot_recvvmsg(sock, &hdr, NULL, 0);
 	if (ret < 0)
 		goto errout;
 	if ((hdr.msgtype != BBUS_MSGTYPE_SOCLI)
@@ -157,7 +157,7 @@ bbus_client* bbus_srv_accept(bbus_server* srv)
 			? BBUS_CLIENT_CALLER : BBUS_CLIENT_SERVICE;
 
 	hdr.msgtype = BBUS_MSGTYPE_SOOK;
-	ret = __bbus_sendv_msg(sock, &hdr, NULL, NULL, 0);
+	ret = __bbus_prot_sendvmsg(sock, &hdr, NULL, NULL, 0);
 	if (ret < 0)
 		goto errout;
 
