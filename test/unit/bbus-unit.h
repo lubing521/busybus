@@ -74,7 +74,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 		"Assertion failed in file %s, line %d!",		\
 		__FILE__, __LINE__)
 
-#define BBUSUNIT_TESTERRQUIT						\
+#define BBUSUNIT_ASSERTION_FAILED					\
 	do {								\
 		__test_retval = -1;					\
 		goto __finally;						\
@@ -86,7 +86,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			BBUSUNIT_PRINTASSERTFAIL;			\
 			bbusunit_printerr("'%s' isn't equal to '%s'",	\
 						#EXPECTED, #ACTUAL);	\
-			BBUSUNIT_TESTERRQUIT;				\
+			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
 
@@ -96,7 +96,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			BBUSUNIT_PRINTASSERTFAIL;			\
 			bbusunit_printerr("'%s' is equal to '%s'",	\
 						#EXPECTED, #ACTUAL);	\
-			BBUSUNIT_TESTERRQUIT;				\
+			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
 
@@ -105,7 +105,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 		if ((PTR) == NULL) {					\
 			BBUSUNIT_PRINTASSERTFAIL;			\
 			bbusunit_printerr("'%s' is NULL!", #PTR);	\
-			BBUSUNIT_TESTERRQUIT;				\
+			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
 
@@ -116,7 +116,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			bbusunit_printerr(				\
 				"Statement '%s' evaluated to true!",	\
 				#STATEMENT);				\
-			BBUSUNIT_TESTERRQUIT;				\
+			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
 
@@ -127,7 +127,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			bbusunit_printerr(				\
 				"Statement '%s' evaluated to false!",	\
 				#STATEMENT);				\
-			BBUSUNIT_TESTERRQUIT;				\
+			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
 
@@ -138,7 +138,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			bbusunit_printerr(				\
 				"Strings '%s' and '%s' "		\
 				"are not the same", STR1, STR2);	\
-			BBUSUNIT_TESTERRQUIT;				\
+			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
 
