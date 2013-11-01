@@ -23,10 +23,10 @@ ssize_t __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize);
 int __bbus_prot_sendmsg(int sock, const void* buf, size_t bufsize);
 int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 		void* payload, size_t psize);
-int __bbus_prot_sendvmsg(int sock, struct bbus_msg_hdr* hdr,
-		char* meta, char* obj, size_t objsize);
+int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
+		const char* meta, const char* obj, size_t objsize);
 void __bbus_prot_hdrsetmagic(struct bbus_msg_hdr* hdr);
-int __bbus_prot_hdrcheckmagic(struct bbus_msg_hdr* hdr);
+int __bbus_prot_hdrcheckmagic(const struct bbus_msg_hdr* hdr);
 int __bbus_prot_errtoerrnum(uint8_t errcode);
 
 #endif /* __BBUS_PROTO__ */

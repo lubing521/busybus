@@ -785,7 +785,7 @@ struct bbus_msg
  *
  * The returned object has to be freed using bbus_obj_free.
  */
-bbus_object* bbus_prot_extractobj(struct bbus_msg* msg,
+bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg,
 		size_t msgsize) BBUS_PUBLIC;
 
 /**
@@ -796,7 +796,8 @@ bbus_object* bbus_prot_extractobj(struct bbus_msg* msg,
  *
  * The returned pointer points to the area inside 'msg'.
  */
-char* bbus_prot_extractmeta(struct bbus_msg* msg, size_t msgsize) BBUS_PUBLIC;
+const char* bbus_prot_extractmeta(const struct bbus_msg* msg,
+		size_t msgsize) BBUS_PUBLIC;
 
 /**
  * @brief Fills some basic fields in the busybus message header.

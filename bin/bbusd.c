@@ -413,7 +413,7 @@ static void send_to_monitors(struct bbus_msg* msg BBUS_UNUSED)
 	return;
 }
 
-static char* mname_from_srvcname(char* srvc)
+static char* mname_from_srvcname(const char* srvc)
 {
 	char* found;
 
@@ -427,7 +427,7 @@ static int handle_clientcall(bbus_client* cli,
 				struct bbus_msg* msg, size_t msgsize)
 {
 	struct method* mthd;
-	char* mname;
+	const char* mname;
 	int ret;
 	bbus_object* argobj = NULL;
 	bbus_object* retobj = NULL;
@@ -511,6 +511,7 @@ dontrespond:
 static int register_service(struct clientlist_elem* cli,
 				struct bbus_msg* msg, size_t msgsize)
 {
+	const char* extrmeta;
 	char* meta;
 	int ret;
 	char* comma;
@@ -518,13 +519,13 @@ static int register_service(struct clientlist_elem* cli,
 	struct remote_method* mthd;
 	struct bbus_msg_hdr hdr;
 
-	meta = bbus_prot_extractmeta(msg, msgsize);
-	if (meta == NULL) {
+	extrmeta = bbus_prot_extractmeta(msg, msgsize);
+	if (extrmeta == NULL) {
 		ret = -1;
 		goto respond;
 	}
 
-	meta = bbus_str_cpy(meta);
+	meta = bbus_str_cpy(extrmeta);
 	if (meta == NULL) {
 		ret = -1;
 		goto metafree;

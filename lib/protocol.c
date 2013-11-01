@@ -136,8 +136,8 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 	return 0;
 }
 
-int __bbus_prot_sendvmsg(int sock, struct bbus_msg_hdr* hdr,
-				char* meta, char* obj, size_t objsize)
+int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
+				const char* meta, const char* obj, size_t objsize)
 {
 	ssize_t r;
 	size_t msgsize;
@@ -153,16 +153,16 @@ int __bbus_prot_sendvmsg(int sock, struct bbus_msg_hdr* hdr,
 	}
 
 	numiov = 0;
-	iov[numiov].iov_base = hdr;
+	iov[numiov].iov_base = (void*)hdr;
 	iov[numiov].iov_len = BBUS_MSGHDR_SIZE;
 	++numiov;
 	if (meta != NULL) {
-		iov[numiov].iov_base = meta;
+		iov[numiov].iov_base = (void*)meta;
 		iov[numiov].iov_len = metasize;
 		++numiov;
 	}
 	if (obj != NULL) {
-		iov[numiov].iov_base = obj;
+		iov[numiov].iov_base = (void*)obj;
 		iov[numiov].iov_len = objsize;
 		++numiov;
 	}
@@ -185,7 +185,7 @@ void __bbus_prot_hdrsetmagic(struct bbus_msg_hdr* hdr)
 	memcpy(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE);
 }
 
-int __bbus_prot_hdrcheckmagic(struct bbus_msg_hdr* hdr)
+int __bbus_prot_hdrcheckmagic(const struct bbus_msg_hdr* hdr)
 {
 	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0 ? 1 : 0;
 }
@@ -216,9 +216,9 @@ int __bbus_prot_errtoerrnum(uint8_t errcode)
 	return errnum;
 }
 
-char* bbus_prot_extractmeta(struct bbus_msg* msg, size_t msgsize)
+const char* bbus_prot_extractmeta(const struct bbus_msg* msg, size_t msgsize)
 {
-	void* payload;
+	const void* payload;
 
 	if (msg->hdr.flags & BBUS_PROT_HASMETA) {
 		payload = msg->payload;
@@ -235,10 +235,10 @@ err:
 	return NULL;
 }
 
-bbus_object* bbus_prot_extractobj(struct bbus_msg* msg, size_t msgsize)
+bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg, size_t msgsize)
 {
-	char* meta;
-	void* payload;
+	const char* meta;
+	const void* payload;
 	size_t psize;
 	size_t offset;
 
