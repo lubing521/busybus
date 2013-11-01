@@ -81,7 +81,7 @@ test_unit:	bbus-unit
 	$(UNIT_TARGET)
 
 test_regr:	all
-	$(REGR_SCRIPT) run
+	LD_LIBRARY_PATH=./ $(REGR_SCRIPT) run
 
 test:		test_unit test_regr
 
