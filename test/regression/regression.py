@@ -26,9 +26,24 @@ import libregr
 import getopt
 import time
 
+class Options(object):
+	"""
+	Program run-time options.
+	"""
+	def __init__(self):
+		self.debug = False
+		self.cmd = ''
+		self.cmdArgs = None
+
+class ShowUsage(Exception):
+	def __init__(self):
+		Exception.__init__(self)
+
 progName = ''
 bbusd = None
 scenFailed = []
+scenRun = 0
+options = Options()
 
 def printUsage():
 	sys.stdout.write('Usage:\n')
@@ -42,11 +57,13 @@ def printUsage():
 
 def init():
 	global bbusd
-	bbusd = libregr.Process(libregr.binaries['bbusd'])
+	bbusd = libregr.Process(libregr.getBinPath('bbusd'))
 	# FIXME Find a better way to wait for bbusd activation.
 	time.sleep(1 / 1000.0)
 	if bbusd.poll() is not None:
-		raise RuntimeError('Error starting bbusd')
+		out = bbusd.communicate()
+		raise RuntimeError('Error starting bbusd{0}'.format(
+					': ' + out[1] if out[1] else ''))
 
 def printExitErr(prog, code):
 	libregr.printerr(
@@ -56,66 +73,107 @@ def printExitErr(prog, code):
 def finalize():
 	bbusd.terminate()
 	if bbusd.wait() != 0:
-		printExitErr(binaries[key], bbusd.returncode)
+		printExitErr('bbusd', bbusd.returncode)
 
 def printScenErr(ex):
-	libregr.printerr(
-		'Scenario \'{0}\' failed: {1}'.format(ex.case, ex.msg))
+	libregr.printwarn(repr(ex))
 
-def runScenario(scenario):
-	libregr.printinfo('Running scenario \'{0}\''.format(scenario))
-	import scenario
+def runScenario(scenarioName):
+	global scenRun, scenFailed
+	libregr.printinfo('Running scenario \'{0}\''.format(scenarioName))
+	scenario = __import__(scenarioName)
 	if hasattr(scenario, 'init'):
 		scenario.init()
 	try:
 		scenario.run()
-	except libregr.ScenarioExc as ex:
+	except libregr.ScenarioErr as ex:
+		ex.setScenario(scenarioName)
 		printScenErr(ex)
-		scenFailed.append(ex.case)
-	if hasattr(scenario, 'finalize'):
-		scenario.finalize()
-	del scenario
+		scenFailed.append(ex.scenario)
+	finally:
+		if hasattr(scenario, 'finalize'):
+			scenario.finalize()
+		del scenario
+	scenRun = scenRun + 1
 
 def runAll():
 	libregr.printinfo('Running all regression scenarios')
 	files = os.listdir(libregr.scenDir)
 	for f in files:
-		if os.path.isfile(f) and libregr.isPyFile(f):
+		fullpath = '{0}/{1}'.format(libregr.scenDir, f)
+		if os.path.isfile(fullpath) and libregr.isPyFile(f):
 			runScenario(f[:-3])
 
 def printResults():
-	libregr.printinfo('Regression ended')
+	libregr.printinfo('Regression ended, {0} {1} run'.format(
+				scenRun, 'scenario' if scenRun == 1
+					else 'scenarios'))
 	if scenFailed:
-		libregr.printinfo(
-			'Following {0} tests failed'.format(len(scenFailed)))
+		numFailed = len(scenFailed)
+		libregr.printwarn(
+			'Following {0} {1} failed'.format(
+				numFailed, 'test' if numFailed == 1
+					else 'tests'))
 		for s in scenFailed:
-			libregr.printinfo('{0}'.format(s))
+			libregr.printwarn('\t{0}'.format(s))
 	else:
 		libregr.printinfo('All tests successful')
 
-def main(argv):
-	global progName
-
+def parseOps(argv):
+	global progName, options
 	progName = argv[0]
-	cmd = argv[1] if len(argv) > 1 else None
-	if len(argv) > 1 and cmd == 'run':
-		libregr.printinfo('Busybus regression test suite')
+	shortopts = 'du'
+	longopts = ('debug', 'usage')
+	cmds = ('run')
+	opts, args = getopt.getopt(argv[1:], shortopts, longopts)
+	for o, a in opts:
+		if o in ('-d', '--debug'):
+			options.debug = True
+		elif o in ('-u', '--usage'):
+			raise ShowUsage()
+		else:
+			raise getopt.GetoptError('Unhandled option', o)
+	if len(args) < 1:
+		raise getopt.GetoptError('Command not specified')
+	else:
+		options.cmd = args[0]
+		if len(args) > 1:
+			options.cmdArgs = args[1:]
+
+def main(argv):
+	try:
+		parseOps(argv)
+	except getopt.GetoptError as ex:
+		libregr.printerr('Error parsing arguments: {0}'.format(ex))
+		return 1
+	except ShowUsage:
+		printUsage()
+		return 0
+
+	if options.cmd == 'run':
+		libregr.printinfo('#######################################')
+		libregr.printinfo('###> Busybus regression test suite <###')
+		libregr.printinfo('#######################################')
 		try:
 			init();
 			sys.path.append(os.path.abspath(libregr.scenDir))
-			if len(argv) == 2:
+			if not options.cmdArgs:
 				runAll()
 			else:
-				for s in argv[2:]:
+				for s in options.cmdArgs:
 					runScenario(s)
 			finalize()
 			printResults()
 		except Exception as ex:
-			libregr.printerr(
-				'Fatal regression error: {0}\n'.format(ex))
-			return 1
+			if options.debug:
+				raise
+			else:
+				libregr.printerr(
+					'Fatal regression error: '
+						'{0}\n'.format(ex))
+				return 1
 	else:
-		printUsage()
+		libregr.printerr('Logic error, this should not happen')
 		return 1
 
 	return 0
