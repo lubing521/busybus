@@ -40,13 +40,7 @@ struct __bbus_object
 
 bbus_object* bbus_obj_alloc(void)
 {
-	struct __bbus_object* obj;
-
-	obj = bbus_malloc0(sizeof(struct __bbus_object));
-	if (obj == NULL)
-		return NULL;
-
-	return obj;
+	return bbus_malloc0(sizeof(struct __bbus_object));
 }
 
 void bbus_obj_free(bbus_object* obj)
@@ -175,10 +169,7 @@ static void make_ready_for_extraction(bbus_object* obj)
 
 static int can_extract_size(bbus_object* obj, size_t size)
 {
-	if ((obj->at + size) > (obj->buf + obj->bufused))
-		return 0;
-	else
-		return 1;
+	return ((obj->at + size) > (obj->buf + obj->bufused)) ? 0 : 1;
 }
 
 static int extract_data(bbus_object* obj, void* buf, size_t size)
