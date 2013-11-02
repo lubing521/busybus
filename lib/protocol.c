@@ -25,7 +25,7 @@
 
 #define MAX_NUMIOV 3
 
-int __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize)
+int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 {
 	ssize_t r;
 	ssize_t rcvd;
@@ -75,7 +75,7 @@ int __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize)
 	return 0;
 }
 
-int __bbus_prot_sendmsg(int sock, const void* buf, size_t bufsize)
+int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf, size_t bufsize)
 {
 	ssize_t r;
 	size_t msgsize;

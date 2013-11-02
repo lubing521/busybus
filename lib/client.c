@@ -281,7 +281,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 	} else {
 		/* Message incoming */
 		memset(buf, 0, BBUS_MAXMSGSIZE);
-		r = __bbus_prot_recvmsg(conn->sock, buf, BBUS_MAXMSGSIZE);
+		r = __bbus_prot_recvmsg(conn->sock, msg, BBUS_MAXMSGSIZE);
 		if (r < 0)
 			return -1;
 		if (msg->hdr.msgtype != BBUS_MSGTYPE_SRVCALL) {
