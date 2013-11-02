@@ -21,6 +21,7 @@
 #include "error.h"
 #include "protocol.h"
 #include <string.h>
+#include <arpa/inet.h>
 
 #define MAX_NUMIOV 3
 
@@ -262,11 +263,31 @@ bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg, size_t msgsize)
 	return bbus_obj_frombuf(payload, psize);
 }
 
-void bbus_prot_mkhdr(struct bbus_msg_hdr* hdr, int typ, int err)
+void bbus_hdr_build(struct bbus_msg_hdr* hdr, int typ, int err)
 {
 	memset(hdr, 0, sizeof(struct bbus_msg_hdr));
 	__bbus_prot_hdrsetmagic(hdr);
 	hdr->msgtype = (uint8_t)typ;
 	hdr->errcode = (uint8_t)err;
+}
+
+uint32_t bbus_hdr_gettoken(const struct bbus_msg_hdr* hdr)
+{
+	return ntohl(hdr->token);
+}
+
+void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, uint32_t tok)
+{
+	hdr->token = htonl(tok);
+}
+
+uint16_t bbus_hdr_getpsize(const struct bbus_msg_hdr* hdr)
+{
+	return ntohs(hdr->psize);
+}
+
+void bbus_hdr_setpsize(struct bbus_msg_hdr* hdr, uint16_t size)
+{
+	hdr->psize = htons(size);
 }
 

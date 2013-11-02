@@ -442,7 +442,7 @@ static int handle_clientcall(bbus_client* cli,
 	mthd = locate_method(mname);
 	if (mthd == NULL) {
 		logmsg(BBUS_LOG_ERR, "No such method: %s\n", mname);
-		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+		bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_ENOMETHOD);
 		ret = -1;
 		goto respond;
@@ -457,10 +457,10 @@ static int handle_clientcall(bbus_client* cli,
 					mname_from_srvcname(mname), argobj);
 		if (retobj == NULL) {
 			logmsg(BBUS_LOG_ERR, "Error calling method.\n");
-			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EMETHODERR);
 		} else {
-			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EGOOD);
 			hdr.psize = bbus_obj_rawsize(retobj);
 		}
@@ -470,11 +470,11 @@ static int handle_clientcall(bbus_client* cli,
 	if (mthd->type == METHOD_REMOTE) {
 		meta = mname_from_srvcname(mname);
 		if (meta == NULL) {
-			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EMETHODERR);
 			goto respond;
 		}
-		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_SRVCALL, BBUS_PROT_EGOOD);
+		bbus_hdr_build(&hdr, BBUS_MSGTYPE_SRVCALL, BBUS_PROT_EGOOD);
 		hdr.flags |= (BBUS_PROT_HASMETA | BBUS_PROT_HASOBJECT);
 		hdr.psize = strlen(meta) + 1 + bbus_obj_rawsize(argobj);
 		hdr.token = bbus_client_gettoken(cli);
@@ -483,7 +483,7 @@ static int handle_clientcall(bbus_client* cli,
 				((struct remote_method*)mthd)->srvc->cli,
 				&hdr, meta, argobj);
 		if (ret < 0) {
-			bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EMETHODERR);
 			goto respond;
 		}
@@ -574,7 +574,7 @@ metafree:
 	bbus_str_free(meta);
 
 respond:
-	bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_SRVACK, ret == 0
+	bbus_hdr_build(&hdr, BBUS_MSGTYPE_SRVACK, ret == 0
 				? BBUS_PROT_EGOOD : BBUS_PROT_EMREGERR);
 	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, NULL);
 	if (ret < 0) {
@@ -618,12 +618,12 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED,
 		logmsg(BBUS_LOG_ERR,
 			"Error extracting the object from message: %s\n",
 			bbus_strerror(bbus_lasterror()));
-		bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY,
+		bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EMETHODERR);
 		goto respond;
 	}
 
-	bbus_prot_mkhdr(&hdr, BBUS_MSGTYPE_CLIREPLY, BBUS_PROT_EGOOD);
+	bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY, BBUS_PROT_EGOOD);
 	hdr.flags |= BBUS_PROT_HASOBJECT;
 	hdr.psize = bbus_obj_rawsize(obj);
 

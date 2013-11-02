@@ -769,6 +769,11 @@ struct bbus_msg_hdr
 };
 
 /**
+ * @brief Size of the busybus message header.
+ */
+#define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))
+
+/**
  * @brief Represents a busybus message.
  */
 struct bbus_msg
@@ -800,19 +805,71 @@ const char* bbus_prot_extractmeta(const struct bbus_msg* msg,
 		size_t msgsize) BBUS_PUBLIC;
 
 /**
+ * @defgroup __header__ Header structure manipulation
+ * @{
+ *
+ * Functions and macros serving as easy setters and getters for the
+ * struct bbus_msg_hdr. These are here because bytes in the header are
+ * in network byte order and writing and reading them without this
+ * interface can be cumbersome.
+ */
+
+/**
  * @brief Fills some basic fields in the busybus message header.
  * @param hdr The header.
  * @param typ Type of the message.
  * @param err Error code.
  */
-void bbus_prot_mkhdr(struct bbus_msg_hdr* hdr, int typ, int err) BBUS_PUBLIC;
+void bbus_hdr_build(struct bbus_msg_hdr* hdr, int typ, int err) BBUS_PUBLIC;
 
 /**
- * @brief Size of the busybus message header.
+ * @brief Returns the token value from the header in host byte order.
+ * @param hdr The header.
+ * @return The token.
  */
-#define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))
+uint32_t bbus_hdr_gettoken(const struct bbus_msg_hdr* hdr) BBUS_PUBLIC;
 
 /**
+ * @brief Converts given token to netwok byte order and assigns it to 'hdr'.
+ * @param hdr The header.
+ * @param tok The token.
+ */
+void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, uint32_t tok) BBUS_PUBLIC;
+
+/**
+ * @brief Returns the payload size from the header in host byte order.
+ * @param hdr The header.
+ * @return The payload size.
+ */
+uint16_t bbus_hdr_getpsize(const struct bbus_msg_hdr* hdr) BBUS_PUBLIC;
+
+/**
+ * @brief Converts given size to network byte order and assigns it to 'hdr'.
+ * @param hdr The header.
+ * @param size New size.
+ */
+void bbus_hdr_setpsize(struct bbus_msg_hdr* hdr, uint16_t size) BBUS_PUBLIC;
+
+/**
+ * @brief Returns true if FLAG is set in the header's flags field.
+ * @param HDR The header.
+ * @param FLAG The flag to be checked.
+ */
+#define BBUS_HDR_ISFLAGSET(HDR, FLAG) ((HDR)->flags & (FLAG))
+
+/**
+ * @brief Sets FLAG to true in the header's flags field.
+ * @param HDR The header.
+ * @param FLAG The flag to be set.
+ */
+#define BBUS_HDR_SETFLAG(HDR, FLAG)					\
+	do {								\
+		(HDR)->flags |= (FLAG);					\
+	} while (0)
+
+/**
+ * @}
+ *
  * @}
  *
  * @defgroup __caller__ Client calls
