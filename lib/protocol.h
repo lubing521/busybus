@@ -19,7 +19,7 @@
 #ifndef __BBUS_PROTO__
 #define __BBUS_PROTO__
 
-ssize_t __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize);
+int __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize);
 int __bbus_prot_sendmsg(int sock, const void* buf, size_t bufsize);
 int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 		void* payload, size_t psize);

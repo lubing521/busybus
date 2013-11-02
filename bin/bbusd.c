@@ -715,7 +715,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 {
 	bbus_client* cli;
 	int r;
-	ssize_t recvd;
+	int recvd;
 
 	cli = (*cli_elem)->cli;
 	memset(msgbuf, 0, BBUS_MAXMSGSIZE);

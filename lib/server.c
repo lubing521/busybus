@@ -59,7 +59,7 @@ int bbus_client_gettype(bbus_client* cli)
 	return cli->type;
 }
 
-ssize_t bbus_client_rcvmsg(bbus_client* cli,
+int bbus_client_rcvmsg(bbus_client* cli,
 				struct bbus_msg* buf, size_t bufsize)
 {
 	return __bbus_prot_recvmsg(cli->sock, buf, bufsize);

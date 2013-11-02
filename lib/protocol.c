@@ -24,7 +24,7 @@
 
 #define MAX_NUMIOV 3
 
-ssize_t __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize)
+int __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize)
 {
 	ssize_t r;
 	ssize_t rcvd;
@@ -71,7 +71,7 @@ ssize_t __bbus_prot_recvmsg(int sock, void* buf, size_t bufsize)
 		return -1;
 	}
 
-	return rcvd;
+	return 0;
 }
 
 int __bbus_prot_sendmsg(int sock, const void* buf, size_t bufsize)
@@ -137,7 +137,7 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 }
 
 int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
-				const char* meta, const char* obj, size_t objsize)
+			const char* meta, const char* obj, size_t objsize)
 {
 	ssize_t r;
 	size_t msgsize;
@@ -187,7 +187,8 @@ void __bbus_prot_hdrsetmagic(struct bbus_msg_hdr* hdr)
 
 int __bbus_prot_hdrcheckmagic(const struct bbus_msg_hdr* hdr)
 {
-	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0 ? 1 : 0;
+	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0
+						? BBUS_TRUE : BBUS_FALSE;
 }
 
 int __bbus_prot_errtoerrnum(uint8_t errcode)
