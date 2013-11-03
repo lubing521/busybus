@@ -28,7 +28,6 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 		const char* meta, const char* obj, size_t objsize);
 void __bbus_prot_hdrsetmagic(struct bbus_msg_hdr* hdr);
-int __bbus_prot_hdrcheckmagic(const struct bbus_msg_hdr* hdr);
 int __bbus_prot_errtoerrnum(uint8_t errcode);
 
 #endif /* __BBUS_PROTO__ */

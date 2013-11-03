@@ -25,6 +25,12 @@
 
 #define MAX_NUMIOV 3
 
+static int hdr_check_magic(const struct bbus_msg_hdr* hdr)
+{
+	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0
+						? BBUS_TRUE : BBUS_FALSE;
+}
+
 int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 {
 	ssize_t r;
@@ -67,7 +73,7 @@ int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 		buf += r;
 	}
 
-	if (!__bbus_prot_hdrcheckmagic(hdr)) {
+	if (!hdr_check_magic(hdr)) {
 		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
@@ -129,7 +135,7 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 		return -1;
 	}
 
-	if (!__bbus_prot_hdrcheckmagic(hdr)) {
+	if (!hdr_check_magic(hdr)) {
 		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
@@ -184,12 +190,6 @@ int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 void __bbus_prot_hdrsetmagic(struct bbus_msg_hdr* hdr)
 {
 	memcpy(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE);
-}
-
-int __bbus_prot_hdrcheckmagic(const struct bbus_msg_hdr* hdr)
-{
-	return memcmp(&hdr->magic, BBUS_MAGIC, BBUS_MAGIC_SIZE) == 0
-						? BBUS_TRUE : BBUS_FALSE;
 }
 
 int __bbus_prot_errtoerrnum(uint8_t errcode)
