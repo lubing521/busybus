@@ -64,6 +64,7 @@ static int do_session_open(const char* path, int sotype)
 		return sock;
 	} else
 	if (hdr.msgtype == BBUS_MSGTYPE_SORJCT) {
+		/* TODO Communicate the cause of rejections somehow. */
 		__bbus_seterr(BBUS_ESORJCTD);
 		goto errout_close;
 	} else {
@@ -129,9 +130,9 @@ bbus_object* bbus_callmethod(bbus_client_connection* conn,
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	__bbus_prot_hdrsetmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_CLICALL;
-	hdr.psize = metasize + objsize;
-	hdr.flags |= BBUS_PROT_HASMETA;
-	hdr.flags |= BBUS_PROT_HASOBJECT;
+	bbus_hdr_setpsize(&hdr, metasize + objsize);
+	BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASMETA);
+	BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASOBJECT);
 
 	r = __bbus_prot_sendvmsg(conn->sock, &hdr, method,
 			bbus_obj_rawdata(arg), objsize);
@@ -215,8 +216,8 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	__bbus_prot_hdrsetmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_SRVREG;
-	hdr.psize = metasize;
-	hdr.flags |= BBUS_PROT_HASMETA;
+	bbus_hdr_setpsize(&hdr, metasize);
+	BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASMETA);
 	meta = bbus_str_build("%s.%s,%s,%s",
 					conn->srvname,
 					method->name,
@@ -289,7 +290,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 			return -1;
 		}
 
-		token = msg->hdr.token;
+		token = bbus_hdr_gettoken(&hdr);
 		meta = bbus_prot_extractmeta(msg, BBUS_MAXMSGSIZE);
 		if (meta == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
@@ -305,7 +306,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 		__bbus_prot_hdrsetmagic(&hdr);
 		hdr.msgtype = BBUS_MSGTYPE_SRVREPLY;
-		hdr.token = token;
+		bbus_hdr_settoken(&hdr, token);
 		objret = NULL;
 		callback = bbus_hmap_finds(conn->methods, meta);
 		if (callback == NULL) {
@@ -321,8 +322,8 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 			goto send_reply;
 		}
 
-		hdr.psize = bbus_obj_rawsize(objret);
-		hdr.flags |= BBUS_PROT_HASOBJECT;
+		bbus_hdr_setpsize(&hdr, bbus_obj_rawsize(objret));
+		BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASOBJECT);
 
 send_reply:
 		r = __bbus_prot_sendvmsg(conn->sock, &hdr, NULL,

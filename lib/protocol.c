@@ -38,6 +38,11 @@ int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 	ssize_t msgsize;
 	struct bbus_msg_hdr* hdr;
 
+	if (bufsize > BBUS_MAXMSGSIZE) {
+		__bbus_seterr(BBUS_EINVALARG);
+		return -1;
+	}
+
 	r = __bbus_sock_recv(sock, buf, bufsize);
 	if (r < 0) {
 		return -1;
@@ -87,6 +92,11 @@ int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf, size_t bufsize)
 	size_t msgsize;
 	size_t sent;
 
+	if (bufsize > BBUS_MAXMSGSIZE) {
+		__bbus_seterr(BBUS_EINVALARG);
+		return -1;
+	}
+
 	msgsize = BBUS_MSGHDR_SIZE + ((struct bbus_msg_hdr*)buf)->psize;
 	if (msgsize > bufsize) {
 		__bbus_seterr(BBUS_EINVALARG);
@@ -111,6 +121,11 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 	ssize_t r;
 	struct iovec iov[MAX_NUMIOV];
 	int numiov;
+
+	if ((BBUS_MSGHDR_SIZE + psize) > BBUS_MAXMSGSIZE) {
+		__bbus_seterr(BBUS_EINVALARG);
+		return -1;
+	}
 
 	numiov = 0;
 	iov[numiov].iov_base = hdr;
@@ -154,7 +169,8 @@ int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 
 	metasize = meta == NULL ? 0 : strlen(meta)+1;
 	msgsize = BBUS_MSGHDR_SIZE + metasize + objsize;
-	if (msgsize != (BBUS_MSGHDR_SIZE + hdr->psize)) {
+	if ((msgsize != (BBUS_MSGHDR_SIZE + hdr->psize))
+				|| (msgsize > BBUS_MAXMSGSIZE)) {
 		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
 	}
