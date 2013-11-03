@@ -715,18 +715,19 @@ static void handle_client(struct clientlist_elem** cli_elem)
 {
 	bbus_client* cli;
 	int r;
-	int recvd;
+	size_t recvd;
 
 	cli = (*cli_elem)->cli;
 	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
-	recvd = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
-	if (recvd < 0) {
+	r = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
+	if (r < 0) {
 		logmsg(BBUS_LOG_ERR,
 			"Error receiving message from client: %s\n",
 			bbus_strerror(bbus_lasterror()));
 		goto cli_close;
 	}
 
+	recvd = bbus_hdr_getpsize(&msgbuf->hdr);
 	send_to_monitors(msgbuf);
 
 	/* TODO Common function for error reporting. */
