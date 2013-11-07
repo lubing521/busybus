@@ -179,3 +179,25 @@ BBUSUNIT_DEFINE_TEST(build_long_string)
 	BBUSUNIT_ENDTEST;
 }
 
+/* For the min_multiple_eval test. */
+static int* twice(int* i)
+{
+	*i *= 2;
+	return i;
+}
+
+BBUSUNIT_DEFINE_TEST(min_multiple_eval)
+{
+	BBUSUNIT_BEGINTEST;
+
+		/* Test the BBUS_MIN macro for double evaluation. */
+
+		int x = 2;
+		int y = 5;
+
+		BBUSUNIT_ASSERT_EQ(4, BBUS_MIN(*(twice(&x)), y));
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
