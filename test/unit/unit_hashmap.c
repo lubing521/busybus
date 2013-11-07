@@ -31,7 +31,7 @@ BBUSUNIT_DEFINE_TEST(hashmap_basic)
 		void* val;
 
 		hmap = bbus_hmap_create();
-		BBUSUNIT_ASSERT_NOT_NULL(hmap);
+		BBUSUNIT_ASSERT_NOTNULL(hmap);
 
 		for (i = 0; i < 140; ++i) {
 			memset(keybuf, 0, sizeof(keybuf));
@@ -63,7 +63,7 @@ BBUSUNIT_DEFINE_TEST(hashmap_reassign)
 		void* v;
 
 		hmap = bbus_hmap_create();
-		BBUSUNIT_ASSERT_NOT_NULL(hmap);
+		BBUSUNIT_ASSERT_NOTNULL(hmap);
 		r = bbus_hmap_set(hmap, &key, sizeof(key), &val1);
 		BBUSUNIT_ASSERT_FALSE(r < 0);
 		v = bbus_hmap_find(hmap, &key, sizeof(key));

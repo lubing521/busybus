@@ -106,7 +106,7 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 		}							\
 	} while (0)
 
-#define BBUSUNIT_ASSERT_NOT_NULL(PTR)					\
+#define BBUSUNIT_ASSERT_NOTNULL(PTR)					\
 	do {								\
 		if ((PTR) == NULL) {					\
 			BBUSUNIT_PRINTASSERTFAIL;			\

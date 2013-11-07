@@ -32,7 +32,7 @@ BBUSUNIT_DEFINE_TEST(basic_object)
 		int ret;
 
 		obj = bbus_obj_alloc();
-		BBUSUNIT_ASSERT_NOT_NULL(obj);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
 		ret = bbus_obj_insuint(obj, u);
 		BBUSUNIT_ASSERT_EQ(0, ret);
 		ret = bbus_obj_insstr(obj, s);
@@ -62,7 +62,7 @@ BBUSUNIT_DEFINE_TEST(build_object)
 				0x11223344u, "oneone",
 				0x55667788u, "twotwo",
 				0xaabbccddu, 0xff, 0x66);
-		BBUSUNIT_ASSERT_NOT_NULL(obj);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
 		BBUSUNIT_ASSERT_EQ(0, memcmp(bbus_obj_rawdata(obj),
 					propbuf, propsize));
 
@@ -95,7 +95,7 @@ BBUSUNIT_DEFINE_TEST(parse_object)
 		bbus_byte sb2;
 
 		obj = bbus_obj_frombuf(propbuf, propsize);
-		BBUSUNIT_ASSERT_NOT_NULL(obj);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
 		ret = bbus_obj_parse(obj, "A(us)(u(bb))",
 					&arrsize, &au1, &as1, &au2,
 					&as2, &su, &sb1, &sb2);
@@ -124,7 +124,7 @@ BBUSUNIT_DEFINE_TEST(repr_object)
 				0x11223344u, "oneone",
 				0x55667788u, "twotwo",
 				0xaabbccddu, 0xf0, 0x58);
-		BBUSUNIT_ASSERT_NOT_NULL(obj);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
 
 		memset(buf, 0, sizeof(buf));
 		ret = bbus_obj_repr(obj, "A(us)(u(bb))", buf, sizeof(buf));
@@ -150,7 +150,7 @@ BBUSUNIT_DEFINE_TEST(repr_string)
 		bbus_object* obj;
 
 		obj = bbus_obj_build("s", str);
-		BBUSUNIT_ASSERT_NOT_NULL(obj);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
 
 		memset(buf, 0, sizeof(buf));
 		ret = bbus_obj_repr(obj, "s", buf, sizeof(buf));
