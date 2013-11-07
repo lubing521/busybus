@@ -90,7 +90,7 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 			bbusunit_printerr("[%s]: TEST FAILED", el->name);
 			tests_failed++;
 		}
-		tests_run++;
+		++tests_run;
 		el = el->next;
 	}
 	bbusunit_print("All done!");

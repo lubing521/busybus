@@ -65,10 +65,6 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			break;						\
 	} while (0)
 
-/*
- * Assertions:
- */
-
 #define BBUSUNIT_PRINTASSERTFAIL					\
 	do {								\
 		bbusunit_printerr(					\
@@ -81,6 +77,14 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 		__test_retval = -1;					\
 		goto __finally;						\
 	} while (0)
+
+/*
+ * Assertions.
+ *
+ * For now we only offer assertions which cause tests to fail
+ * immediately. In the future 'expects' might be added too -
+ * similar to those offered by the gtest framework.
+ */
 
 #define BBUSUNIT_ASSERT_EQ(EXPECTED, ACTUAL)				\
 	do {								\
@@ -107,6 +111,15 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 		if ((PTR) == NULL) {					\
 			BBUSUNIT_PRINTASSERTFAIL;			\
 			bbusunit_printerr("'%s' is NULL!", #PTR);	\
+			BBUSUNIT_ASSERTION_FAILED;			\
+		}							\
+	} while (0)
+
+#define BBUSUNIT_ASSERT_NULL(PTR)					\
+	do {								\
+		if ((PTR) != NULL) {					\
+			BBUSUNIT_PRINTASSERTFAIL;			\
+			bbusunit_printerr("'%s' is not NULL!", #PTR);	\
 			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
@@ -140,6 +153,18 @@ void bbusunit_registertest(struct bbusunit_listelem* test);
 			bbusunit_printerr(				\
 				"Strings '%s' and '%s' "		\
 				"are not the same", STR1, STR2);	\
+			BBUSUNIT_ASSERTION_FAILED;			\
+		}							\
+	} while (0)
+
+#define BBUSUNIT_ASSERT_STRNOTEQ(STR1, STR2)				\
+	do {								\
+		if (strcmp(STR1, STR2) == 0) {				\
+			BBUSUNIT_PRINTASSERTFAIL;			\
+			bbusunit_printerr(				\
+				"Strings '%s' and '%s' "		\
+				"are the same, but were "		\
+				"expected to differ", STR1, STR2);	\
 			BBUSUNIT_ASSERTION_FAILED;			\
 		}							\
 	} while (0)
