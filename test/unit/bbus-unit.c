@@ -136,8 +136,10 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 			tests_run == 1 ? "test" : "tests",
 			(int)time_spent.tv_sec, (int)time_spent.tv_usec);
 	if (tests_failed > 0) {
-		bbusunit_print("  %u %s failed", tests_failed,
+		bbusunit_printerr("  %u %s FAILED", tests_failed,
 				tests_failed == 1 ? "test" : "tests");
+		bbusunit_printerr("  Failure rate: %.2f%%",
+					((double)tests_failed/tests_run)*100);
 		r = EXIT_FAILURE;
 	} else {
 		bbusunit_print("  All tests PASSED!");
