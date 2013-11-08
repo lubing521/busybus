@@ -17,6 +17,7 @@
  */
 
 #include "bbus-unit.h"
+#include <busybus.h>
 #include <string.h>
 #include <stdio.h>
 
