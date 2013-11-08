@@ -1,0 +1,6 @@
+- Implement signals.
+- Implement arbitrary messages.
+- Remove the bbus_connectp-like functions and instead add a global, thread-safe
+  path string accessible and changeable with dedicated functions.
+- Add a new library function and data structures for argument parsing to avoid
+  code duplication in every binary.
