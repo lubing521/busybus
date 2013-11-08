@@ -138,6 +138,32 @@ BBUSUNIT_DEFINE_TEST(list_ins_first)
 	BBUSUNIT_ENDTEST;
 }
 
+BBUSUNIT_DEFINE_TEST(list_ins_push_back)
+{
+	BBUSUNIT_BEGINTEST;
+
+		struct list l = { NULL, NULL };
+		DEF_ELEM(1);
+		DEF_ELEM(2);
+		DEF_ELEM(3);
+
+		bbus_list_insert(&l, &e1, NULL);
+		bbus_list_insert(&l, &e2, &e1);
+		bbus_list_insert(&l, &e3, &e2);
+
+		BBUSUNIT_ASSERT_EQ(1, l.head->val);
+		BBUSUNIT_ASSERT_EQ(2, l.head->next->val);
+		BBUSUNIT_ASSERT_EQ(2, l.tail->prev->val);
+		BBUSUNIT_ASSERT_EQ(3, l.tail->val);
+		BBUSUNIT_ASSERT_EQ(e2.prev, l.head);
+		BBUSUNIT_ASSERT_EQ(e2.next, l.tail);
+		BBUSUNIT_ASSERT_NULL(e1.prev);
+		BBUSUNIT_ASSERT_NULL(e3.next);
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
 BBUSUNIT_DEFINE_TEST(list_rm_last)
 {
 	BBUSUNIT_BEGINTEST;
