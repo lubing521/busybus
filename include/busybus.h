@@ -830,7 +830,7 @@ void bbus_hdr_build(struct bbus_msg_hdr* hdr, int typ, int err) BBUS_PUBLIC;
 uint32_t bbus_hdr_gettoken(const struct bbus_msg_hdr* hdr) BBUS_PUBLIC;
 
 /**
- * @brief Converts given token to netwok byte order and assigns it to 'hdr'.
+ * @brief Converts given token to network byte order and assigns it to 'hdr'.
  * @param hdr The header.
  * @param tok The token.
  */
