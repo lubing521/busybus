@@ -44,13 +44,13 @@ void bbus_list_insert(void* list, void* elem, void* prev)
 	if (pr == NULL) {
 		/* Assume the list is empty. */
 		el->next = el->prev = NULL;
-		lst->head = lst->tail = NULL;
+		lst->head = lst->tail = el;
 	} else {
 		el->prev = pr;
 		el->next = pr->next;
-		pr->next = el;
 		if (pr->next != NULL)
 			pr->next->prev = el;
+		pr->next = el;
 		if (pr == lst->tail)
 			lst->tail = el;
 	}
