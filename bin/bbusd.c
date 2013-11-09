@@ -56,6 +56,12 @@ struct clientlist_elem
 	bbus_client* cli;
 };
 
+struct clientlist
+{
+	struct clientlist_elem* head;
+	struct clientlist_elem* tail;
+};
+
 #define METHOD_LOCAL	0x01
 #define METHOD_REMOTE	0x02
 
@@ -101,10 +107,8 @@ struct service_map
 
 static char* sockpath = BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME;
 static bbus_server* server;
-static struct clientlist_elem* clients_head = NULL;
-static struct clientlist_elem* clients_tail = NULL;
-static struct clientlist_elem* monitors_head = NULL;
-static struct clientlist_elem* monitors_tail = NULL;
+static struct clientlist clients = { NULL, NULL };
+static struct clientlist monitors = { NULL, NULL };
 static volatile int run;
 /* TODO in the future syslog will be the default. */
 static struct option_flags options = { 0, 0, 1, 0 };
@@ -240,8 +244,7 @@ static void sighandler(int signum)
 	}
 }
 
-static int list_add(bbus_client* cli, struct clientlist_elem** head,
-					struct clientlist_elem** tail)
+static int list_add(bbus_client* cli, struct clientlist* list)
 {
 	struct clientlist_elem* el;
 
@@ -250,45 +253,26 @@ static int list_add(bbus_client* cli, struct clientlist_elem** head,
 		return -1;
 
 	el->cli = cli;
-	if (*tail == NULL) {
-		*head = *tail = el;
-		el->prev = NULL;
-		el->next = NULL;
-	} else {
-		insque(el, *tail);
-		*tail = el;
-	}
+	bbus_list_push(list, el);
 
 	return 0;
 }
 
-static void list_rm(struct clientlist_elem** elem,
-			struct clientlist_elem** head,
-			struct clientlist_elem** tail)
+static void list_rm(struct clientlist_elem** elem, struct clientlist* list)
 {
-	struct clientlist_elem* tmp;
-
-	if (*head == *tail) {
-		/* Last element left. */
-		*head = *tail = NULL;
-	} else {
-		remque(*elem);
-		for (tmp = *head; tmp->next != NULL; tmp = tmp->next);
-		*tail = tmp;
-	}
-
+	bbus_list_rm(list, *elem);
 	bbus_free(*elem);
 	*elem = NULL;
 }
 
 static int client_list_add(bbus_client* cli)
 {
-	return list_add(cli, &clients_head, &clients_tail);
+	return list_add(cli, &clients);
 }
 
 static int monitor_list_add(bbus_client* cli)
 {
-	return list_add(cli, &monitors_head, &monitors_tail);
+	return list_add(cli, &monitors);
 }
 
 static int do_insert_method(const char* path, struct method* mthd,
@@ -681,7 +665,7 @@ static void accept_client(void)
 		bbus_client_settoken(cli, token);
 		/* This client is the list's tail at this point. */
 		r = bbus_hmap_set(caller_map, &token,
-					sizeof(token), clients_tail);
+					sizeof(token), clients.tail);
 		if (r < 0) {
 			logmsg(BBUS_LOG_ERR,
 				"Error adding new client to "
@@ -808,12 +792,10 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			{
 				struct clientlist_elem* mon;
 
-				for (mon = monitors_head; mon != NULL;
+				for (mon = monitors.head; mon != NULL;
 							mon = mon->next) {
 					if (mon->cli == cli) {
-						list_rm(&mon,
-							&monitors_head,
-							&monitors_tail);
+						list_rm(&mon, &monitors);
 						goto cli_close;
 					}
 				}
@@ -842,7 +824,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 cli_close:
 	bbus_client_close(cli);
 	bbus_client_free(cli);
-	list_rm(cli_elem, &clients_head, &clients_tail);
+	list_rm(cli_elem, &clients);
 	logmsg(BBUS_LOG_INFO, "Client disconnected.\n");
 }
 
@@ -928,7 +910,7 @@ int main(int argc, char** argv)
 		memset(&tv, 0, sizeof(struct bbus_timeval));
 		bbus_pollset_clear(pollset);
 		bbus_pollset_addsrv(pollset, server);
-		for (tmpcli = clients_head; tmpcli != NULL;
+		for (tmpcli = clients.head; tmpcli != NULL;
 				tmpcli = tmpcli->next) {
 			bbus_pollset_addcli(pollset, tmpcli->cli);
 		}
@@ -955,7 +937,7 @@ int main(int argc, char** argv)
 				--retval;
 			}
 
-			tmpcli = clients_head;
+			tmpcli = clients.head;
 			while (retval > 0) {
 				if (bbus_pollset_cliisset(pollset,
 							tmpcli->cli)) {
@@ -974,13 +956,13 @@ int main(int argc, char** argv)
 	/* Cleanup. */
 	bbus_srv_close(server);
 
-	for (tmpcli = clients_head; tmpcli != NULL; tmpcli = tmpcli->next) {
+	for (tmpcli = clients.head; tmpcli != NULL; tmpcli = tmpcli->next) {
 		bbus_client_close(tmpcli->cli);
 		bbus_client_free(tmpcli->cli);
 		bbus_free(tmpcli);
 	}
 
-	for (tmpcli = monitors_head; tmpcli != NULL; tmpcli = tmpcli->next) {
+	for (tmpcli = monitors.head; tmpcli != NULL; tmpcli = tmpcli->next) {
 		bbus_free(tmpcli);
 	}
 
