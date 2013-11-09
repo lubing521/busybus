@@ -4,3 +4,6 @@
   path string accessible and changeable with dedicated functions.
 - Add a new library function and data structures for argument parsing to avoid
   code duplication in every binary.
+- Add thread-specific error values.
+- Ignore SIGPIPE on socket level.
+- Hashmaps should use bbus_list functions instead of insque and remque.
