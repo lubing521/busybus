@@ -286,14 +286,14 @@ static int do_insert_method(const char* path, struct method* mthd,
 	found = index(path, '.');
 	if (found == NULL) {
 		/* Path is the method name. */
-		mval = bbus_hmap_finds(node->methods, path);
+		mval = bbus_hmap_findstr(node->methods, path);
 		if (mval != NULL) {
 			logmsg(BBUS_LOG_ERR,
 				"Method already exists for this value: %s\n",
 				path);
 			return -1;
 		}
-		ret = bbus_hmap_sets(node->methods, path, mthd);
+		ret = bbus_hmap_setstr(node->methods, path, mthd);
 		if (ret < 0) {
 			logmsg(BBUS_LOG_ERR,
 				"Error registering new method: %s\n",
@@ -305,22 +305,22 @@ static int do_insert_method(const char* path, struct method* mthd,
 	} else {
 		/* Path is the subservice name. */
 		*found = '\0';
-		next = bbus_hmap_finds(node->subsrvc, path);
+		next = bbus_hmap_findstr(node->subsrvc, path);
 		if (next == NULL) {
 			/* Insert new service. */
 			next = bbus_malloc(sizeof(struct service_map));
 			if (next == NULL)
 				goto err_mknext;
 
-			next->subsrvc = bbus_hmap_create();
+			next->subsrvc = bbus_hmap_create(BBUS_HMAP_KEYSTR);
 			if (next->subsrvc == NULL)
 				goto err_mksubsrvc;
 
-			next->methods = bbus_hmap_create();
+			next->methods = bbus_hmap_create(BBUS_HMAP_KEYSTR);
 			if (next->subsrvc == NULL)
 				goto err_mkmethods;
 
-			ret = bbus_hmap_sets(node->subsrvc, path, next);
+			ret = bbus_hmap_setstr(node->subsrvc, path, next);
 			if (ret < 0)
 				goto err_setsrvc;
 		}
@@ -364,11 +364,11 @@ static struct method* do_locate_method(char* path, struct service_map* node)
 	found = index(path, '.');
 	if (found == NULL) {
 		/* This is a method. */
-		return bbus_hmap_finds(node->methods, path);
+		return bbus_hmap_findstr(node->methods, path);
 	} else {
 		*found = '\0';
 		/* This is a sub-service. */
-		next = bbus_hmap_finds(node->subsrvc, path);
+		next = bbus_hmap_findstr(node->subsrvc, path);
 		if (next == NULL) {
 			return NULL;
 		}
@@ -590,8 +590,8 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED,
 	bbus_object* obj;
 	int ret;
 
-	cli = (struct clientlist_elem*)bbus_hmap_find(caller_map,
-				&msg->hdr.token, sizeof(msg->hdr.token));
+	cli = (struct clientlist_elem*)bbus_hmap_finduint(caller_map,
+						(unsigned)msg->hdr.token);
 	if (cli == NULL) {
 		logmsg(BBUS_LOG_ERR, "Caller not found for reply.\n");
 		return -1;
@@ -664,8 +664,8 @@ static void accept_client(void)
 		token = make_token();
 		bbus_client_settoken(cli, token);
 		/* This client is the list's tail at this point. */
-		r = bbus_hmap_set(caller_map, &token,
-					sizeof(token), clients.tail);
+		r = bbus_hmap_setuint(caller_map, (unsigned)token,
+							clients.tail);
 		if (r < 0) {
 			logmsg(BBUS_LOG_ERR,
 				"Error adding new client to "
@@ -846,7 +846,7 @@ int main(int argc, char** argv)
 	 * 	keys -> tokens,
 	 * 	values -> pointers to caller objects.
 	 */
-	caller_map = bbus_hmap_create();
+	caller_map = bbus_hmap_create(BBUS_HMAP_KEYUINT);
 	if (caller_map == NULL) {
 		die("Error creating the caller hashmap: %s\n",
 			bbus_strerror(bbus_lasterror()));
@@ -857,13 +857,13 @@ int main(int argc, char** argv)
 	if (srvc_map == NULL)
 		goto err_map;
 
-	srvc_map->subsrvc = bbus_hmap_create();
+	srvc_map->subsrvc = bbus_hmap_create(BBUS_HMAP_KEYSTR);
 	if (srvc_map->subsrvc == NULL) {
 		bbus_free(srvc_map);
 		goto err_map;
 	}
 
-	srvc_map->methods = bbus_hmap_create();
+	srvc_map->methods = bbus_hmap_create(BBUS_HMAP_KEYSTR);
 	if (srvc_map->methods == NULL) {
 		bbus_hmap_free(srvc_map->subsrvc);
 		bbus_free(srvc_map);

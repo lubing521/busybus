@@ -191,7 +191,7 @@ bbus_service_connection* bbus_srvc_connectp(const char* name,
 		return NULL;
 	conn->sock = sock;
 	conn->srvname = bbus_str_cpy(name);
-	conn->methods = bbus_hmap_create();
+	conn->methods = bbus_hmap_create(BBUS_HMAP_KEYSTR);
 	if (conn->methods == NULL) {
 		__bbus_sock_close(conn->sock);
 		bbus_str_free(conn->srvname);
@@ -250,7 +250,7 @@ int bbus_srvc_regmethod(bbus_service_connection* conn,
 		return -1;
 	}
 
-	r = bbus_hmap_sets(conn->methods, method->name,
+	r = bbus_hmap_setstr(conn->methods, method->name,
 			(void*)method->func);
 	if (r < 0)
 		return -1;
@@ -308,7 +308,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		hdr.msgtype = BBUS_MSGTYPE_SRVREPLY;
 		bbus_hdr_settoken(&hdr, token);
 		objret = NULL;
-		callback = bbus_hmap_finds(conn->methods, meta);
+		callback = bbus_hmap_findstr(conn->methods, meta);
 		if (callback == NULL) {
 			hdr.errcode = BBUS_PROT_ENOMETHOD;
 			__bbus_seterr(BBUS_ENOMETHOD);

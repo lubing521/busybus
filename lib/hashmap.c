@@ -40,9 +40,10 @@ struct __bbus_hashmap
 	size_t size;
 	size_t numstored;
 	struct map_entry** bucket_heads;
+	enum bbus_hmap_type type;
 };
 
-static bbus_hashmap* create_hashmap(size_t size)
+static bbus_hashmap* create_hashmap(enum bbus_hmap_type type, size_t size)
 {
 	bbus_hashmap* hmap;
 	unsigned i;
@@ -62,14 +63,19 @@ static bbus_hashmap* create_hashmap(size_t size)
 		hmap->bucket_heads[i] = NULL;
 	hmap->size = size;
 	hmap->numstored = 0;
+	hmap->type = type;
 
 	return hmap;
 }
 
-bbus_hashmap* bbus_hmap_create(void)
+bbus_hashmap* bbus_hmap_create(enum bbus_hmap_type type)
 {
-	return create_hashmap(DEF_MAP_SIZE);
+	return create_hashmap(type, DEF_MAP_SIZE);
 }
+
+/* Prototype for enlarge_map(). */
+static int hmap_set(bbus_hashmap* hmap, const void* key,
+					size_t ksize, void* val);
 
 static int enlarge_map(bbus_hashmap* hmap)
 {
@@ -78,12 +84,12 @@ static int enlarge_map(bbus_hashmap* hmap)
 	unsigned i;
 	int r;
 
-	newmap = create_hashmap(hmap->size * 2);
+	newmap = create_hashmap(hmap->type, hmap->size * 2);
 	if (newmap == NULL)
 		return -1;
 	for (i = 0; i < hmap->size; ++i) {
 		for (el = hmap->bucket_heads[i]; el != NULL; el = el->next) {
-			r = bbus_hmap_set(newmap, el->key,
+			r = hmap_set(newmap, el->key,
 						el->ksize, el->val);
 			if (r < 0) {
 				bbus_hmap_free(newmap);
@@ -102,13 +108,8 @@ static int enlarge_map(bbus_hashmap* hmap)
 	return 0;
 }
 
-int bbus_hmap_sets(bbus_hashmap* hmap, const char* key, void* val)
-{
-	return bbus_hmap_set(hmap, key, strlen(key), val);
-}
-
-int bbus_hmap_set(bbus_hashmap* hmap, const void* key,
-		size_t ksize, void* val)
+static int hmap_set(bbus_hashmap* hmap, const void* key,
+					size_t ksize, void* val)
 {
 	uint32_t crc;
 	unsigned ind;
@@ -190,12 +191,7 @@ noelem:
 	return NULL;
 }
 
-void* bbus_hmap_finds(bbus_hashmap* hmap, const char* key)
-{
-	return bbus_hmap_find(hmap, key, strlen(key));
-}
-
-void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
+static void* hmap_find(bbus_hashmap* hmap, const void* key,
 		size_t ksize)
 {
 	struct map_entry* entr;
@@ -206,12 +202,7 @@ void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
 	return entr->val;
 }
 
-void* bbus_hmap_rms(bbus_hashmap* hmap, const char* key)
-{
-	return bbus_hmap_rm(hmap, key, strlen(key));
-}
-
-void* bbus_hmap_rm(bbus_hashmap* hmap, const void* key, size_t ksize)
+static void* hmap_rm(bbus_hashmap* hmap, const void* key, size_t ksize)
 {
 	struct map_entry* entr;
 	void* ret;
@@ -226,6 +217,50 @@ void* bbus_hmap_rm(bbus_hashmap* hmap, const void* key, size_t ksize)
 	hmap->numstored--;
 
 	return ret;
+}
+
+#define CHECK_HMAP_TYPE(MAP, EXPECTED, RET)				\
+	do {								\
+		if ((MAP)->type != (EXPECTED)) {			\
+			__bbus_seterr(BBUS_EHMAPINVTYPE);		\
+			return (RET);					\
+		}							\
+	} while (0)
+
+int bbus_hmap_setstr(bbus_hashmap* hmap, const char* key, void* val)
+{
+	CHECK_HMAP_TYPE(hmap, BBUS_HMAP_KEYSTR, -1);
+	return hmap_set(hmap, key, strlen(key), val);
+}
+
+void* bbus_hmap_findstr(bbus_hashmap* hmap, const char* key)
+{
+	CHECK_HMAP_TYPE(hmap, BBUS_HMAP_KEYSTR, NULL);
+	return hmap_find(hmap, key, strlen(key));
+}
+
+void* bbus_hmap_rmstr(bbus_hashmap* hmap, const char* key)
+{
+	CHECK_HMAP_TYPE(hmap, BBUS_HMAP_KEYSTR, NULL);
+	return hmap_rm(hmap, key, strlen(key));
+}
+
+int bbus_hmap_setuint(bbus_hashmap* hmap, unsigned key, void* val)
+{
+	CHECK_HMAP_TYPE(hmap, BBUS_HMAP_KEYUINT, -1);
+	return hmap_set(hmap, &key, sizeof(unsigned), val);
+}
+
+void* bbus_hmap_finduint(bbus_hashmap* hmap, unsigned key)
+{
+	CHECK_HMAP_TYPE(hmap, BBUS_HMAP_KEYUINT, NULL);
+	return hmap_find(hmap, &key, sizeof(unsigned));
+}
+
+void* bbus_hmap_rmuint(bbus_hashmap* hmap, unsigned key)
+{
+	CHECK_HMAP_TYPE(hmap, BBUS_HMAP_KEYUINT, NULL);
+	return hmap_rm(hmap, &key, sizeof(unsigned));
 }
 
 void bbus_hmap_reset(bbus_hashmap* hmap)

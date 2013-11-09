@@ -31,17 +31,17 @@ BBUSUNIT_DEFINE_TEST(hashmap_basic)
 		char keybuf[128];
 		void* val;
 
-		hmap = bbus_hmap_create();
+		hmap = bbus_hmap_create(BBUS_HMAP_KEYSTR);
 		BBUSUNIT_ASSERT_NOTNULL(hmap);
 
 		for (i = 0; i < 140; ++i) {
 			memset(keybuf, 0, sizeof(keybuf));
 			snprintf(keybuf, sizeof(keybuf), "%ld", i);
-			r = bbus_hmap_sets(hmap, keybuf, (void*)i);
+			r = bbus_hmap_setstr(hmap, keybuf, (void*)i);
 			BBUSUNIT_ASSERT_FALSE(r < 0);
 		}
 
-		val = bbus_hmap_finds(hmap, "40");
+		val = bbus_hmap_findstr(hmap, "40");
 		BBUSUNIT_ASSERT_EQ(40, (long)val);
 
 	BBUSUNIT_FINALLY;
@@ -55,7 +55,7 @@ BBUSUNIT_DEFINE_TEST(hashmap_reassign)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const int key = 42;
+		static const unsigned key = 42;
 		static int val1 = 1;
 		static int val2 = 2;
 
@@ -63,16 +63,36 @@ BBUSUNIT_DEFINE_TEST(hashmap_reassign)
 		int r;
 		void* v;
 
-		hmap = bbus_hmap_create();
+		hmap = bbus_hmap_create(BBUS_HMAP_KEYUINT);
 		BBUSUNIT_ASSERT_NOTNULL(hmap);
-		r = bbus_hmap_set(hmap, &key, sizeof(key), &val1);
+		r = bbus_hmap_setuint(hmap, key, &val1);
 		BBUSUNIT_ASSERT_FALSE(r < 0);
-		v = bbus_hmap_find(hmap, &key, sizeof(key));
+		v = bbus_hmap_finduint(hmap, key);
 		BBUSUNIT_ASSERT_TRUE(*((int*)v) == 1);
-		r = bbus_hmap_set(hmap, &key, sizeof(key), &val2);
+		r = bbus_hmap_setuint(hmap, key, &val2);
 		BBUSUNIT_ASSERT_FALSE(r < 0);
-		v = bbus_hmap_find(hmap, &key, sizeof(key));
+		v = bbus_hmap_finduint(hmap, key);
 		BBUSUNIT_ASSERT_TRUE(*((int*)v) == 2);
+
+	BBUSUNIT_FINALLY;
+
+		bbus_hmap_free(hmap);
+
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(hashmap_invalid_type)
+{
+	BBUSUNIT_BEGINTEST;
+
+		bbus_hashmap* hmap;
+		int r;
+
+		hmap = bbus_hmap_create(BBUS_HMAP_KEYSTR);
+		BBUSUNIT_ASSERT_NOTNULL(hmap);
+		r = bbus_hmap_setuint(hmap, 123, NULL);
+		BBUSUNIT_ASSERT_EQ(-1, r);
+		BBUSUNIT_ASSERT_EQ(BBUS_EHMAPINVTYPE, bbus_lasterror());
 
 	BBUSUNIT_FINALLY;
 

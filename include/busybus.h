@@ -274,21 +274,19 @@ void bbus_list_rm(void* list, void* elem) BBUS_PUBLIC;
 typedef struct __bbus_hashmap bbus_hashmap;
 
 /**
+ * @brief Indicates the type of a key in the hashmap.
+ */
+enum bbus_hmap_type
+{
+	BBUS_HMAP_KEYUINT = 1,	/**< Keys are unsigned integers. */
+	BBUS_HMAP_KEYSTR,	/**< Keys are null-terminated strings. */
+};
+
+/**
  * @brief Creates an empty hashmap object.
  * @return Pointer to the new hashmap or NULL if no memory.
  */
-bbus_hashmap* bbus_hmap_create(void) BBUS_PUBLIC;
-
-/**
- * @brief Inserts an entry or sets a new value for an existing one.
- * @param hmap The hashmap.
- * @param key The key.
- * @param ksize Size of 'key'.
- * @param val New value.
- * @return 0 on success, -1 if no memory.
- */
-int bbus_hmap_set(bbus_hashmap* hmap, const void* key,
-		size_t ksize, void* val) BBUS_PUBLIC;
+bbus_hashmap* bbus_hmap_create(enum bbus_hmap_type type) BBUS_PUBLIC;
 
 /**
  * @brief Inserts an entry or sets a new value for an existing one.
@@ -299,18 +297,8 @@ int bbus_hmap_set(bbus_hashmap* hmap, const void* key,
  *
  * A string is used as key.
  */
-int bbus_hmap_sets(bbus_hashmap* hmap,
+int bbus_hmap_setstr(bbus_hashmap* hmap,
 		const char* key, void* val) BBUS_PUBLIC;
-
-/**
- * @brief Looks up the value for a given key.
- * @param hmap The hashmap.
- * @param key The key.
- * @param ksize Size of 'key'.
- * @return Pointer to the looked up entry or NULL if not present.
- */
-void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
-		size_t ksize) BBUS_PUBLIC;
 
 /**
  * @brief Looks up the value for a given string.
@@ -318,20 +306,7 @@ void* bbus_hmap_find(bbus_hashmap* hmap, const void* key,
  * @param key The key.
  * @return Pointer to the looked up entry or NULL if not present.
  */
-void* bbus_hmap_finds(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
-
-/**
- * @brief Removes an entry for a given key.
- * @param hmap The hashmap.
- * @param key The key.
- * @param ksize Size of 'key'.
- * @return Pointer to the looked up value or NULL if not present.
- *
- * If value points to dynamically allocated data, it must be freed
- * separately.
- */
-void* bbus_hmap_rm(bbus_hashmap* hmap, const void* key,
-		size_t ksize) BBUS_PUBLIC;
+void* bbus_hmap_findstr(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
 
 /**
  * @brief Removes an entry for a given string.
@@ -342,7 +317,37 @@ void* bbus_hmap_rm(bbus_hashmap* hmap, const void* key,
  * If value points to dynamically allocated data, it must be freed
  * separately.
  */
-void* bbus_hmap_rms(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+void* bbus_hmap_rmstr(bbus_hashmap* hmap, const char* key) BBUS_PUBLIC;
+
+/**
+ * @brief Inserts an entry or sets a new value for an existing one.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @param val New value.
+ * @return 0 on success, -1 if no memory.
+ *
+ * An unsigned integer is used as key.
+ */
+int bbus_hmap_setuint(bbus_hashmap* hmap, unsigned key, void* val) BBUS_PUBLIC;
+
+/**
+ * @brief Looks up the value for a given unsigned integer.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @return Pointer to the looked up entry or NULL if not present.
+ */
+void* bbus_hmap_finduint(bbus_hashmap* hmap, unsigned key) BBUS_PUBLIC;
+
+/**
+ * @brief Removes an entry for a given unsigned integer.
+ * @param hmap The hashmap.
+ * @param key The key.
+ * @return Pointer to the looked up value or NULL if not present.
+ *
+ * If value points to dynamically allocated data, it must be freed
+ * separately.
+ */
+void* bbus_hmap_rmuint(bbus_hashmap* hmap, unsigned key) BBUS_PUBLIC;
 
 /**
  * @brief Deletes all key-value pairs from the hashmap.
@@ -407,7 +412,8 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_EMETHODERR		10014 /**< Error calling method */
 #define BBUS_EPOLLINTR		10015 /**< Poll interrupted by a signal. */
 #define BBUS_EMREGERR		10016 /**< Error registering the method. */
-#define __BBUS_MAX_ERR		10017 /**< Highest error code */
+#define BBUS_EHMAPINVTYPE	10017 /**< Invalid key type for this map. */
+#define __BBUS_MAX_ERR		10018 /**< Highest error code */
 
 /**
  * @}
