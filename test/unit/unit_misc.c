@@ -20,6 +20,7 @@
 #include <busybus.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
 
 BBUSUNIT_DEFINE_TEST(crc32)
 {
@@ -79,6 +80,22 @@ BBUSUNIT_DEFINE_TEST(error_strings)
 					bbus_strerror(BBUS_EMSGINVTYPRCVD));
 		BBUSUNIT_ASSERT_STREQ("error registering the method",
 					bbus_strerror(BBUS_EMREGERR));
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(error_libc_error_strings)
+{
+	BBUSUNIT_BEGINTEST;
+
+		/*
+		 * Check, that bbus_strerror called with regular errnos
+		 * returns the same error string strerror does.
+		 */
+
+		BBUSUNIT_ASSERT_STREQ(strerror(ENOMEM), bbus_strerror(ENOMEM));
+		BBUSUNIT_ASSERT_STREQ(strerror(EACCES), bbus_strerror(EACCES));
 
 	BBUSUNIT_FINALLY;
 	BBUSUNIT_ENDTEST;
@@ -171,6 +188,24 @@ BBUSUNIT_DEFINE_TEST(build_long_string)
 		str = bbus_str_build("%s", proper);
 		BBUSUNIT_ASSERT_NOTNULL(str);
 		BBUSUNIT_ASSERT_STREQ(str, proper);
+
+	BBUSUNIT_FINALLY;
+
+		bbus_str_free(str);
+
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(str_cpy)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char* const tocopy = "somethin somethin";
+		char* str;
+
+		str = bbus_str_cpy(tocopy);
+		BBUSUNIT_ASSERT_NOTNULL(str);
+		BBUSUNIT_ASSERT_STREQ(tocopy, str);
 
 	BBUSUNIT_FINALLY;
 
