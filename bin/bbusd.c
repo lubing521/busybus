@@ -97,7 +97,7 @@ struct remote_method
 	struct clientlist_elem* srvc;
 };
 
-struct service_map
+struct service_tree
 {
 	/* Values are pointers to struct service_map. */
 	bbus_hashmap* subsrvc;
@@ -113,8 +113,9 @@ static volatile int run;
 /* TODO in the future syslog will be the default. */
 static struct option_flags options = { 0, 0, 1, 0 };
 static bbus_hashmap* caller_map;
-static struct service_map* srvc_map;
-static struct bbus_msg* msgbuf;
+static struct service_tree* srvc_tree;
+static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
+static struct bbus_msg* msgbuf = (struct bbus_msg*)_msgbuf;
 
 static void print_help_and_exit(void)
 {
@@ -276,10 +277,10 @@ static int monitor_list_add(bbus_client* cli)
 }
 
 static int do_insert_method(const char* path, struct method* mthd,
-					struct service_map* node)
+					struct service_tree* node)
 {
 	char* found;
-	struct service_map* next;
+	struct service_tree* next;
 	int ret;
 	void* mval;
 
@@ -308,7 +309,7 @@ static int do_insert_method(const char* path, struct method* mthd,
 		next = bbus_hmap_findstr(node->subsrvc, path);
 		if (next == NULL) {
 			/* Insert new service. */
-			next = bbus_malloc(sizeof(struct service_map));
+			next = bbus_malloc(sizeof(struct service_tree));
 			if (next == NULL)
 				goto err_mknext;
 
@@ -350,16 +351,16 @@ static int insert_method(const char* path, struct method* mthd)
 	if (mname == NULL)
 		return -1;
 
-	ret = do_insert_method(mname, mthd, srvc_map);
+	ret = do_insert_method(mname, mthd, srvc_tree);
 	bbus_str_free(mname);
 
 	return ret;
 }
 
-static struct method* do_locate_method(char* path, struct service_map* node)
+static struct method* do_locate_method(char* path, struct service_tree* node)
 {
 	char* found;
-	struct service_map* next;
+	struct service_tree* next;
 
 	found = index(path, '.');
 	if (found == NULL) {
@@ -386,7 +387,7 @@ static struct method* locate_method(const char* path)
 	if (mname == NULL)
 		return NULL;
 
-	ret = do_locate_method(mname, srvc_map);
+	ret = do_locate_method(mname, srvc_tree);
 	bbus_str_free(mname);
 
 	return ret;
@@ -459,9 +460,11 @@ static int handle_clientcall(bbus_client* cli,
 			goto respond;
 		}
 		bbus_hdr_build(&hdr, BBUS_MSGTYPE_SRVCALL, BBUS_PROT_EGOOD);
-		hdr.flags |= (BBUS_PROT_HASMETA | BBUS_PROT_HASOBJECT);
-		hdr.psize = strlen(meta) + 1 + bbus_obj_rawsize(argobj);
-		hdr.token = bbus_client_gettoken(cli);
+		BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASMETA);
+		BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASOBJECT);
+		bbus_hdr_setpsize(&hdr, (uint16_t)(strlen(meta) + 1
+						+ bbus_obj_rawsize(argobj)));
+		bbus_hdr_settoken(&hdr, bbus_client_gettoken(cli));
 
 		ret = bbus_client_sendmsg(
 				((struct remote_method*)mthd)->srvc->cli,
@@ -608,8 +611,8 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED,
 	}
 
 	bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY, BBUS_PROT_EGOOD);
-	hdr.flags |= BBUS_PROT_HASOBJECT;
-	hdr.psize = bbus_obj_rawsize(obj);
+	BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASOBJECT);
+	bbus_hdr_setpsize(&hdr, bbus_obj_rawsize(obj));
 
 respond:
 	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, obj);
@@ -853,20 +856,20 @@ int main(int argc, char** argv)
 	}
 
 	/* Service map. */
-	srvc_map = bbus_malloc(sizeof(struct service_map));
-	if (srvc_map == NULL)
+	srvc_tree = bbus_malloc(sizeof(struct service_tree));
+	if (srvc_tree == NULL)
 		goto err_map;
 
-	srvc_map->subsrvc = bbus_hmap_create(BBUS_HMAP_KEYSTR);
-	if (srvc_map->subsrvc == NULL) {
-		bbus_free(srvc_map);
+	srvc_tree->subsrvc = bbus_hmap_create(BBUS_HMAP_KEYSTR);
+	if (srvc_tree->subsrvc == NULL) {
+		bbus_free(srvc_tree);
 		goto err_map;
 	}
 
-	srvc_map->methods = bbus_hmap_create(BBUS_HMAP_KEYSTR);
-	if (srvc_map->methods == NULL) {
-		bbus_hmap_free(srvc_map->subsrvc);
-		bbus_free(srvc_map);
+	srvc_tree->methods = bbus_hmap_create(BBUS_HMAP_KEYSTR);
+	if (srvc_tree->methods == NULL) {
+		bbus_hmap_free(srvc_tree->subsrvc);
+		bbus_free(srvc_tree);
 		goto err_map;
 	}
 
@@ -886,12 +889,6 @@ int main(int argc, char** argv)
 	pollset = bbus_pollset_make();
 	if (pollset == NULL) {
 		die("Error creating the poll_set: %s\n",
-			bbus_strerror(bbus_lasterror()));
-	}
-
-	msgbuf = bbus_malloc(BBUS_MAXMSGSIZE);
-	if (msgbuf == NULL) {
-		die("Error allocating a buffer for messages: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
 
@@ -965,8 +962,6 @@ int main(int argc, char** argv)
 	for (tmpcli = monitors.head; tmpcli != NULL; tmpcli = tmpcli->next) {
 		bbus_free(tmpcli);
 	}
-
-	bbus_free(msgbuf);
 
 	logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
 	return 0;
