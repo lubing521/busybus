@@ -261,7 +261,7 @@ bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg, size_t msgsize)
 	size_t offset;
 
 	if (msg->hdr.flags & BBUS_PROT_HASOBJECT) {
-		psize = msgsize - sizeof(struct bbus_msg_hdr);
+		psize = msg->hdr.psize;
 		payload = msg->payload;
 		if (msg->hdr.flags & BBUS_PROT_HASMETA) {
 			meta = bbus_prot_extractmeta(msg, msgsize);
