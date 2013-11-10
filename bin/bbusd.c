@@ -24,7 +24,6 @@
 #include <signal.h>
 #include <syslog.h>
 #include <limits.h>
-#include <search.h>
 #include <string.h>
 
 #define SYSLOG_IDENT "bbusd"
