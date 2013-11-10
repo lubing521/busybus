@@ -37,7 +37,7 @@ BBUSD_OBJS =		./bin/bbusd.o
 BBUSD_TARGET =		./bbusd
 BBUSD_LIBS =		-lbbus
 
-bbusd:			$(BBUSD_OBJS)
+bbusd:			libbbus.so $(BBUSD_OBJS)
 	$(CROSSCC) -o $(BBUSD_TARGET) $(BBUSD_OBJS) $(LDFLAGS)		\
 		$(DEBUGFLAGS) $(BBUSD_LIBS) -L./
 
@@ -48,7 +48,7 @@ BBUSCALL_OBJS =		./bin/bbus-call.o
 BBUSCALL_TARGET =	./bbus-call
 BBUSCALL_LIBS =		-lbbus
 
-bbus-call:		$(BBUSCALL_OBJS)
+bbus-call:		libbbus.so $(BBUSCALL_OBJS)
 	$(CROSSCC) -o $(BBUSCALL_TARGET) $(BBUSCALL_OBJS) $(LDFLAGS)	\
 		$(DEBUGFLAGS) $(BBUSCALL_LIBS) -L./
 
@@ -59,7 +59,7 @@ BBUSECHOD_OBJS =	./bin/bbus-echod.o
 BBUSECHOD_TARGET =	./bbus-echod
 BBUSECHOD_LIBS =	-lbbus
 
-bbus-echod:		$(BBUSECHOD_OBJS)
+bbus-echod:		libbbus.so $(BBUSECHOD_OBJS)
 	$(CROSSCC) -o $(BBUSECHOD_TARGET) $(BBUSECHOD_OBJS) $(LDFLAGS)	\
 		$(DEBUGFLAGS) $(BBUSECHOD_LIBS) -L./
 
