@@ -145,7 +145,7 @@ help:
 .PRECIOUS:	%.c
 .SUFFIXES:
 .SUFFIXES:	.o .c
-.PHONY:		all clean help test doc
+.PHONY:		all clean help test_unit test_regr test doc
 
 .c.o:
 	$(CROSSCC) -c -o $*.o $(CFLAGS) $(DEBUGFLAGS) $*.c
