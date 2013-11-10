@@ -57,7 +57,7 @@ int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 	}
 
 	hdr = (struct bbus_msg_hdr*)buf;
-	msgsize = hdr->psize + BBUS_MSGHDR_SIZE;
+	msgsize = bbus_hdr_getpsize(hdr) + BBUS_MSGHDR_SIZE;
 	if (msgsize > (ssize_t)bufsize) {
 		__bbus_seterr(BBUS_ENOSPACE);
 		return -1;
@@ -97,7 +97,8 @@ int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf, size_t bufsize)
 		return -1;
 	}
 
-	msgsize = BBUS_MSGHDR_SIZE + ((struct bbus_msg_hdr*)buf)->psize;
+	msgsize = BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(
+					(struct bbus_msg_hdr*)buf);
 	if (msgsize > bufsize) {
 		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
@@ -145,7 +146,7 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 		__bbus_seterr(BBUS_EMSGINVFMT);
 		return -1;
 	} else
-	if (r < (ssize_t)(BBUS_MSGHDR_SIZE + hdr->psize)) {
+	if (r < (ssize_t)(BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(hdr))) {
 		__bbus_seterr(BBUS_ERCVDLESS);
 		return -1;
 	}
@@ -169,7 +170,7 @@ int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 
 	metasize = meta == NULL ? 0 : strlen(meta)+1;
 	msgsize = BBUS_MSGHDR_SIZE + metasize + objsize;
-	if ((msgsize != (BBUS_MSGHDR_SIZE + hdr->psize))
+	if ((msgsize != (BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(hdr)))
 				|| (msgsize > BBUS_MAXMSGSIZE)) {
 		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
@@ -261,7 +262,7 @@ bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg, size_t msgsize)
 	size_t offset;
 
 	if (msg->hdr.flags & BBUS_PROT_HASOBJECT) {
-		psize = msg->hdr.psize;
+		psize = bbus_hdr_getpsize(&msg->hdr);
 		payload = msg->payload;
 		if (msg->hdr.flags & BBUS_PROT_HASMETA) {
 			meta = bbus_prot_extractmeta(msg, msgsize);
