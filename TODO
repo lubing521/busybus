@@ -7,3 +7,5 @@
 - Add thread-specific error values.
 - Ignore SIGPIPE on socket level.
 - Hashmaps should use bbus_list functions instead of insque and remque.
+- Make bbus_hdr_setpsize accept a size_t and set psize to UINT16_MAX if
+  it's greater than 65535.
