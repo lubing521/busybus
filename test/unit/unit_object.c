@@ -20,26 +20,49 @@
 #include <busybus.h>
 #include <string.h>
 
-BBUSUNIT_DEFINE_TEST(basic_object)
+/*
+ * We assert, that bbus_obj_rawdata() and bbus_obj_rawsize() work as
+ * expected, as we're gonna use them to test other functions.
+ */
+
+BBUSUNIT_DEFINE_TEST(object_insert)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char* const propbuf = "\x11\x22\x33\x44string\0";
-		static const size_t propsize = 11;
+		static const char propbuf[] =
+					"\xFE\xDC\xBA\x99"
+					"\x11\x22\x33\x44"
+					"string\0"
+					"\x66"
+					"\x00\x00\x00\x05"
+					"\x21\x32\x43\x54\x65";
+
+		static const size_t propsize = sizeof(propbuf)-1;
+		static const int i = -0x01234567;
 		static const unsigned u = 0x11223344;
 		static const char* const s = "string";
+		static const char b = '\x66';
+		static const char t[] = "\x21\x32\x43\x54\x65";
+		static const size_t ts = sizeof(t)-1;
 
 		bbus_object* obj;
 		int ret;
 
 		obj = bbus_obj_alloc();
 		BBUSUNIT_ASSERT_NOTNULL(obj);
+		ret = bbus_obj_insint(obj, i);
+		BBUSUNIT_ASSERT_EQ(0, ret);
 		ret = bbus_obj_insuint(obj, u);
 		BBUSUNIT_ASSERT_EQ(0, ret);
 		ret = bbus_obj_insstr(obj, s);
 		BBUSUNIT_ASSERT_EQ(0, ret);
+		ret = bbus_obj_insbyte(obj, b);
+		BBUSUNIT_ASSERT_EQ(0, ret);
+		ret = bbus_obj_insbytes(obj, t, ts);
+		BBUSUNIT_ASSERT_EQ(0, ret);
+		BBUSUNIT_ASSERT_EQ(propsize, bbus_obj_rawsize(obj));
 		BBUSUNIT_ASSERT_EQ(0, memcmp(bbus_obj_rawdata(obj),
-					propbuf, propsize));
+						propbuf, propsize));
 
 	BBUSUNIT_FINALLY;
 
@@ -53,8 +76,15 @@ BBUSUNIT_DEFINE_TEST(build_object)
 	BBUSUNIT_BEGINTEST;
 
 		static const char* const propbuf =
-				"\x00\x00\x00\x02\x11\x22\x33\x44oneone\0\x55"
-				"\x66\x77\x88twotwo\0\xAA\xBB\xCC\xDD\xFF\x66";
+					"\x00\x00\x00\x02"
+					"\x11\x22\x33\x44"
+					"oneone\0"
+					"\x55\x66\x77\x88"
+					"twotwo\0"
+					"\xAA\xBB\xCC\xDD"
+					"\xFF"
+					"\x66";
+
 		static const size_t propsize = 32;
 
 		bbus_object* obj;
@@ -79,8 +109,15 @@ BBUSUNIT_DEFINE_TEST(parse_object)
 	BBUSUNIT_BEGINTEST;
 
 		static const char* const propbuf =
-				"\x00\x00\x00\x02\x11\x22\x33\x44oneone\0\x55"
-				"\x66\x77\x88twotwo\0\xAA\xBB\xCC\xDD\xFF\x66";
+					"\x00\x00\x00\x02"
+					"\x11\x22\x33\x44"
+					"oneone\0"
+					"\x55\x66\x77\x88"
+					"twotwo\0"
+					"\xAA\xBB\xCC\xDD"
+					"\xFF"
+					"\x66";
+
 		static const size_t propsize = 32;
 
 		bbus_object* obj;
@@ -114,8 +151,8 @@ BBUSUNIT_DEFINE_TEST(repr_object)
 	BBUSUNIT_BEGINTEST;
 
 		static const char* const proprepr =
-			"bbus_object(A[(287454020, oneone)(1432778632, "
-			"twotwo)](2864434397, (0xf0, 0x58)))";
+			"bbus_object(A[(287454020, 'oneone')(1432778632, "
+			"'twotwo')](2864434397, (0xf0, 0x58)))";
 
 		char buf[256];
 		int ret;
@@ -139,12 +176,12 @@ BBUSUNIT_DEFINE_TEST(repr_object)
 	BBUSUNIT_ENDTEST;
 }
 
-BBUSUNIT_DEFINE_TEST(repr_string)
+BBUSUNIT_DEFINE_TEST(repr_one_string)
 {
 	BBUSUNIT_BEGINTEST;
 
 		static const char* const str = "something";
-		static const char* const proprepr = "bbus_object(something)";
+		static const char* const proprepr = "bbus_object('something')";
 
 		char buf[256];
 		int ret;
