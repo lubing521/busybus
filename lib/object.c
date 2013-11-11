@@ -689,7 +689,7 @@ static int repr_simple_type(char descr, bbus_object* obj,
 			ret = bbus_obj_extrstr(obj, &v);
 			if (ret < 0)
 				goto out;
-			ret = snprintf(*buf, *bufsize, "%s, ", v);
+			ret = snprintf(*buf, *bufsize, "'%s', ", v);
 		}
 		break;
 	default:
