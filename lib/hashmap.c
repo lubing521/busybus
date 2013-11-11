@@ -21,7 +21,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <search.h>
 #include <stdio.h>
 
 #define DEF_MAP_SIZE 32
@@ -35,11 +34,17 @@ struct map_entry
 	void* val;
 };
 
+struct entry_list
+{
+	struct map_entry* head;
+	struct map_entry* tail;
+};
+
 struct __bbus_hashmap
 {
 	size_t size;
 	size_t numstored;
-	struct map_entry** bucket_heads;
+	struct entry_list* buckets;
 	enum bbus_hmap_type type;
 };
 
@@ -52,15 +57,16 @@ static bbus_hashmap* create_hashmap(enum bbus_hmap_type type, size_t size)
 	if (hmap == NULL)
 		return NULL;
 
-	hmap->bucket_heads = bbus_malloc(
-				size * sizeof(struct map_entry*));
-	if (hmap->bucket_heads == NULL) {
+	hmap->buckets = bbus_malloc(size * sizeof(struct entry_list));
+	if (hmap->buckets == NULL) {
 		bbus_free(hmap);
 		return NULL;
 	}
 
-	for (i = 0; i < size; ++i)
-		hmap->bucket_heads[i] = NULL;
+	for (i = 0; i < size; ++i) {
+		hmap->buckets[i].head = NULL;
+		hmap->buckets[i].tail = NULL;
+	}
 	hmap->size = size;
 	hmap->numstored = 0;
 	hmap->type = type;
@@ -88,9 +94,8 @@ static int enlarge_map(bbus_hashmap* hmap)
 	if (newmap == NULL)
 		return -1;
 	for (i = 0; i < hmap->size; ++i) {
-		for (el = hmap->bucket_heads[i]; el != NULL; el = el->next) {
-			r = hmap_set(newmap, el->key,
-						el->ksize, el->val);
+		for (el = hmap->buckets[i].head; el != NULL; el = el->next) {
+			r = hmap_set(newmap, el->key, el->ksize, el->val);
 			if (r < 0) {
 				bbus_hmap_free(newmap);
 				return -1;
@@ -99,10 +104,10 @@ static int enlarge_map(bbus_hashmap* hmap)
 	}
 
 	bbus_hmap_reset(hmap);
-	bbus_free(hmap->bucket_heads);
+	bbus_free(hmap->buckets);
 	hmap->size = newmap->size;
 	hmap->numstored = newmap->numstored;
-	hmap->bucket_heads = newmap->bucket_heads;
+	hmap->buckets = newmap->buckets;
 	bbus_free(newmap); /* Free only the pointer to avoid a memory leak. */
 
 	return 0;
@@ -115,7 +120,6 @@ static int hmap_set(bbus_hashmap* hmap, const void* key,
 	unsigned ind;
 	int r;
 	struct map_entry* tmpel;
-	struct map_entry* tail;
 	struct map_entry* newel;
 
 	if (hmap->numstored == hmap->size) {
@@ -126,31 +130,26 @@ static int hmap_set(bbus_hashmap* hmap, const void* key,
 
 	crc = bbus_crc32(key, ksize);
 	ind = crc % hmap->size;
-	if (hmap->bucket_heads[ind] == NULL) {
-		hmap->bucket_heads[ind] = bbus_malloc(sizeof(
-						struct map_entry));
-		if (hmap->bucket_heads[ind] == NULL)
+	if (hmap->buckets[ind].head == NULL) {
+		newel = bbus_malloc(sizeof(struct map_entry));
+		if (newel == NULL)
 			return -1;
-		hmap->bucket_heads[ind]->next = NULL;
-		hmap->bucket_heads[ind]->prev = NULL;
-		hmap->bucket_heads[ind]->key = bbus_memdup(key, ksize);
-		if (hmap->bucket_heads[ind]->key == NULL) {
-			bbus_free(hmap->bucket_heads[ind]);
-			hmap->bucket_heads[ind] = NULL;
+		newel->key = bbus_memdup(key, ksize);
+		if (newel->key == NULL) {
+			bbus_free(newel);
 			return -1;
 		}
-		hmap->bucket_heads[ind]->ksize = ksize;
-		hmap->bucket_heads[ind]->val = val;
+		newel->ksize = ksize;
+		newel->val = val;
+		bbus_list_push(&hmap->buckets[ind], newel);
 	} else {
-		for (tmpel = hmap->bucket_heads[ind];
+		for (tmpel = hmap->buckets[ind].head;
 				tmpel != NULL; tmpel = tmpel->next) {
 			if (memcmp(tmpel->key, key,
 					BBUS_MIN(tmpel->ksize, ksize)) == 0) {
 				tmpel->val = val;
 				return 0;
 			}
-			if (tmpel->next == NULL)
-				tail = tmpel;
 		}
 		newel = bbus_malloc(sizeof(struct map_entry));
 		if (newel == NULL)
@@ -162,7 +161,7 @@ static int hmap_set(bbus_hashmap* hmap, const void* key,
 		}
 		newel->ksize = ksize;
 		newel->val = val;
-		insque(newel, tail);
+		bbus_list_push(&hmap->buckets[ind], newel);
 	}
 
 	hmap->numstored++;
@@ -170,7 +169,7 @@ static int hmap_set(bbus_hashmap* hmap, const void* key,
 }
 
 static struct map_entry* locate_entry(bbus_hashmap* hmap,
-		const void* key, size_t ksize)
+		const void* key, size_t ksize, struct entry_list** list)
 {
 	uint32_t crc;
 	unsigned ind;
@@ -178,13 +177,19 @@ static struct map_entry* locate_entry(bbus_hashmap* hmap,
 
 	crc = bbus_crc32(key, ksize);
 	ind = crc % hmap->size;
-	if (hmap->bucket_heads[ind] == NULL)
+	if (hmap->buckets[ind].head == NULL)
 		goto noelem;
 
-	for (entr = hmap->bucket_heads[ind];
+	for (entr = hmap->buckets[ind].head;
 			entr != NULL; entr = entr->next) {
-		if (memcmp(entr->key, key, BBUS_MIN(entr->ksize, ksize)) == 0)
+		if (memcmp(entr->key, key,
+				BBUS_MIN(entr->ksize, ksize)) == 0) {
+			if (list != NULL) {
+				/* bbus_hmap_rm() needs to know the bucket */
+				*list = &hmap->buckets[ind];
+			}
 			return entr;
+		}
 	}
 
 noelem:
@@ -196,7 +201,7 @@ static void* hmap_find(bbus_hashmap* hmap, const void* key,
 {
 	struct map_entry* entr;
 
-	entr = locate_entry(hmap, key, ksize);
+	entr = locate_entry(hmap, key, ksize, NULL);
 	if (entr == NULL)
 		return NULL;
 	return entr->val;
@@ -205,13 +210,14 @@ static void* hmap_find(bbus_hashmap* hmap, const void* key,
 static void* hmap_rm(bbus_hashmap* hmap, const void* key, size_t ksize)
 {
 	struct map_entry* entr;
+	struct entry_list* bucket;
 	void* ret;
 
-	entr = locate_entry(hmap, key, ksize);
+	entr = locate_entry(hmap, key, ksize, &bucket);
 	if (entr == NULL)
 		return NULL;
 	ret = entr->val;
-	remque(entr);
+	bbus_list_rm(bucket, entr);
 	bbus_free(entr->key);
 	bbus_free(entr);
 	hmap->numstored--;
@@ -270,14 +276,15 @@ void bbus_hmap_reset(bbus_hashmap* hmap)
 	struct map_entry* tmpel;
 
 	for (i = 0; i < hmap->size; ++i) {
-		el = hmap->bucket_heads[i];
+		el = hmap->buckets[i].head;
 		while (el != NULL) {
 			tmpel = el;
 			el = el->next;
 			bbus_free(tmpel->key);
 			bbus_free(tmpel);
 		}
-		hmap->bucket_heads[i] = NULL;
+		hmap->buckets[i].head = NULL;
+		hmap->buckets[i].tail = NULL;
 	}
 }
 
@@ -285,7 +292,7 @@ void bbus_hmap_free(bbus_hashmap* hmap)
 {
 	if (hmap) {
 		bbus_hmap_reset(hmap);
-		bbus_free(hmap->bucket_heads);
+		bbus_free(hmap->buckets);
 		bbus_free(hmap);
 	}
 }
@@ -331,10 +338,10 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize)
 
 	for (i = 0; i < hmap->size; ++i) {
 		r = dump_append(&buf, &bufsize, "Bucket nr %u:\n%s", i,
-				hmap->bucket_heads[i] == NULL ? "" : "| ");
+				hmap->buckets[i].head == NULL ? "" : "| ");
 		if (r < 0)
 			return -1;
-		el = hmap->bucket_heads[i];
+		el = hmap->buckets[i].head;
 		while (el != NULL) {
 			r = dump_append(&buf, &bufsize,
 				" [\"%s\"]->[0x%p] |%s",
