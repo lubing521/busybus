@@ -1,7 +1,8 @@
 ###############################################################################
 # globals
 ###############################################################################
-CFLAGS =	-Wall -Wextra -fPIC -O2 -D_GNU_SOURCE -I./include 	\
+OPT =		-O2
+CFLAGS =	-Wall -Wextra -fPIC $(OPT) -D_GNU_SOURCE -I./include	\
 				-fvisibility=hidden -Wno-psabi
 LDFLAGS =	-Wl,-E
 DEBUGFLAGS =
