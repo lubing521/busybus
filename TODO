@@ -11,3 +11,4 @@
   it's greater than 65535.
 - Add new assertions to the test suite: lower-than, lower-or-equal-to,
   greater-than and greater-or-equal-to.
+- Proper bbus_hmap_dump().
