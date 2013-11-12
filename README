@@ -3,12 +3,12 @@
 What is it?
 
   Busybus is a lightweight, simple and portable message bus and IPC system
-  for embedded Linux. Main objective is to create an intuitive, easy-to-use
-  and small message bus using binary data marshalling without any external
-  dependencies other than a standard Unix-like C library (glibc, eglibc
-  or uClibc). It shall work out-of-the-box - ie. server daemon bbusd will
-  be fully functional without any kind of configuration files - just simple
-  command line options will suffice.
+  for embedded, Linux-based systems. The main objective is to create an
+  intuitive, easy-to-use and small message bus using binary data marshalling
+  without any external dependencies other than a standard Unix-like C library
+  (glibc, eglibc or uClibc). It shall work out-of-the-box - ie. server daemon
+  bbusd will be fully functional without any kind of configuration files - just
+  simple command line options will suffice.
 
 Why busybus?
 
@@ -16,7 +16,7 @@ Why busybus?
   than that there are no many alternatives. There is ubus, but it's
   integrated with OpenWRT, there's abus, but it uses JSON for serialization
   and there's embus, but it doesn't seem to be actively developed and it
-  doesn't offer much functionality.
+  doesn't offer much functionality either.
 
 Is it ready?
 
@@ -29,7 +29,8 @@ Compilation and installation:
 
   This will probably change, but for now it's a simple 'make all' in order to
   build the libbbus.so library and all the binaries. Additionally there's
-  the 'make test' command, that will run the test suite located in test.c.
+  the 'make test' command, that will run the test suite located in the test/
+  directory. For more info just type 'make help'.
 
   There's no installation procedure for now - just make sure your loader can
   locate libbbus.so and put the binaries where you like.
@@ -40,7 +41,7 @@ Compilation and installation:
 How easy is it?
 
   Here's an example of a simple user session - a program connects to the server
-  and calls a method (no error checking).
+  and calls a method (error checking has been left out).
 
     bbus_client_connection* conn;
     bbus_object* arg;
@@ -85,12 +86,4 @@ How easy is it?
 
   Functions used by bbusd are a bit more complex, but user programs don't
   even need to look at them.
-
-Future plans:
-
-  - get it working,
-  - regression tests,
-  - doxygen documentation,
-  - add bindings for C++ and Python,
-  - static compilation.
 
