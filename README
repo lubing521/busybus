@@ -87,3 +87,5 @@ How easy is it?
   Functions used by bbusd are a bit more complex, but user programs don't
   even need to look at them.
 
+Questions and suggestions => Bartosz Golaszewski <bartekgola@gmail.com>
+
