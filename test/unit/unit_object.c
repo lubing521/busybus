@@ -194,11 +194,11 @@ BBUSUNIT_DEFINE_TEST(object_extract_rewind)
 	BBUSUNIT_ENDTEST;
 }
 
-BBUSUNIT_DEFINE_TEST(object_build)
+BBUSUNIT_DEFINE_TEST(object_basic_build)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char* const propbuf =
+		static const char propbuf[] =
 					"\x00\x00\x00\x02"
 					"\x11\x22\x33\x44"
 					"oneone\0"
@@ -208,7 +208,7 @@ BBUSUNIT_DEFINE_TEST(object_build)
 					"\xFF"
 					"\x66";
 
-		static const size_t propsize = 32;
+		static const size_t propsize = sizeof(propbuf)-1;
 
 		bbus_object* obj;
 
@@ -217,6 +217,7 @@ BBUSUNIT_DEFINE_TEST(object_build)
 				0x55667788u, "twotwo",
 				0xaabbccddu, 0xff, 0x66);
 		BBUSUNIT_ASSERT_NOTNULL(obj);
+		BBUSUNIT_ASSERT_EQ(propsize, bbus_obj_rawsize(obj));
 		BBUSUNIT_ASSERT_EQ(0, memcmp(bbus_obj_rawdata(obj),
 					propbuf, propsize));
 
@@ -227,11 +228,11 @@ BBUSUNIT_DEFINE_TEST(object_build)
 	BBUSUNIT_ENDTEST;
 }
 
-BBUSUNIT_DEFINE_TEST(object_parse)
+BBUSUNIT_DEFINE_TEST(object_basic_parse)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char* const propbuf =
+		static const char propbuf[] =
 					"\x00\x00\x00\x02"
 					"\x11\x22\x33\x44"
 					"oneone\0"
@@ -241,7 +242,7 @@ BBUSUNIT_DEFINE_TEST(object_parse)
 					"\xFF"
 					"\x66";
 
-		static const size_t propsize = 32;
+		static const size_t propsize = sizeof(propbuf)-1;
 
 		bbus_object* obj;
 		int ret;
@@ -261,6 +262,14 @@ BBUSUNIT_DEFINE_TEST(object_parse)
 					&arrsize, &au1, &as1, &au2,
 					&as2, &su, &sb1, &sb2);
 		BBUSUNIT_ASSERT_EQ(0, ret);
+		BBUSUNIT_ASSERT_EQ(2, arrsize);
+		BBUSUNIT_ASSERT_EQ(0x11223344, au1);
+		BBUSUNIT_ASSERT_STREQ("oneone", as1);
+		BBUSUNIT_ASSERT_EQ(0x55667788, au2);
+		BBUSUNIT_ASSERT_STREQ("twotwo", as2);
+		BBUSUNIT_ASSERT_EQ(0xAABBCCDD, su);
+		BBUSUNIT_ASSERT_EQ(0xFF, sb1);
+		BBUSUNIT_ASSERT_EQ(0x66, sb2);
 
 	BBUSUNIT_FINALLY;
 
