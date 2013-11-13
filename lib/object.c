@@ -568,6 +568,7 @@ static int parse_array(const char** descr, bbus_object* obj,
 	const char* pos;
 
 	ret = bbus_obj_extrarray(obj, &arrsize);
+	*(va_arg(va_box->va, bbus_size*)) = arrsize;
 	++(*descr);
 	while (--arrsize) {
 		switch (**descr) {
