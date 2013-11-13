@@ -754,8 +754,8 @@ int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
  *
  * Flags, that can be carried by the message header in the 'flags' field.
  */
-#define BBUS_PROT_HASMETA	(1 << 1) /**< Message contains metadata. */
-#define BBUS_PROT_HASOBJECT	(1 << 2) /**< Message contains an object. */
+#define BBUS_PROT_HASMETA	(1 << 0) /**< Message contains metadata. */
+#define BBUS_PROT_HASOBJECT	(1 << 1) /**< Message contains an object. */
 /**
  * @}
  */
