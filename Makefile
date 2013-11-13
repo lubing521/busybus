@@ -72,7 +72,8 @@ UNIT_OBJS =	./test/unit/bbus-unit.o					\
 		./test/unit/unit_misc.o					\
 		./test/unit/unit_hashmap.o				\
 		./test/unit/unit_object.o				\
-		./test/unit/unit_list.o
+		./test/unit/unit_list.o					\
+		./test/unit/unit_prot.o
 UNIT_TARGET =	./bbus-unit
 REGR_SCRIPT =	./test/regression/regression.py
 
