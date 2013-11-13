@@ -219,7 +219,7 @@ BBUSUNIT_DEFINE_TEST(object_basic_build)
 		BBUSUNIT_ASSERT_NOTNULL(obj);
 		BBUSUNIT_ASSERT_EQ(propsize, bbus_obj_rawsize(obj));
 		BBUSUNIT_ASSERT_EQ(0, memcmp(bbus_obj_rawdata(obj),
-					propbuf, propsize));
+						propbuf, propsize));
 
 	BBUSUNIT_FINALLY;
 
@@ -270,6 +270,82 @@ BBUSUNIT_DEFINE_TEST(object_basic_parse)
 		BBUSUNIT_ASSERT_EQ(0xAABBCCDD, su);
 		BBUSUNIT_ASSERT_EQ(0xFF, sb1);
 		BBUSUNIT_ASSERT_EQ(0x66, sb2);
+
+	BBUSUNIT_FINALLY;
+
+		bbus_obj_free(obj);
+
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(object_hardcore_nesting)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char propbuf[] =
+					"\x00\x00\x00\x02"
+					"\x00\x00\x00\x03"
+					"\x11\x22\x33\x44"
+					"first string\0"
+					"\x55\x66\x77\x88"
+					"second string\0"
+					"\x12\x23\x34\x45"
+					"third string\0"
+					"\x00\x00\x00\x08"
+					"\x11\x22\x33\x44\x55\x66\x77\x88"
+					"\x00\x00\x00\x02"
+					"\x11\x22\x33\x44"
+					"first second string\0"
+					"\x55\x66\x77\x88"
+					"second second string\0"
+					"\x00\x00\x00\x05"
+					"\xAA\xBB\xCC\xDD\xEE"
+					"\x21\x32\x43\x54"
+					"\x19"
+					"\x91"
+					"\x00\x00\x00\x03"
+					"first first\0"
+					"second second\0"
+					"third third\0"
+					"\x13\x24\x35\x46"
+					"\x51\x52\x53\x54";
+
+		static const size_t propsize = sizeof(propbuf)-1;
+
+		bbus_object* obj;
+
+		obj = bbus_obj_build("A(A(us)Ab)(u(bbAs(uu)))",
+						2,
+						3,
+						0x11223344,
+						"first string",
+						0x55667788,
+						"second string",
+						0x12233445,
+						"third string",
+						8,
+						0x11, 0x22, 0x33, 0x44,
+						0x55, 0x66, 0x77, 0x88,
+						2,
+						0x11223344,
+						"first second string",
+						0x55667788,
+						"second second string",
+						5,
+						0xAA, 0xBB, 0xCC, 0xDD, 0xEE,
+						0x21324354,
+						0x19,
+						0x91,
+						3,
+						"first first",
+						"second second",
+						"third third",
+						0x13243546,
+						0x51525354);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
+		BBUSUNIT_ASSERT_EQ(propsize, bbus_obj_rawsize(obj));
+		BBUSUNIT_ASSERT_EQ(0, memcmp(bbus_obj_rawdata(obj),
+						propbuf, propsize));
 
 	BBUSUNIT_FINALLY;
 
