@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013 Bartosz Golaszewski
+ * Copyright (C) 2013 Bartosz Golaszewski <bartekgola@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,3 +56,130 @@ BBUSUNIT_DEFINE_TEST(prot_extract_obj)
 
 	BBUSUNIT_ENDTEST;
 }
+
+BBUSUNIT_DEFINE_TEST(prot_extract_meta)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char msgbuf[] =
+				"\xBB\xC5"
+				"\x01"
+				"\x00"
+				"\x00\x00\x00\x00"
+				"\x00\x0C"
+				"\x01"
+				"\x00"
+				"meta string\0";
+
+		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
+		static const size_t msgsize = sizeof(msgbuf)-1;
+
+		const char* meta;
+
+		meta = bbus_prot_extractmeta(msg, msgsize);
+		BBUSUNIT_ASSERT_NOTNULL(meta);
+		BBUSUNIT_ASSERT_STREQ("meta string", meta);
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(prot_extract_meta_and_obj)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char msgbuf[] =
+				"\xBB\xC5"
+				"\x01"
+				"\x00"
+				"\x00\x00\x00\x00"
+				"\x00\x14"
+				"\x03"
+				"\x00"
+				"meta string\0"
+				"\x11\x22\x33\x44"
+				"\x55\x66\x77\x88";
+
+		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
+		static const size_t msgsize = sizeof(msgbuf)-1;
+
+		bbus_object* obj = NULL;
+		/* FIXME GCC complains later if obj is uninitialized, why? */
+		const char* meta;
+
+		meta = bbus_prot_extractmeta(msg, msgsize);
+		BBUSUNIT_ASSERT_NOTNULL(meta);
+		BBUSUNIT_ASSERT_STREQ("meta string", meta);
+		obj = bbus_prot_extractobj(msg, msgsize);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
+		BBUSUNIT_ASSERT_EQ(2*sizeof(bbus_uint32),
+					bbus_obj_rawsize(obj));
+		BBUSUNIT_ASSERT_EQ(0, memcmp(
+					"\x11\x22\x33\x44\x55\x66\x77\x88",
+					bbus_obj_rawdata(obj),
+					bbus_obj_rawsize(obj)));
+
+	BBUSUNIT_FINALLY;
+
+		bbus_obj_free(obj);
+
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(prot_extract_invalid_meta)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char msgbuf[] =
+				"\xBB\xC5"
+				"\x01"
+				"\x00"
+				"\x00\x00\x00\x00"
+				"\x00\x0C"
+				"\x01"
+				"\x00"
+				"meta string without null";
+
+		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
+		static const size_t msgsize = sizeof(msgbuf)-1;
+
+		const char* meta;
+
+		meta = bbus_prot_extractmeta(msg, msgsize);
+		BBUSUNIT_ASSERT_NULL(meta);
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(prot_extract_flags_not_set)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char msgbuf[] =
+				"\xBB\xC5"
+				"\x01"
+				"\x00"
+				"\x00\x00\x00\x00"
+				"\x00\x14"
+				"\x00"
+				"\x00"
+				"meta string\0"
+				"\x11\x22\x33\x44"
+				"\x55\x66\x77\x88";
+
+		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
+		static const size_t msgsize = sizeof(msgbuf)-1;
+
+		const char* meta;
+		bbus_object* obj;
+
+		meta = bbus_prot_extractmeta(msg, msgsize);
+		BBUSUNIT_ASSERT_NULL(meta);
+		obj = bbus_prot_extractobj(msg, msgsize);
+		BBUSUNIT_ASSERT_NULL(obj);
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
