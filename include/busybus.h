@@ -83,6 +83,11 @@ extern "C" {
 #define BBUS_UNUSED __attribute__((unused))
 
 /**
+ * @brief Used to get the number of elements in an array.
+ */
+#define BBUS_ARRAY_SIZE(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
+
+/**
  * @brief Marks a function as a constructor with high priority.
  *
  * Functions marked with this macro will be run before the main() function

@@ -21,6 +21,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+#include <time.h>
 
 BBUSUNIT_DEFINE_TEST(crc32)
 {
@@ -231,6 +232,35 @@ BBUSUNIT_DEFINE_TEST(min_multiple_eval)
 		int y = 5;
 
 		BBUSUNIT_ASSERT_EQ(4, BBUS_MIN(*(twice(&x)), y));
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(array_size)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const struct timeval tv[] = {
+			{
+				.tv_sec = 1,
+				.tv_usec = 1,
+			},
+			{
+				.tv_sec = 2,
+				.tv_usec = 2,
+			},
+			{
+				.tv_sec = 3,
+				.tv_usec = 3,
+			},
+			{
+				.tv_sec = 4,
+				.tv_usec = 5,
+			},
+		};
+
+		BBUSUNIT_ASSERT_EQ(4, BBUS_ARRAY_SIZE(tv));
 
 	BBUSUNIT_FINALLY;
 	BBUSUNIT_ENDTEST;
