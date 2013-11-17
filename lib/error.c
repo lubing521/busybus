@@ -45,7 +45,8 @@ static const char* const error_descr[] = {
 	"internal method error",
 	"poll interrupted by a signal",
 	"error registering the method",
-	"invalid key type used on a hashmap"
+	"invalid key type used on a hashmap",
+	"invalid regular expression pattern"
 };
 
 int bbus_lasterror(void)

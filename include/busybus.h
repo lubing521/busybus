@@ -196,6 +196,14 @@ char* bbus_str_cpy(const char* str) BBUS_PUBLIC;
 void bbus_str_free(char* str) BBUS_PUBLIC;
 
 /**
+ * @brief Matches a string against given regular expression pattern.
+ * @param pattern A valid POSIX regular expression pattern.
+ * @param str String to be matched.
+ * @return BBUS_TRUE on match, BBUS_FALSE on no-match and -1 on error.
+ */
+int bbus_regex_match(const char* pattern, const char* str) BBUS_PUBLIC;
+
+/**
  * @brief Computes crc32 checksum of given data.
  * @param buf Buffer containing the data.
  * @param bufsize Size of the data to be computed.
@@ -418,7 +426,8 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 #define BBUS_EPOLLINTR		10015 /**< Poll interrupted by a signal. */
 #define BBUS_EMREGERR		10016 /**< Error registering the method. */
 #define BBUS_EHMAPINVTYPE	10017 /**< Invalid key type for this map. */
-#define __BBUS_MAX_ERR		10018 /**< Highest error code */
+#define BBUS_EREGEXPTRN		10018 /**< Invalid regex pattern. */
+#define __BBUS_MAX_ERR		10019 /**< Highest error code */
 
 /**
  * @}

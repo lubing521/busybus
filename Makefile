@@ -24,7 +24,8 @@ LIBBBUS_OBJS =		./lib/error.o					\
 			./lib/string.o					\
 			./lib/crc32.o					\
 			./lib/hashmap.o					\
-			./lib/list.o
+			./lib/list.o					\
+			./lib/regex.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 
@@ -73,7 +74,8 @@ UNIT_OBJS =	./test/unit/bbus-unit.o					\
 		./test/unit/unit_hashmap.o				\
 		./test/unit/unit_object.o				\
 		./test/unit/unit_list.o					\
-		./test/unit/unit_prot.o
+		./test/unit/unit_prot.o					\
+		./test/unit/unit_regex.o
 UNIT_TARGET =	./bbus-unit
 REGR_SCRIPT =	./test/regression/regression.py
 
