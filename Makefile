@@ -25,7 +25,8 @@ LIBBBUS_OBJS =		./lib/error.o					\
 			./lib/crc32.o					\
 			./lib/hashmap.o					\
 			./lib/list.o					\
-			./lib/regex.o
+			./lib/regex.o					\
+			./lib/args.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 

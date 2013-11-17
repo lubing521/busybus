@@ -397,6 +397,62 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
 /**
  * @}
  *
+ * @defgroup __args__ Argument parsing
+ * @{
+ *
+ * Functions and data structures for easy argument parsing.
+ */
+
+enum bbus_opt_action
+{
+	BBUS_OPTACT_NOTHING = 0,
+	BBUS_OPTACT_SETFLAG,
+	BBUS_OPTACT_GETOPTARG,
+	BBUS_OPTACT_CALLFUNC,
+};
+
+enum bbus_opt_hasarg
+{
+	BBUS_OPT_NOARG = 0,
+	BBUS_OPT_ARGREQ,
+	BBUS_OPT_ARGOPT,
+};
+
+typedef int (*bbus_opt_callback)(const char* arg);
+
+struct bbus_option
+{
+	int shortopt;
+	const char* longopt;
+	enum bbus_opt_hasarg hasarg;
+	enum bbus_opt_action action;
+	void* actdata;
+	const char* descr;
+};
+
+struct bbus_opt_list
+{
+	const struct bbus_option* opts;
+	size_t numopts;
+	const char* progname;
+	const char* version;
+	const char* progdescr;
+};
+
+struct bbus_nonopts
+{
+	char** args;
+	size_t numargs;
+};
+
+int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
+		struct bbus_nonopts** nonopts) BBUS_PUBLIC;
+
+void bbus_free_nonopts(struct bbus_nonopts* nonopts) BBUS_PUBLIC;
+
+/**
+ * @}
+ *
  * @defgroup __error__ Error handling
  * @{
  *
