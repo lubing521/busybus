@@ -88,6 +88,23 @@ extern "C" {
 #define BBUS_ARRAY_SIZE(ARR) (sizeof(ARR) / sizeof((ARR)[0]))
 
 /**
+ * @brief Provide a branch prediction hint - expect the statement to be true.
+ * @param EXPR Statement expected to evaluate to true.
+ */
+#define BBUS_LIKELY(EXPR) __builtin_expect((EXPR), 1)
+
+/**
+ * @brief Provide a branch prediction hint - expect the statement to be false.
+ * @param EXPR Statement expected to evaluate to false.
+ */
+#define BBUS_UNLIKELY(EXPR) __builtin_expect((EXPR), 0)
+
+/**
+ * @brief Functions with this attribute will be run before entering main().
+ */
+#define BBUS_ATSTART __attribute__((constructor))
+
+/**
  * @brief Marks a function as a constructor with high priority.
  *
  * Functions marked with this macro will be run before the main() function
