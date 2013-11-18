@@ -22,8 +22,26 @@
 #include "protocol.h"
 #include <string.h>
 #include <arpa/inet.h>
+#include <stdio.h>
+#include <pthread.h>
 
 #define MAX_NUMIOV 3
+
+static pthread_mutex_t sockpath_mutex = PTHREAD_MUTEX_INITIALIZER;
+static char sockpath[BBUS_PROT_SOCKPATHMAX] = BBUS_PROT_DEFSOCKPATH;
+
+void bbus_prot_setsockpath(const char* path)
+{
+	pthread_mutex_lock(&sockpath_mutex);
+	snprintf(sockpath, BBUS_PROT_SOCKPATHMAX, "%s", path);
+	pthread_mutex_unlock(&sockpath_mutex);
+}
+
+const char* bbus_prot_getsockpath(void)
+{
+	/* TODO Full thread-safety will require a thread-specific storage. */
+	return sockpath;
+}
 
 static int hdr_check_magic(const struct bbus_msg_hdr* hdr)
 {

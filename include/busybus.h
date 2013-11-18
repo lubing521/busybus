@@ -829,17 +829,13 @@ int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
 
 /* TODO Signals and simple messages will be added in the future. */
 
-/** @brief Busybus magic number. */
-#define BBUS_MAGIC			"\xBB\xC5"
-/** @brief Size of the magic number. */
-#define BBUS_MAGIC_SIZE			2
-/** @brief Unix socket directory. */
-/* TODO should be /var/run/bbus/ in the future. */
-#define BBUS_DEF_DIRPATH		"/tmp/"
-/** @brief Unix socket filename. */
-#define BBUS_DEF_SOCKNAME 		"bbus.sock"
-/** @brief Biggest allowed message size. */
-#define BBUS_MAXMSGSIZE			4096
+#define BBUS_MAGIC	"\xBB\xC5"	/**< Busybus magic number. */
+#define BBUS_MAGIC_SIZE	2		/**< Size of the magic number. */
+
+/* TODO should go in /var/run/bbus/ in the future. */
+#define BBUS_PROT_DEFSOCKPATH "/tmp/bbus.sock" /**< Default socket path. */
+
+#define BBUS_MAXMSGSIZE	4096	/**< Biggest allowed message size. */
 
 /**
  * @defgroup __protmsgtypes__ Protocol message types
@@ -938,6 +934,22 @@ bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg,
 const char* bbus_prot_extractmeta(const struct bbus_msg* msg,
 		size_t msgsize) BBUS_PUBLIC;
 
+#define BBUS_PROT_SOCKPATHMAX 256 /**< Maximum size of busybus socket path. */
+
+/**
+ * @brief Sets new busybus unix socket path.
+ * @param path New path.
+ *
+ * This functions is thread-safe.
+ */
+void bbus_prot_setsockpath(const char* path) BBUS_PUBLIC;
+
+/**
+ * @brief Returns current busybus unix socket path.
+ * @returns Current path.
+ */
+const char* bbus_prot_getsockpath(void) BBUS_PUBLIC;
+
 /**
  * @defgroup __header__ Header structure manipulation
  * @{
@@ -1026,13 +1038,6 @@ typedef struct __bbus_client_connection bbus_client_connection;
 bbus_client_connection* bbus_connect(void) BBUS_PUBLIC;
 
 /**
- * @brief Establishes a client connection with custom socket path.
- * @param path Filename of the socket to connect to.
- * @return New connection object or NULL in case of an error.
- */
-bbus_client_connection* bbus_connectp(const char* path) BBUS_PUBLIC;
-
-/**
  * @brief Calls a method synchronously.
  * @param conn The client connection.
  * @param method Full service and method name.
@@ -1088,15 +1093,6 @@ struct bbus_method
  * @return New connection object or NULL in case of an error.
  */
 bbus_service_connection* bbus_srvc_connect(const char* name) BBUS_PUBLIC;
-
-/**
- * @brief Establishes a service publisher connection with custom socket path.
- * @param name Whole path of the service location ie. 'foo.bar.baz'.
- * @param path Filename of the socket to connect to.
- * @return New connection object or NULL in case of an error.
- */
-bbus_service_connection* bbus_srvc_connectp(
-		const char* name, const char* path) BBUS_PUBLIC;
 
 /**
  * @brief Registers a method within the busybus server.
@@ -1233,13 +1229,6 @@ typedef struct __bbus_server bbus_server;
  * @return Pointer to the newly created server instance or NULL on error.
  */
 bbus_server* bbus_srv_create(void) BBUS_PUBLIC;
-
-/**
- * @brief Creates a server instance with custom socket path.
- * @param path Path to the socket.
- * @return Pointer to the newly created server instance or NULL on error.
- */
-bbus_server* bbus_srv_createp(const char* path) BBUS_PUBLIC;
 
 /**
  * @brief Sets the server into listening mode.

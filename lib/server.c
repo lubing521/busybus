@@ -85,11 +85,6 @@ void bbus_client_free(bbus_client* cli)
 
 bbus_server* bbus_srv_create(void)
 {
-	return bbus_srv_createp(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
-}
-
-bbus_server* bbus_srv_createp(const char* path)
-{
 	bbus_server* srv;
 	int sock;
 	int ret;
@@ -98,7 +93,7 @@ bbus_server* bbus_srv_createp(const char* path)
 	if (sock < 0)
 		goto err;
 
-	ret = __bbus_sock_bind(sock, path);
+	ret = __bbus_sock_bind(sock, bbus_prot_getsockpath());
 	if (ret < 0)
 		goto err;
 

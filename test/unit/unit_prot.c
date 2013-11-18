@@ -183,3 +183,17 @@ BBUSUNIT_DEFINE_TEST(prot_extract_flags_not_set)
 	BBUSUNIT_ENDTEST;
 }
 
+BBUSUNIT_DEFINE_TEST(prot_set_and_get_path)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char newpath[] = "/tmp/newsock.sock";
+
+		BBUSUNIT_ASSERT_STREQ(BBUS_PROT_DEFSOCKPATH,
+						bbus_prot_getsockpath());
+		bbus_prot_setsockpath(newpath);
+		BBUSUNIT_ASSERT_STREQ(newpath, bbus_prot_getsockpath());
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}

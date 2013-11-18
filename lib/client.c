@@ -97,15 +97,10 @@ static int send_session_close(int sock)
 
 bbus_client_connection* bbus_connect(void)
 {
-	return bbus_connectp(BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
-}
-
-bbus_client_connection* bbus_connectp(const char* path)
-{
 	int sock;
 	bbus_client_connection* conn;
 
-	sock = do_session_open(path, BBUS_MSGTYPE_SOCLI);
+	sock = do_session_open(bbus_prot_getsockpath(), BBUS_MSGTYPE_SOCLI);
 	if (sock < 0)
 		return NULL;
 
@@ -172,17 +167,10 @@ int bbus_closeconn(bbus_client_connection* conn)
 
 bbus_service_connection* bbus_srvc_connect(const char* name)
 {
-	return bbus_srvc_connectp(name,
-			BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME);
-}
-
-bbus_service_connection* bbus_srvc_connectp(const char* name,
-		const char* path)
-{
 	int sock;
 	bbus_service_connection* conn;
 
-	sock = do_session_open(path, BBUS_MSGTYPE_SOSRVP);
+	sock = do_session_open(bbus_prot_getsockpath(), BBUS_MSGTYPE_SOSRVP);
 	if (sock < 0)
 		return NULL;
 

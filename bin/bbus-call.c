@@ -28,7 +28,6 @@ struct option_flags
 	int print_version;
 };
 
-static char* sockpath = BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME;
 static char* method = NULL;
 static char* argdescr = NULL;
 static char** argstart = NULL;
@@ -63,7 +62,7 @@ static void parse_args(int argc, char** argv)
 				longopts, &index)) != -1) {
 		switch (opt) {
 		case 's':
-			sockpath = optarg;
+			bbus_prot_setsockpath(optarg);
 			break;
 		case 0:
 			/* Do nothing - we have a longopt. */

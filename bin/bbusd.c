@@ -104,7 +104,6 @@ struct service_tree
 	bbus_hashmap* methods;
 };
 
-static char* sockpath = BBUS_DEF_DIRPATH BBUS_DEF_SOCKNAME;
 static bbus_server* server;
 static struct clientlist clients = { NULL, NULL };
 static struct clientlist monitors = { NULL, NULL };
@@ -121,8 +120,8 @@ static struct bbus_option cmdopts[] = {
 		.shortopt = 0,
 		.longopt = "sockpath",
 		.hasarg = BBUS_OPT_ARGREQ,
-		.action = BBUS_OPTACT_GETOPTARG,
-		.actdata = &sockpath,
+		.action = BBUS_OPTACT_CALLFUNC,
+		.actdata = &bbus_prot_setsockpath,
 		.descr = "path to the busybus socket",
 	}
 };
@@ -849,7 +848,7 @@ int main(int argc, char** argv)
 	}
 
 	/* Creating the server object. */
-	server = bbus_srv_createp(sockpath);
+	server = bbus_srv_create();
 	if (server == NULL) {
 		die("Error creating the server object: %s\n",
 			bbus_strerror(bbus_lasterror()));
