@@ -190,6 +190,17 @@ char* bbus_str_build(const char* fmt, ...) BBUS_PUBLIC BBUS_PRINTF_FUNC(1, 2);
 char* bbus_str_cpy(const char* str) BBUS_PUBLIC;
 
 /**
+ * @brief Joins two strings, of which the first one must be a bbus string.
+ * @param dst String allocated by one of the bbus string functions.
+ * @param src Source string.
+ * @return Pointer to joined strings or NULL on no memory.
+ *
+ * This functions tries to realloc 'dst'. It means it may be moved to another
+ * location.
+ */
+char* bbus_str_join(char* dst, const char* src) BBUS_PUBLIC;
+
+/**
  * @brief Frees a string allocated by one of the bbus string functions.
  * @param str Pointer to the string that will be freed.
  */

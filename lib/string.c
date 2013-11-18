@@ -84,6 +84,23 @@ char* bbus_str_cpy(const char* str)
 	return s;
 }
 
+char* bbus_str_join(char* dst, const char* src)
+{
+	size_t dsize, ssize;
+
+	dsize = strlen(dst);
+	ssize = strlen(src);
+
+	dst = bbus_realloc(dst, dsize + ssize + 1);
+	if (dst == NULL)
+		return NULL;
+
+	strncpy(dst+dsize, src, ssize);
+	dst[dsize + ssize] = '\0';
+
+	return dst;
+}
+
 void bbus_str_free(char* str)
 {
 	bbus_free(str);

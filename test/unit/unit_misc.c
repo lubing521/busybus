@@ -215,6 +215,28 @@ BBUSUNIT_DEFINE_TEST(str_cpy)
 	BBUSUNIT_ENDTEST;
 }
 
+BBUSUNIT_DEFINE_TEST(str_join)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char from[] = " second string";
+		static const char proper[] = "first string second string";
+
+		char* str;
+
+		str = bbus_str_build("first string");
+		BBUSUNIT_ASSERT_NOTNULL(str);
+		str = bbus_str_join(str, from);
+		BBUSUNIT_ASSERT_NOTNULL(str);
+		BBUSUNIT_ASSERT_STREQ(str, proper);
+
+	BBUSUNIT_FINALLY;
+
+		bbus_str_free(str);
+
+	BBUSUNIT_ENDTEST;
+}
+
 /* For the min_multiple_eval test. */
 static int* twice(int* i)
 {
