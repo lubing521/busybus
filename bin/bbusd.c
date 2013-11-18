@@ -116,17 +116,24 @@ static struct service_tree* srvc_tree;
 static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
 static struct bbus_msg* msgbuf = (struct bbus_msg*)_msgbuf;
 
-static void print_help_and_exit(void)
-{
-	fprintf(stdout, "Help stub\n");
-	exit(EXIT_SUCCESS);
-}
+static struct bbus_option cmdopts[] = {
+	{
+		.shortopt = 0,
+		.longopt = "sockpath",
+		.hasarg = BBUS_OPT_ARGREQ,
+		.action = BBUS_OPTACT_GETOPTARG,
+		.actdata = &sockpath,
+		.descr = "path to the busybus socket",
+	}
+};
 
-static void print_version_and_exit(void)
-{
-	fprintf(stdout, "Version stub\n");
-	exit(EXIT_SUCCESS);
-}
+static struct bbus_opt_list optlist = {
+	.opts = cmdopts,
+	.numopts = BBUS_ARRAY_SIZE(cmdopts),
+	.progname = "busybus",
+	.version = "ALPHA",
+	.progdescr = "tiny message bus"
+};
 
 static int loglvl_to_sysloglvl(enum loglevel lvl)
 {
@@ -177,37 +184,6 @@ static void BBUS_PRINTF_FUNC(2, 3) logmsg(enum loglevel lvl,
 		vsyslog(loglvl_to_sysloglvl(lvl), fmt, va);
 		closelog();
 		va_end(va);
-	}
-}
-
-static void parse_args(int argc, char** argv)
-{
-	static const struct option longopts[] = {
-		{ "help", no_argument, &options.print_help, 1 },
-		{ "version", no_argument, &options.print_version, 1 },
-		{ "sockpath", required_argument, 0, 's' },
-		{ 0, 0, 0, 0 }
-	};
-
-	static const char* const shortopts = "s:";
-
-	int opt, ind;
-
-	opterr = 0;
-	while ((opt = getopt_long(argc, argv, shortopts,
-				longopts, &ind)) != -1) {
-		switch (opt) {
-		case 's':
-			sockpath = optarg;
-			break;
-		case 0:
-			/* Do nothing - we have a longopt. */
-			break;
-		case '?':
-		default:
-			die("Invalid arguments! Try %s --help\n", argv[0]);
-			break;
-		}
 	}
 }
 
@@ -837,11 +813,9 @@ int main(int argc, char** argv)
 	struct bbus_timeval tv;
 	static bbus_pollset* pollset;
 
-	parse_args(argc, argv);
-	if (options.print_help)
-		print_help_and_exit();
-	if (options.print_version)
-		print_version_and_exit();
+	retval = bbus_parse_args(argc, argv, &optlist, NULL);
+	if (retval < 0)
+		return -1;
 
 	/*
 	 * Caller map:

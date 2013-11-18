@@ -30,10 +30,16 @@ static char* make_shortopts(const struct bbus_opt_list* optlist)
 	for (i = 0; i < optlist->numopts; ++i) {
 		if (optlist->opts[i].shortopt != 0) {
 			switch (optlist->opts[i].hasarg) {
-			case BBUS_OPT_NOARG: ++size; break;
-			case BBUS_OPT_ARGREQ: size += 2; break;
-			case BBUS_OPT_ARGOPT: size += 3; break;
-			default: return NULL; /* Error notification. */
+			case BBUS_OPT_ARGREQ:
+				size += 2;
+				break;
+			case BBUS_OPT_ARGOPT:
+				size += 3;
+				break;
+			case BBUS_OPT_NOARG:
+			default:
+				++size;
+				break;
 			}
 		}
 	}
@@ -46,9 +52,6 @@ static char* make_shortopts(const struct bbus_opt_list* optlist)
 	for (i = 0; i < optlist->numopts; ++i) {
 		if (optlist->opts[i].shortopt != 0) {
 			switch (optlist->opts[i].hasarg) {
-			case BBUS_OPT_NOARG:
-				*tmp++ = (char)optlist->opts[i].shortopt;
-				break;
 			case BBUS_OPT_ARGREQ:
 				*tmp++ = (char)optlist->opts[i].shortopt;
 				*tmp++ = ':';
@@ -58,8 +61,10 @@ static char* make_shortopts(const struct bbus_opt_list* optlist)
 				*tmp++ = ':';
 				*tmp++ = ':';
 				break;
+			case BBUS_OPT_NOARG:
 			default:
-				return NULL; /* Error notification. */
+				*tmp++ = (char)optlist->opts[i].shortopt;
+				break;
 			}
 		}
 	}
@@ -67,12 +72,18 @@ static char* make_shortopts(const struct bbus_opt_list* optlist)
 	return ret;
 }
 
+/* Values for the '--help' and '--version' options. */
+#define OPT_HELP	-1
+#define OPT_VERSION	-2
+
 static struct option* make_longopts(const struct bbus_opt_list* optlist,
 								int* flag)
 {
 	struct option* ret;
-	unsigned i, j;
-	size_t size = 0;
+	unsigned i;
+	/* Set those below to 2 for 'help' and 'version' options. */
+	unsigned j = 2;
+	size_t size = 2;
 
 	for (i = 0; i < optlist->numopts; ++i)
 		if (optlist->opts[i].longopt != NULL)
@@ -82,7 +93,15 @@ static struct option* make_longopts(const struct bbus_opt_list* optlist,
 	if (ret == NULL)
 		return NULL;
 
-	j = 0;
+	ret[0].name = "help";
+	ret[0].has_arg = no_argument;
+	ret[0].flag = flag;
+	ret[0].val = OPT_HELP;
+	ret[1].name = "version";
+	ret[1].has_arg = no_argument;
+	ret[1].flag = flag;
+	ret[1].val = OPT_VERSION;
+
 	for (i = 0; i < optlist->numopts; ++i) {
 		if (optlist->opts[i].longopt != NULL) {
 			/*
@@ -95,14 +114,15 @@ static struct option* make_longopts(const struct bbus_opt_list* optlist,
 			ret[j].flag = flag;
 			ret[j].val = i;
 			switch (optlist->opts[i].hasarg) {
-			case BBUS_OPT_NOARG:
-				ret[j].has_arg = no_argument;
-				break;
 			case BBUS_OPT_ARGREQ:
 				ret[j].has_arg = required_argument;
 				break;
 			case BBUS_OPT_ARGOPT:
 				ret[j].has_arg = optional_argument;
+				break;
+			case BBUS_OPT_NOARG:
+			default:
+				ret[j].has_arg = no_argument;
 				break;
 			}
 			++j;
@@ -160,43 +180,44 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 	int ret = 0;
 	int flag;
 	char* info = NULL;
-	int cbret;
 	unsigned i;
 
 	info = make_info_string(optlist);
-	if (info == NULL) {
-		/* TODO print error. */
-		ret = -1;
-		goto out;
-	}
+	if (info == NULL)
+		goto out_of_memory;
 
 	shortopts = make_shortopts(optlist);
-	if (shortopts == NULL) {
-		/* TODO print error. */
-		ret = -1;
-		goto out;
-	}
+	if (shortopts == NULL)
+		goto out_of_memory;
 
 	longopts = make_longopts(optlist, &flag);
-	if (longopts == NULL) {
-		/* TODO print error. */
-		ret = -1;
-		goto out;
-	}
+	if (longopts == NULL)
+		goto out_of_memory;
 
-	//opterr = 0;
 	while ((opt = getopt_long(argc, argv, shortopts,
 					longopts, &ind)) != -1) {
 		switch (opt) {
 		case '?':
 		case ':':
-			fprintf(stdout, "%s\n", info);
+			fprintf(stderr, "try %s --help\n", argv[0]);
 			ret = -1;
 			goto out;
 			break;
 		case 0:
 			/* Long option. */
-			curopt = &optlist->opts[flag];
+			if (flag < 0) {
+				if (flag == OPT_VERSION) {
+					fprintf(stdout, "%s %s\n",
+							optlist->progname,
+							optlist->version);
+				} else {
+					fprintf(stdout, "%s\n", info);
+				}
+				ret = -1;
+				goto out;
+			} else {
+				curopt = &optlist->opts[flag];
+			}
 			break;
 		default:
 			/*
@@ -226,10 +247,7 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 			*((char**)curopt->actdata) = optarg;
 			break;
 		case BBUS_OPTACT_CALLFUNC:
-			cbret = ((bbus_opt_callback)curopt->actdata)(optarg);
-			if (cbret < 0)
-				/* TODO Error indication. */
-				return -1;
+			((bbus_opt_callback)curopt->actdata)(optarg);
 			break;
 		default:
 			ret = -1;
@@ -237,13 +255,18 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 		}
 	}
 
+	/* TODO Parse and interpret positional arguments as well? */
 	if (nonopts != NULL) {
 		*nonopts = find_nonopts(argc, argv);
-		if (*nonopts == NULL) {
-			ret = -1;
-			goto out;
-		}
+		if (*nonopts == NULL)
+			goto out_of_memory;
 	}
+
+	goto out;
+
+out_of_memory:
+	fprintf(stderr, "%s: %s\n", __FUNCTION__, bbus_strerror(BBUS_ENOMEM));
+	ret = -1;
 
 out:
 	bbus_free(shortopts);

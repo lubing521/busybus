@@ -427,10 +427,10 @@ enum bbus_opt_hasarg
 /**
  * @brief Signature of callbacks called for options with CALLFUNC action set.
  */
-typedef int (*bbus_opt_callback)(const char* arg);
+typedef void (*bbus_opt_callback)(const char* arg);
 
 /**
- * @brief Describes a single options
+ * @brief Describes a single option recognised by bbus_parse_args().
  */
 struct bbus_option
 {
@@ -473,6 +473,15 @@ struct bbus_nonopts
  * @param optlist Program description and list of available options.
  * @param nonopts If not NULL, the remaining non-options will be stored here.
  * @return Returns 0 on success, -1 on failure.
+ *
+ * Internally this function uses getopt_long() to parse the command-line
+ * arguments, but extends it in that it automatically generates the help and
+ * version messages and offers a basic callback interface.
+ *
+ * This function is different from other busybus public functions in that
+ * instead of setting the global error number on failure it prints the error
+ * message to stderr. Global error code can still be set by internally used
+ * busybus functions but should be ignored.
  */
 int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 		struct bbus_nonopts** nonopts) BBUS_PUBLIC;
