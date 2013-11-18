@@ -196,7 +196,8 @@ char* bbus_str_cpy(const char* str) BBUS_PUBLIC;
  * @return Pointer to joined strings or NULL on no memory.
  *
  * This functions tries to realloc 'dst'. It means it may be moved to another
- * location.
+ * location. If this functions fails, 'dst' is left untouched - it is neither
+ * freed nor moved.
  */
 char* bbus_str_join(char* dst, const char* src) BBUS_PUBLIC;
 
