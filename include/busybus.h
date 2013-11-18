@@ -478,6 +478,10 @@ struct bbus_nonopts
 	size_t numargs;		/**< Number of non-options. */
 };
 
+#define BBUS_ARGS_GOOD	0	/**< bbus_parse_args parsed all arguments. */
+#define BBUS_ARGS_ERR	-1	/**< bbus_parse_args encountered an error */
+#define BBUS_ARGS_HELP	1	/**< bbus_parse_args showed help or version. */
+
 /**
  * @brief Parses the command-line arguments according to given list of options.
  * @param argc Number of arguments.

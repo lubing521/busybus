@@ -134,7 +134,42 @@ static struct option* make_longopts(const struct bbus_opt_list* optlist,
 
 static char* make_info_string(const struct bbus_opt_list* optlist BBUS_UNUSED)
 {
-	return bbus_str_build("dummy");
+	char* info;
+	char* tmp;
+	unsigned i;
+	char shortopt;
+	const char* longopt;
+
+	info = bbus_str_build("%s %s\n\n%s\n\n",
+				optlist->progname,
+				optlist->version,
+				optlist->progdescr);
+	if (info == NULL)
+		return NULL;
+
+	for (i = 0; i < optlist->numopts; ++i) {
+		shortopt = optlist->opts[i].shortopt;
+		longopt = optlist->opts[i].longopt;
+		tmp = bbus_str_build("  %s%c%s%s%s -\t%s\n",
+			shortopt == 0 ? " " : "-",
+			shortopt == 0 ? ' ' : shortopt,
+			(shortopt != 0) && (longopt != NULL) ? "," : " ",
+			longopt == NULL ? "  " : "--",
+			longopt == NULL ? " " : longopt,
+			optlist->opts[i].descr);
+		if (tmp == NULL) {
+			bbus_str_free(info);
+			return NULL;
+		}
+
+		info = bbus_str_join(info, tmp);
+		if (info == NULL) {
+			bbus_str_free(tmp);
+			return NULL;
+		}
+	}
+
+	return info;
 }
 
 void bbus_free_nonopts(struct bbus_nonopts* nonopts)
@@ -177,7 +212,7 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 	const struct bbus_option* curopt = NULL;
 	int opt;
 	int ind = 0;
-	int ret = 0;
+	int ret = BBUS_ARGS_GOOD;
 	int flag;
 	char* info = NULL;
 	unsigned i;
@@ -200,7 +235,7 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 		case '?':
 		case ':':
 			fprintf(stderr, "try %s --help\n", argv[0]);
-			ret = -1;
+			ret = BBUS_ARGS_ERR;
 			goto out;
 			break;
 		case 0:
@@ -213,7 +248,7 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 				} else {
 					fprintf(stdout, "%s\n", info);
 				}
-				ret = -1;
+				ret = BBUS_ARGS_HELP;
 				goto out;
 			} else {
 				curopt = &optlist->opts[flag];
@@ -238,8 +273,6 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 
 		/* Now actually handle the option. */
 		switch (curopt->action) {
-		case BBUS_OPTACT_NOTHING:
-			break;
 		case BBUS_OPTACT_SETFLAG:
 			*((int*)curopt->actdata) = 1;
 			break;
@@ -249,9 +282,9 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 		case BBUS_OPTACT_CALLFUNC:
 			((bbus_opt_callback)curopt->actdata)(optarg);
 			break;
+		case BBUS_OPTACT_NOTHING:
 		default:
-			ret = -1;
-			goto out;
+			break;
 		}
 	}
 
@@ -266,7 +299,7 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 
 out_of_memory:
 	fprintf(stderr, "%s: %s\n", __FUNCTION__, bbus_strerror(BBUS_ENOMEM));
-	ret = -1;
+	ret = BBUS_ARGS_ERR;
 
 out:
 	bbus_free(shortopts);

@@ -130,9 +130,9 @@ static struct bbus_option cmdopts[] = {
 static struct bbus_opt_list optlist = {
 	.opts = cmdopts,
 	.numopts = BBUS_ARRAY_SIZE(cmdopts),
-	.progname = "busybus",
+	.progname = "Busybus",
 	.version = "ALPHA",
-	.progdescr = "tiny message bus"
+	.progdescr = "Tiny message bus daemon."
 };
 
 static int loglvl_to_sysloglvl(enum loglevel lvl)
@@ -814,7 +814,9 @@ int main(int argc, char** argv)
 	static bbus_pollset* pollset;
 
 	retval = bbus_parse_args(argc, argv, &optlist, NULL);
-	if (retval < 0)
+	if (retval == BBUS_ARGS_HELP)
+		return 0;
+	else if (retval == BBUS_ARGS_ERR)
 		return -1;
 
 	/*
