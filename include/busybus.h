@@ -403,51 +403,84 @@ int bbus_hmap_dump(bbus_hashmap* hmap, char* buf, size_t bufsize) BBUS_PUBLIC;
  * Functions and data structures for easy argument parsing.
  */
 
+/**
+ * @brief Indicates the action which should be performed on option.
+ */
 enum bbus_opt_action
 {
-	BBUS_OPTACT_NOTHING = 0,
-	BBUS_OPTACT_SETFLAG,
-	BBUS_OPTACT_GETOPTARG,
-	BBUS_OPTACT_CALLFUNC,
+	BBUS_OPTACT_NOTHING = 0,	/**< Do nothing. */
+	BBUS_OPTACT_SETFLAG,		/**< Set an integer variable to 1. */
+	BBUS_OPTACT_GETOPTARG,		/**< Store the optarg argument. */
+	BBUS_OPTACT_CALLFUNC,		/**< Call a registered callback. */
 };
 
+/**
+ * @brief Indicates the argument requirements of an option.
+ */
 enum bbus_opt_hasarg
 {
-	BBUS_OPT_NOARG = 0,
-	BBUS_OPT_ARGREQ,
-	BBUS_OPT_ARGOPT,
+	BBUS_OPT_NOARG = 0,	/**< Option doesn't accept an argument. */
+	BBUS_OPT_ARGREQ,	/**< Option requires an argument. */
+	BBUS_OPT_ARGOPT,	/**< Argument is optional for this option. */
 };
 
+/**
+ * @brief Signature of callbacks called for options with CALLFUNC action set.
+ */
 typedef int (*bbus_opt_callback)(const char* arg);
 
+/**
+ * @brief Describes a single options
+ */
 struct bbus_option
 {
-	int shortopt;
-	const char* longopt;
-	enum bbus_opt_hasarg hasarg;
-	enum bbus_opt_action action;
-	void* actdata;
-	const char* descr;
+	int shortopt;			/**< Short option character. */
+	const char* longopt;		/**< Long option string. */
+	enum bbus_opt_hasarg hasarg;	/**< Argument requirement. */
+	enum bbus_opt_action action;	/**< Action to be performed. */
+	void* actdata;			/**< Action-specific data. */
+	const char* descr;		/**< Description string. */
 };
 
+/**
+ * @brief Contains all needed input information for bbus_parse_args().
+ */
 struct bbus_opt_list
 {
-	const struct bbus_option* opts;
-	size_t numopts;
-	const char* progname;
-	const char* version;
-	const char* progdescr;
+	const struct bbus_option* opts;	/**< List of available options. */
+	size_t numopts;			/**< Number of supplied options. */
+	const char* progname;		/**< Full program name. */
+	const char* version;		/**< Program version string. */
+	const char* progdescr;		/**< Elaborate program description. */
 };
 
+/**
+ * @brief List of remaining non-options extracted by bbus_parse_args().
+ *
+ * It's filled with pointers to the argv vector by bbus_parse_args(). It
+ * should be freed using bbus_free_nonopts().
+ */
 struct bbus_nonopts
 {
-	char** args;
-	size_t numargs;
+	char** args;		/**< List of pointers to non-options. */
+	size_t numargs;		/**< Number of non-options. */
 };
 
+/**
+ * @brief Parses the command-line arguments according to given list of options.
+ * @param argc Number of arguments.
+ * @param argv Array of comand-line arguments.
+ * @param optlist Program description and list of available options.
+ * @param nonopts If not NULL, the remaining non-options will be stored here.
+ * @return Returns 0 on success, -1 on failure.
+ */
 int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 		struct bbus_nonopts** nonopts) BBUS_PUBLIC;
 
+/**
+ * @brief Frees non-options collected by bbus_parse_args().
+ * @param nonopts The non-options struct.
+ */
 void bbus_free_nonopts(struct bbus_nonopts* nonopts) BBUS_PUBLIC;
 
 /**

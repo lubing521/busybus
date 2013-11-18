@@ -130,7 +130,7 @@ static struct bbus_nonopts* find_nonopts(int argc, char** argv)
 	struct bbus_nonopts* nonopts;
 	size_t arrsize = 0;
 
-	/* We expect argv to properly permuted and optind set. */
+	/* We expect argv to be properly permuted and optind set. */
 	arrsize = argc - optind;
 	nonopts = bbus_malloc0(sizeof(struct bbus_nonopts));
 	if (nonopts == NULL)
