@@ -1,8 +1,5 @@
 - Implement signals.
 - Implement arbitrary messages.
-- Add a new library function and data structures for argument parsing to avoid
-  code duplication in every binary.
-- Add thread-specific error values.
 - Ignore SIGPIPE on socket level.
 - Make bbus_hdr_setpsize accept a size_t and set psize to UINT16_MAX if
   it's greater than 65535.
