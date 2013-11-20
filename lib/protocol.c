@@ -29,18 +29,22 @@
 
 static pthread_mutex_t sockpath_mutex = PTHREAD_MUTEX_INITIALIZER;
 static char sockpath[BBUS_PROT_SOCKPATHMAX] = BBUS_PROT_DEFSOCKPATH;
+static BBUS_THREAD_LOCAL char localpath[BBUS_PROT_SOCKPATHMAX];
 
 void bbus_prot_setsockpath(const char* path)
 {
-	pthread_mutex_lock(&sockpath_mutex);
-	snprintf(sockpath, BBUS_PROT_SOCKPATHMAX, "%s", path);
-	pthread_mutex_unlock(&sockpath_mutex);
+	/* FIXME pthread_mutex_lock and unlock don't need pthread linkage? */
+	(void)pthread_mutex_lock(&sockpath_mutex);
+	(void)snprintf(sockpath, BBUS_PROT_SOCKPATHMAX, "%s", path);
+	(void)pthread_mutex_unlock(&sockpath_mutex);
 }
 
 const char* bbus_prot_getsockpath(void)
 {
-	/* TODO Full thread-safety will require a thread-specific storage. */
-	return sockpath;
+	(void)pthread_mutex_lock(&sockpath_mutex);
+	(void)snprintf(localpath, BBUS_PROT_SOCKPATHMAX, "%s", sockpath);
+	(void)pthread_mutex_unlock(&sockpath_mutex);
+	return localpath;
 }
 
 static int hdr_check_magic(const struct bbus_msg_hdr* hdr)

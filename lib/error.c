@@ -21,11 +21,13 @@
 #include <string.h>
 
 /*
- * TODO: Implement thread specific error value using
- * pthread_setspecific() and use strerror_r for thread-safety.
+ * The longest error message in glibc is about 50 characters long so 64 should
+ * be enough to store every error message in the future too.
  */
+#define ERRSTR_MAX 64
 
-static volatile int last_error = BBUS_ESUCCESS;
+static BBUS_THREAD_LOCAL int last_error = BBUS_ESUCCESS;
+static BBUS_THREAD_LOCAL char errmsg[ERRSTR_MAX];
 
 static const char* const error_descr[] = {
 	"success",
@@ -57,8 +59,9 @@ int bbus_lasterror(void)
 const char* bbus_strerror(int errnum)
 {
 	if (errnum < BBUS_ESUCCESS)
-		return strerror(errnum);
-	else if (errnum >= __BBUS_MAX_ERR)
+		return strerror_r(errnum, errmsg, ERRSTR_MAX);
+	else
+	if (errnum >= __BBUS_MAX_ERR)
 		return "invalid error code";
 	else
 		return error_descr[errnum-BBUS_ESUCCESS];

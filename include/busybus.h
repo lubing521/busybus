@@ -121,6 +121,11 @@ extern "C" {
 #define BBUS_ATSTART_LAST __attribute__((constructor(2000)))
 
 /**
+ * @brief Variables with this specifier have a separate instance per thread.
+ */
+#define BBUS_THREAD_LOCAL __thread
+
+/**
  * @brief Busybus malloc.
  * @param size Number of bytes to allocate.
  * @return Pointer to the allocated memory or NULL in case of an error.
@@ -957,13 +962,15 @@ const char* bbus_prot_extractmeta(const struct bbus_msg* msg,
  * @brief Sets new busybus unix socket path.
  * @param path New path.
  *
- * This functions is thread-safe.
+ * This function is thread-safe.
  */
 void bbus_prot_setsockpath(const char* path) BBUS_PUBLIC;
 
 /**
  * @brief Returns current busybus unix socket path.
- * @returns Current path.
+ * @return Current path.
+ *
+ * This function is thread-safe.
  */
 const char* bbus_prot_getsockpath(void) BBUS_PUBLIC;
 
