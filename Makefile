@@ -29,10 +29,12 @@ LIBBBUS_OBJS =		./lib/error.o					\
 			./lib/args.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
+LIBBBUS_LIBS =		-pthread
 
 libbbus.so:		$(LIBBBUS_OBJS)
 	$(CROSSCC) -o $(LIBBBUS_TARGET) $(LIBBBUS_OBJS) $(LDFLAGS)	\
-		$(DEBUGFLAGS) $(LDSOFLAGS) -Wl,-soname,$(LIBBBUS_SONAME)
+		$(DEBUGFLAGS) -Wl,-soname,$(LIBBBUS_SONAME)		\
+		$(LDSOFLAGS) $(LIBBBUS_LIBS)
 
 ###############################################################################
 # bbusd
