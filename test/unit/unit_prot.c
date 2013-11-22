@@ -19,6 +19,7 @@
 #include "bbus-unit.h"
 #include <busybus.h>
 #include <string.h>
+#include <stdint.h>
 
 BBUSUNIT_DEFINE_TEST(prot_extract_obj)
 {
@@ -197,3 +198,36 @@ BBUSUNIT_DEFINE_TEST(prot_set_and_get_path)
 	BBUSUNIT_FINALLY;
 	BBUSUNIT_ENDTEST;
 }
+
+BBUSUNIT_DEFINE_TEST(prot_set_psize)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const size_t size = 1024;
+
+		struct bbus_msg_hdr hdr;
+
+		memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
+		bbus_hdr_setpsize(&hdr, size);
+		BBUSUNIT_ASSERT_EQ(size, bbus_hdr_getpsize(&hdr));
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+
+BBUSUNIT_DEFINE_TEST(prot_set_psize_gtmax)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const size_t size = 2 * UINT16_MAX;
+
+		struct bbus_msg_hdr hdr;
+
+		memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
+		bbus_hdr_setpsize(&hdr, size);
+		BBUSUNIT_ASSERT_EQ(UINT16_MAX, bbus_hdr_getpsize(&hdr));
+
+	BBUSUNIT_FINALLY;
+	BBUSUNIT_ENDTEST;
+}
+

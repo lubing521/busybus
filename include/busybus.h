@@ -1011,14 +1011,16 @@ void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, uint32_t tok) BBUS_PUBLIC;
  * @param hdr The header.
  * @return The payload size.
  */
-uint16_t bbus_hdr_getpsize(const struct bbus_msg_hdr* hdr) BBUS_PUBLIC;
+size_t bbus_hdr_getpsize(const struct bbus_msg_hdr* hdr) BBUS_PUBLIC;
 
 /**
  * @brief Converts given size to network byte order and assigns it to 'hdr'.
  * @param hdr The header.
  * @param size New size.
+ *
+ * If 'size' exceeds UINT16_MAX, the size will be set exactly to UINT16_MAX.
  */
-void bbus_hdr_setpsize(struct bbus_msg_hdr* hdr, uint16_t size) BBUS_PUBLIC;
+void bbus_hdr_setpsize(struct bbus_msg_hdr* hdr, size_t size) BBUS_PUBLIC;
 
 /**
  * @brief Returns true if FLAG is set in the header's flags field.

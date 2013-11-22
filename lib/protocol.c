@@ -24,6 +24,7 @@
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <stdint.h>
 
 #define MAX_NUMIOV 3
 
@@ -320,13 +321,13 @@ void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, uint32_t tok)
 	hdr->token = htonl(tok);
 }
 
-uint16_t bbus_hdr_getpsize(const struct bbus_msg_hdr* hdr)
+size_t bbus_hdr_getpsize(const struct bbus_msg_hdr* hdr)
 {
-	return ntohs(hdr->psize);
+	return (size_t)ntohs(hdr->psize);
 }
 
-void bbus_hdr_setpsize(struct bbus_msg_hdr* hdr, uint16_t size)
+void bbus_hdr_setpsize(struct bbus_msg_hdr* hdr, size_t size)
 {
-	hdr->psize = htons(size);
+	hdr->psize = size > UINT16_MAX ? UINT16_MAX : htons((uint16_t)size);
 }
 
