@@ -942,8 +942,7 @@ struct bbus_msg
  *
  * The returned object has to be freed using bbus_obj_free.
  */
-bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg,
-		size_t msgsize) BBUS_PUBLIC;
+bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg) BBUS_PUBLIC;
 
 /**
  * @brief Extracts the meta string from the message buffer.
@@ -953,8 +952,7 @@ bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg,
  *
  * The returned pointer points to the area inside 'msg'.
  */
-const char* bbus_prot_extractmeta(const struct bbus_msg* msg,
-		size_t msgsize) BBUS_PUBLIC;
+const char* bbus_prot_extractmeta(const struct bbus_msg* msg) BBUS_PUBLIC;
 
 #define BBUS_PROT_SOCKPATHMAX 256 /**< Maximum size of busybus socket path. */
 

@@ -254,13 +254,14 @@ int __bbus_prot_errtoerrnum(uint8_t errcode)
 	return errnum;
 }
 
-const char* bbus_prot_extractmeta(const struct bbus_msg* msg, size_t msgsize)
+const char* bbus_prot_extractmeta(const struct bbus_msg* msg)
 {
 	const void* payload;
+	size_t msgsize;
 
+	msgsize = bbus_hdr_getpsize(&msg->hdr);
 	if (msg->hdr.flags & BBUS_PROT_HASMETA) {
 		payload = msg->payload;
-		msgsize -= sizeof(struct bbus_msg_hdr);
 		if (memmem(payload, msgsize, "\0", 1) == NULL) {
 			goto err;
 		} else {
@@ -273,7 +274,7 @@ err:
 	return NULL;
 }
 
-bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg, size_t msgsize)
+bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg)
 {
 	const char* meta;
 	const void* payload;
@@ -284,7 +285,7 @@ bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg, size_t msgsize)
 		psize = bbus_hdr_getpsize(&msg->hdr);
 		payload = msg->payload;
 		if (msg->hdr.flags & BBUS_PROT_HASMETA) {
-			meta = bbus_prot_extractmeta(msg, msgsize);
+			meta = bbus_prot_extractmeta(msg);
 			if (meta != NULL) {
 				offset = strlen(meta)+1;
 				payload += offset;
