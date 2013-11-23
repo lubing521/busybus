@@ -53,7 +53,7 @@ static void sighandler(int signum)
 	}
 }
 
-static bbus_object* rm_echo(const char* name BBUS_UNUSED, bbus_object* arg)
+static bbus_object* rm_echo(bbus_object* arg)
 {
 	char* msg;
 	int ret;

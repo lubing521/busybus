@@ -1097,7 +1097,7 @@ typedef struct __bbus_service_connection bbus_service_connection;
 /**
  * @brief Represents a function that is actually being called on method call.
  */
-typedef bbus_object* (*bbus_method_func)(const char*, bbus_object*);
+typedef bbus_object* (*bbus_method_func)(bbus_object*);
 
 /**
  * @brief Represents a single busybus method.

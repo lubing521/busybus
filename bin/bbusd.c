@@ -186,7 +186,7 @@ static void BBUS_PRINTF_FUNC(2, 3) logmsg(enum loglevel lvl,
 	}
 }
 
-static bbus_object* lm_echo(const char* name BBUS_UNUSED, bbus_object* arg)
+static bbus_object* lm_echo(bbus_object* arg)
 {
 	char* msg;
 	int ret;
@@ -412,8 +412,7 @@ static int handle_clientcall(bbus_client* cli,
 		return -1;
 
 	if (mthd->type == METHOD_LOCAL) {
-		retobj = ((struct local_method*)mthd)->func(
-					mname_from_srvcname(mname), argobj);
+		retobj = ((struct local_method*)mthd)->func(argobj);
 		if (retobj == NULL) {
 			logmsg(BBUS_LOG_ERR, "Error calling method.\n");
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,

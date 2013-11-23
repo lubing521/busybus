@@ -303,7 +303,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 			goto send_reply;
 		}
 
-		objret = ((bbus_method_func)callback)(meta, objarg);
+		objret = ((bbus_method_func)callback)(objarg);
 		if (objret == NULL) {
 			hdr.errcode = BBUS_PROT_EMETHODERR;
 			__bbus_seterr(BBUS_EMETHODERR);

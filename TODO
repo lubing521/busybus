@@ -10,4 +10,3 @@
   obj_parse functions.
 - Functions taking struct bbus_msg as argument should not require msgsize -
   they have it already in hdr->psize.
-- Busybus method callbacks should not require the name argument.
