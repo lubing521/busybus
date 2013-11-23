@@ -1,5 +1,5 @@
-- Implement signals.
-- Implement arbitrary messages.
+- Use sendmsg and recvmsg instead of writev and readv in __bbus_prot_sendvmsg
+  and __bbus_prot_recvvmsg.
 - Ignore SIGPIPE on socket level.
 - Add new assertions to the test suite: lower-than, lower-or-equal-to,
   greater-than and greater-or-equal-to.
@@ -8,5 +8,3 @@
   only rely on the array size taken from the object buffer.
 - Some other way to store and read byte arrays from object with obj_build and
   obj_parse functions.
-- Functions taking struct bbus_msg as argument should not require msgsize -
-  they have it already in hdr->psize.
