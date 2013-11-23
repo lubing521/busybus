@@ -109,20 +109,16 @@ int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 	return 0;
 }
 
-int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf, size_t bufsize)
+int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf)
 {
 	ssize_t r;
 	size_t msgsize;
 	size_t sent;
 
-	if (bufsize > BBUS_MAXMSGSIZE) {
-		__bbus_seterr(BBUS_EINVALARG);
-		return -1;
-	}
-
 	msgsize = BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(
 					(struct bbus_msg_hdr*)buf);
-	if (msgsize > bufsize) {
+	if (msgsize > BBUS_MAXMSGSIZE) {
+		/* FIXME Is this check needed? */
 		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
 	}

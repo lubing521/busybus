@@ -22,7 +22,7 @@
 #include <busybus.h>
 
 int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize);
-int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf, size_t bufsize);
+int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf);
 int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 		void* payload, size_t psize);
 int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
