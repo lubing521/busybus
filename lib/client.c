@@ -278,7 +278,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 			return -1;
 		}
 
-		token = bbus_hdr_gettoken(&hdr);
+		token = bbus_hdr_gettoken(&msg->hdr);
 		meta = bbus_prot_extractmeta(msg);
 		if (meta == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
