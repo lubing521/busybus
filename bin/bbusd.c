@@ -20,30 +20,16 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <getopt.h>
 #include <signal.h>
-#include <syslog.h>
 #include <limits.h>
 #include <string.h>
-
-#define SYSLOG_IDENT "bbusd"
+#include "bbusd/log.h"
+#include "bbusd/common.h"
 
 struct option_flags
 {
 	int log_to_console;
 	int log_to_syslog;
-};
-
-enum loglevel
-{
-	BBUS_LOG_EMERG = LOG_EMERG,
-	BBUS_LOG_ALERT = LOG_ALERT,
-	BBUS_LOG_CRIT = LOG_CRIT,
-	BBUS_LOG_ERR = LOG_ERR,
-	BBUS_LOG_WARN = LOG_WARNING,
-	BBUS_LOG_NOTICE = LOG_NOTICE,
-	BBUS_LOG_INFO = LOG_INFO,
-	BBUS_LOG_DEBUG = LOG_DEBUG
 };
 
 struct clientlist_elem
@@ -106,8 +92,6 @@ static bbus_server* server;
 static struct clientlist clients = { NULL, NULL };
 static struct clientlist monitors = { NULL, NULL };
 static volatile int run;
-/* TODO in the future syslog will be the default. */
-static struct option_flags options = { 1, 0 };
 static bbus_hashmap* caller_map;
 static struct service_tree* srvc_tree;
 static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
@@ -131,58 +115,6 @@ static struct bbus_opt_list optlist = {
 	.version = "ALPHA",
 	.progdescr = "Tiny message bus daemon."
 };
-
-static int loglvl_to_sysloglvl(enum loglevel lvl)
-{
-	/* TODO Make sure it works properly. */
-	return (int)lvl;
-}
-
-static void BBUS_PRINTF_FUNC(1, 2) BBUS_NORETURN die(const char* format, ...)
-{
-	va_list va;
-
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
-}
-
-static void BBUS_PRINTF_FUNC(2, 3) logmsg(enum loglevel lvl,
-						const char* fmt, ...)
-{
-	va_list va;
-
-	if (options.log_to_console) {
-		va_start(va, fmt);
-		switch (lvl) {
-		case BBUS_LOG_EMERG:
-		case BBUS_LOG_ALERT:
-		case BBUS_LOG_CRIT:
-		case BBUS_LOG_ERR:
-		case BBUS_LOG_WARN:
-			vfprintf(stderr, fmt, va);
-			break;
-		case BBUS_LOG_NOTICE:
-		case BBUS_LOG_INFO:
-		case BBUS_LOG_DEBUG:
-			vfprintf(stdout, fmt, va);
-			break;
-		default:
-			die("Invalid log level\n");
-			break;
-		}
-		va_end(va);
-	}
-
-	if (options.log_to_syslog) {
-		va_start(va, fmt);
-		openlog(SYSLOG_IDENT, LOG_PID, LOG_DAEMON);
-		vsyslog(loglvl_to_sysloglvl(lvl), fmt, va);
-		closelog();
-		va_end(va);
-	}
-}
 
 static bbus_object* lm_echo(bbus_object* arg)
 {
