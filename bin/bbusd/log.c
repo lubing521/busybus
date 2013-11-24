@@ -25,14 +25,14 @@
 #define LOG_SYSL	(1 << 1)
 static int logmask = LOG_CONSOLE;
 
-static inline int loglvl_to_sysloglvl(enum loglevel lvl)
+static inline int loglvl_to_sysloglvl(enum bbusd_loglevel lvl)
 {
 	return (int)lvl;
 }
 
 #define SYSLOG_IDENT "bbusd"
 
-void logmsg(enum loglevel lvl, const char* fmt, ...)
+void bbusd_logmsg(enum bbusd_loglevel lvl, const char* fmt, ...)
 {
 	va_list va;
 
@@ -52,7 +52,7 @@ void logmsg(enum loglevel lvl, const char* fmt, ...)
 			vfprintf(stdout, fmt, va);
 			break;
 		default:
-			die("Invalid log level\n");
+			bbusd_die("Invalid log level\n");
 			break;
 		}
 		va_end(va);

@@ -70,7 +70,9 @@ struct local_method
 	do {								\
 		if (insert_method(PATH,					\
 				(struct method*)&__m_##FUNC##__) < 0) {	\
-			die("Error inserting method: '%s'\n", PATH);	\
+			bbusd_die(					\
+				"Error inserting method: '%s'\n",	\
+				PATH);					\
 		}							\
 	} while (0)
 
@@ -193,14 +195,14 @@ static int do_insert_method(const char* path, struct method* mthd,
 		/* Path is the method name. */
 		mval = bbus_hmap_findstr(node->methods, path);
 		if (mval != NULL) {
-			logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUS_LOG_ERR,
 				"Method already exists for this value: %s\n",
 				path);
 			return -1;
 		}
 		ret = bbus_hmap_setstr(node->methods, path, mthd);
 		if (ret < 0) {
-			logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUS_LOG_ERR,
 				"Error registering new method: %s\n",
 				bbus_strerror(bbus_lasterror()));
 			return -1;
@@ -329,7 +331,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	mthd = locate_method(mname);
 	if (mthd == NULL) {
-		logmsg(BBUS_LOG_ERR, "No such method: %s\n", mname);
+		bbusd_logmsg(BBUS_LOG_ERR, "No such method: %s\n", mname);
 		bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_ENOMETHOD);
 		ret = -1;
@@ -343,7 +345,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 	if (mthd->type == METHOD_LOCAL) {
 		retobj = ((struct local_method*)mthd)->func(argobj);
 		if (retobj == NULL) {
-			logmsg(BBUS_LOG_ERR, "Error calling method.\n");
+			bbusd_logmsg(BBUS_LOG_ERR, "Error calling method.\n");
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EMETHODERR);
 		} else {
@@ -377,7 +379,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 			goto respond;
 		}
 	} else {
-		die("Internal logic error, invalid method type\n");
+		bbusd_die("Internal logic error, invalid method type\n");
 	}
 
 	goto dontrespond;
@@ -385,8 +387,9 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 respond:
 	ret = bbus_client_sendmsg(cli, &hdr, NULL, retobj);
 	if (ret < 0) {
-		logmsg(BBUS_LOG_ERR, "Error sending reply to client: %s\n",
-					bbus_strerror(bbus_lasterror()));
+		bbusd_logmsg(BBUS_LOG_ERR,
+				"Error sending reply to client: %s\n",
+				bbus_strerror(bbus_lasterror()));
 		ret = -1;
 	}
 
@@ -446,7 +449,7 @@ static int register_service(struct clientlist_elem* cli, struct bbus_msg* msg)
 		ret = -1;
 		goto mthdfree;
 	} else {
-		logmsg(BBUS_LOG_INFO,
+		bbusd_logmsg(BBUS_LOG_INFO,
 			"Method '%s' successfully registered.\n", path);
 		ret = 0;
 		goto pathfree;
@@ -466,8 +469,9 @@ respond:
 				? BBUS_PROT_EGOOD : BBUS_PROT_EMREGERR);
 	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, NULL);
 	if (ret < 0) {
-		logmsg(BBUS_LOG_ERR, "Error sending reply to client: %s\n",
-					bbus_strerror(bbus_lasterror()));
+		bbusd_logmsg(BBUS_LOG_ERR,
+				"Error sending reply to client: %s\n",
+				bbus_strerror(bbus_lasterror()));
 		ret = -1;
 	}
 
@@ -496,13 +500,13 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED, struct bbus_msg* msg)
 	cli = (struct clientlist_elem*)bbus_hmap_finduint(caller_map,
 						bbus_hdr_gettoken(&msg->hdr));
 	if (cli == NULL) {
-		logmsg(BBUS_LOG_ERR, "Caller not found for reply.\n");
+		bbusd_logmsg(BBUS_LOG_ERR, "Caller not found for reply.\n");
 		return -1;
 	}
 
 	obj = bbus_prot_extractobj(msg);
 	if (obj == NULL) {
-		logmsg(BBUS_LOG_ERR,
+		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error extracting the object from message: %s\n",
 			bbus_strerror(bbus_lasterror()));
 		bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
@@ -517,7 +521,7 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED, struct bbus_msg* msg)
 respond:
 	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, obj);
 	if (ret < 0) {
-		logmsg(BBUS_LOG_ERR,
+		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error sending server reply to client: %s\n",
 			bbus_strerror(bbus_lasterror()));
 		ret = -1;
@@ -546,17 +550,17 @@ static void accept_client(void)
 	/* TODO Client credentials verification. */
 	cli = bbus_srv_accept(server);
 	if (cli == NULL) {
-		logmsg(BBUS_LOG_ERR,
+		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error accepting incoming client "
 			"connection: %s\n",
 			bbus_strerror(bbus_lasterror()));
 		return;
 	}
-	logmsg(BBUS_LOG_INFO, "Client connected.\n");
+	bbusd_logmsg(BBUS_LOG_INFO, "Client connected.\n");
 
 	r = client_list_add(cli);
 	if (r < 0) {
-		logmsg(BBUS_LOG_ERR,
+		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error adding new client to the list: %s\n",
 			bbus_strerror(bbus_lasterror()));
 		return;
@@ -570,7 +574,7 @@ static void accept_client(void)
 		r = bbus_hmap_setuint(caller_map, (unsigned)token,
 							clients.tail);
 		if (r < 0) {
-			logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUS_LOG_ERR,
 				"Error adding new client to "
 				"the caller map: %s\n",
 				bbus_strerror(bbus_lasterror()));
@@ -579,7 +583,7 @@ static void accept_client(void)
 	case BBUS_CLIENT_MON:
 		r = monitor_list_add(cli);
 		if (r < 0) {
-			logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUS_LOG_ERR,
 				"Error adding new monitor to "
 				"the list: %s\n",
 				bbus_strerror(bbus_lasterror()));
@@ -607,7 +611,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
 	r = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
 	if (r < 0) {
-		logmsg(BBUS_LOG_ERR,
+		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error receiving message from client: %s\n",
 			bbus_strerror(bbus_lasterror()));
 		goto cli_close;
@@ -622,7 +626,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		case BBUS_MSGTYPE_CLICALL:
 			r = handle_clientcall(cli, msgbuf);
 			if (r < 0) {
-				logmsg(BBUS_LOG_ERR,
+				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error on client call\n");
 				goto cli_close;
 			}
@@ -631,7 +635,8 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			goto cli_close;
 			break;
 		default:
-			logmsg(BBUS_LOG_ERR, "Unexpected message received.\n");
+			bbusd_logmsg(BBUS_LOG_ERR,
+					"Unexpected message received.\n");
 			goto cli_close;
 			break;
 		}
@@ -641,7 +646,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		case BBUS_MSGTYPE_SRVREG:
 			r = register_service(*cli_elem, msgbuf);
 			if (r < 0) {
-				logmsg(BBUS_LOG_ERR,
+				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error registering a service\n");
 				return;
 			}
@@ -649,7 +654,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		case BBUS_MSGTYPE_SRVUNREG:
 			r = unregister_service(cli, msgbuf);
 			if (r < 0) {
-				logmsg(BBUS_LOG_ERR,
+				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error unregistering a service: %s\n",
 					bbus_strerror(bbus_lasterror()));
 				return;
@@ -658,7 +663,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		case BBUS_MSGTYPE_SRVREPLY:
 			r = pass_srvc_reply(cli, msgbuf);
 			if (r < 0) {
-				logmsg(BBUS_LOG_ERR,
+				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error passing a service reply: %s\n",
 					bbus_strerror(bbus_lasterror()));
 				return;
@@ -668,7 +673,8 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			goto cli_close;
 			break;
 		default:
-			logmsg(BBUS_LOG_ERR, "Unexpected message received.\n");
+			bbusd_logmsg(BBUS_LOG_ERR,
+					"Unexpected message received.\n");
 			goto cli_close;
 			return;
 		}
@@ -682,7 +688,8 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			goto cli_close;
 			break;
 		default:
-			logmsg(BBUS_LOG_ERR, "Unexpected message received.\n");
+			bbusd_logmsg(BBUS_LOG_ERR,
+					"Unexpected message received.\n");
 			return;
 		}
 		break;
@@ -699,14 +706,14 @@ static void handle_client(struct clientlist_elem** cli_elem)
 						goto cli_close;
 					}
 				}
-				logmsg(BBUS_LOG_WARN,
+				bbusd_logmsg(BBUS_LOG_WARN,
 					"Monitor not found in the list, "
 					"this should not happen.\n");
 				goto cli_close;
 			}
 			break;
 		default:
-			logmsg(BBUS_LOG_WARN,
+			bbusd_logmsg(BBUS_LOG_WARN,
 				"Message received from a monitor which should "
 				"not be sending any messages - discarding.\n");
 			goto cli_close;
@@ -714,7 +721,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		}
 		break;
 	default:
-		logmsg(BBUS_LOG_ERR,
+		bbusd_logmsg(BBUS_LOG_ERR,
 			"Unhandled client type in the received message.\n");
 		return;
 	}
@@ -725,7 +732,7 @@ cli_close:
 	bbus_client_close(cli);
 	bbus_client_free(cli);
 	list_rm(cli_elem, &clients);
-	logmsg(BBUS_LOG_INFO, "Client disconnected.\n");
+	bbusd_logmsg(BBUS_LOG_INFO, "Client disconnected.\n");
 }
 
 int main(int argc, char** argv)
@@ -748,7 +755,7 @@ int main(int argc, char** argv)
 	 */
 	caller_map = bbus_hmap_create(BBUS_HMAP_KEYUINT);
 	if (caller_map == NULL) {
-		die("Error creating the caller hashmap: %s\n",
+		bbusd_die("Error creating the caller hashmap: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
 
@@ -773,25 +780,25 @@ int main(int argc, char** argv)
 	/* Creating the server object. */
 	server = bbus_srv_create();
 	if (server == NULL) {
-		die("Error creating the server object: %s\n",
+		bbusd_die("Error creating the server object: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
 
 	retval = bbus_srv_listen(server);
 	if (retval < 0) {
-		die("Error opening server for connections: %s\n",
+		bbusd_die("Error opening server for connections: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
 
 	pollset = bbus_pollset_make();
 	if (pollset == NULL) {
-		die("Error creating the poll_set: %s\n",
+		bbusd_die("Error creating the poll_set: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
 
 	REG_LOCAL_METHOD("bbus.bbusd.echo", lm_echo);
 
-	logmsg(BBUS_LOG_INFO, "Busybus daemon starting!\n");
+	bbusd_logmsg(BBUS_LOG_INFO, "Busybus daemon starting!\n");
 	run = 1;
 	(void)signal(SIGTERM, sighandler);
 	(void)signal(SIGINT, sighandler);
@@ -815,7 +822,7 @@ int main(int argc, char** argv)
 			if (bbus_lasterror() == BBUS_EPOLLINTR) {
 				continue;
 			} else {
-				die("Error polling connections: %s",
+				bbusd_die("Error polling connections: %s",
 					bbus_strerror(bbus_lasterror()));
 			}
 		} else
@@ -860,11 +867,11 @@ int main(int argc, char** argv)
 		bbus_free(tmpcli);
 	}
 
-	logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
+	bbusd_logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
 	return 0;
 
 err_map:
-	die("Error creating the service map: %s\n",
+	bbusd_die("Error creating the service map: %s\n",
 		bbus_strerror(bbus_lasterror()));
 }
 

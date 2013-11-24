@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-void die(const char* format, ...)
+void bbusd_die(const char* format, ...)
 {
 	va_list va;
 

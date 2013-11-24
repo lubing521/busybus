@@ -22,7 +22,7 @@
 #include <busybus.h>
 #include <syslog.h>
 
-enum loglevel
+enum bbusd_loglevel
 {
 	BBUS_LOG_EMERG = LOG_EMERG,
 	BBUS_LOG_ALERT = LOG_ALERT,
@@ -34,7 +34,8 @@ enum loglevel
 	BBUS_LOG_DEBUG = LOG_DEBUG
 };
 
-void logmsg(enum loglevel lvl, const char* fmt, ...) BBUS_PRINTF_FUNC(2, 3);
+void bbusd_logmsg(enum bbusd_loglevel lvl, const char* fmt, ...)
+						BBUS_PRINTF_FUNC(2, 3);
 
 #endif /* __BBUSD_LOG__ */
 
