@@ -36,7 +36,6 @@ BBUSUNIT_DEFINE_TEST(prot_extract_obj)
 				"a string\0";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-		static const size_t msgsize = sizeof(msgbuf)-1;
 		static const size_t objsize = sizeof(msgbuf)-1
 							-BBUS_MSGHDR_SIZE;
 
@@ -44,7 +43,7 @@ BBUSUNIT_DEFINE_TEST(prot_extract_obj)
 		char* s;
 		int ret;
 
-		obj = bbus_prot_extractobj(msg, msgsize);
+		obj = bbus_prot_extractobj(msg);
 		BBUSUNIT_ASSERT_NOTNULL(obj);
 		BBUSUNIT_ASSERT_EQ(objsize, bbus_obj_rawsize(obj));
 		ret = bbus_obj_extrstr(obj, &s);
@@ -73,11 +72,10 @@ BBUSUNIT_DEFINE_TEST(prot_extract_meta)
 				"meta string\0";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-		static const size_t msgsize = sizeof(msgbuf)-1;
 
 		const char* meta;
 
-		meta = bbus_prot_extractmeta(msg, msgsize);
+		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NOTNULL(meta);
 		BBUSUNIT_ASSERT_STREQ("meta string", meta);
 
@@ -102,16 +100,15 @@ BBUSUNIT_DEFINE_TEST(prot_extract_meta_and_obj)
 				"\x55\x66\x77\x88";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-		static const size_t msgsize = sizeof(msgbuf)-1;
 
 		bbus_object* obj = NULL;
 		/* FIXME GCC complains later if obj is uninitialized, why? */
 		const char* meta;
 
-		meta = bbus_prot_extractmeta(msg, msgsize);
+		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NOTNULL(meta);
 		BBUSUNIT_ASSERT_STREQ("meta string", meta);
-		obj = bbus_prot_extractobj(msg, msgsize);
+		obj = bbus_prot_extractobj(msg);
 		BBUSUNIT_ASSERT_NOTNULL(obj);
 		BBUSUNIT_ASSERT_EQ(2*sizeof(bbus_uint32),
 					bbus_obj_rawsize(obj));
@@ -142,11 +139,10 @@ BBUSUNIT_DEFINE_TEST(prot_extract_invalid_meta)
 				"meta string without null";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-		static const size_t msgsize = sizeof(msgbuf)-1;
 
 		const char* meta;
 
-		meta = bbus_prot_extractmeta(msg, msgsize);
+		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NULL(meta);
 
 	BBUSUNIT_FINALLY;
@@ -170,14 +166,13 @@ BBUSUNIT_DEFINE_TEST(prot_extract_flags_not_set)
 				"\x55\x66\x77\x88";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-		static const size_t msgsize = sizeof(msgbuf)-1;
 
 		const char* meta;
 		bbus_object* obj;
 
-		meta = bbus_prot_extractmeta(msg, msgsize);
+		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NULL(meta);
-		obj = bbus_prot_extractobj(msg, msgsize);
+		obj = bbus_prot_extractobj(msg);
 		BBUSUNIT_ASSERT_NULL(obj);
 
 	BBUSUNIT_FINALLY;

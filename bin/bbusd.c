@@ -30,8 +30,6 @@
 
 struct option_flags
 {
-	int print_help;
-	int print_version;
 	int log_to_console;
 	int log_to_syslog;
 };
@@ -109,7 +107,7 @@ static struct clientlist clients = { NULL, NULL };
 static struct clientlist monitors = { NULL, NULL };
 static volatile int run;
 /* TODO in the future syslog will be the default. */
-static struct option_flags options = { 0, 0, 1, 0 };
+static struct option_flags options = { 1, 0 };
 static bbus_hashmap* caller_map;
 static struct service_tree* srvc_tree;
 static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
@@ -382,8 +380,7 @@ static char* mname_from_srvcname(const char* srvc)
 	return found;
 }
 
-static int handle_clientcall(bbus_client* cli,
-				struct bbus_msg* msg, size_t msgsize)
+static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 {
 	struct method* mthd;
 	const char* mname;
@@ -393,7 +390,7 @@ static int handle_clientcall(bbus_client* cli,
 	struct bbus_msg_hdr hdr;
 	char* meta;
 
-	mname = bbus_prot_extractmeta(msg, msgsize);
+	mname = bbus_prot_extractmeta(msg);
 	if (mname == NULL)
 		return -1;
 
@@ -407,7 +404,7 @@ static int handle_clientcall(bbus_client* cli,
 		goto respond;
 	}
 
-	argobj = bbus_prot_extractobj(msg, msgsize);
+	argobj = bbus_prot_extractobj(msg);
 	if (argobj == NULL)
 		return -1;
 
@@ -420,7 +417,7 @@ static int handle_clientcall(bbus_client* cli,
 		} else {
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EGOOD);
-			hdr.psize = bbus_obj_rawsize(retobj);
+			bbus_hdr_setpsize(&hdr, bbus_obj_rawsize(retobj));
 		}
 
 		goto respond;
@@ -468,8 +465,7 @@ dontrespond:
 	return ret;
 }
 
-static int register_service(struct clientlist_elem* cli,
-				struct bbus_msg* msg, size_t msgsize)
+static int register_service(struct clientlist_elem* cli, struct bbus_msg* msg)
 {
 	const char* extrmeta;
 	char* meta;
@@ -479,7 +475,7 @@ static int register_service(struct clientlist_elem* cli,
 	struct remote_method* mthd;
 	struct bbus_msg_hdr hdr;
 
-	extrmeta = bbus_prot_extractmeta(msg, msgsize);
+	extrmeta = bbus_prot_extractmeta(msg);
 	if (extrmeta == NULL) {
 		ret = -1;
 		goto respond;
@@ -558,8 +554,7 @@ static int handle_control_message(bbus_client* cli BBUS_UNUSED,
 	return 0;
 }
 
-static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED,
-				struct bbus_msg* msg, size_t msgsize)
+static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED, struct bbus_msg* msg)
 {
 	struct bbus_msg_hdr hdr;
 	struct clientlist_elem* cli;
@@ -567,13 +562,13 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED,
 	int ret;
 
 	cli = (struct clientlist_elem*)bbus_hmap_finduint(caller_map,
-						(unsigned)msg->hdr.token);
+						bbus_hdr_gettoken(&msg->hdr));
 	if (cli == NULL) {
 		logmsg(BBUS_LOG_ERR, "Caller not found for reply.\n");
 		return -1;
 	}
 
-	obj = bbus_prot_extractobj(msg, msgsize);
+	obj = bbus_prot_extractobj(msg);
 	if (obj == NULL) {
 		logmsg(BBUS_LOG_ERR,
 			"Error extracting the object from message: %s\n",
@@ -675,7 +670,6 @@ static void handle_client(struct clientlist_elem** cli_elem)
 {
 	bbus_client* cli;
 	int r;
-	size_t recvd;
 
 	cli = (*cli_elem)->cli;
 	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
@@ -687,7 +681,6 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		goto cli_close;
 	}
 
-	recvd = bbus_hdr_getpsize(&msgbuf->hdr);
 	send_to_monitors(msgbuf);
 
 	/* TODO Common function for error reporting. */
@@ -695,7 +688,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 	case BBUS_CLIENT_CALLER:
 		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLICALL:
-			r = handle_clientcall(cli, msgbuf, recvd);
+			r = handle_clientcall(cli, msgbuf);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error on client call\n");
@@ -714,8 +707,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 	case BBUS_CLIENT_SERVICE:
 		switch (msgbuf->hdr.msgtype) {
 		case BBUS_MSGTYPE_SRVREG:
-			r = register_service(*cli_elem,
-						msgbuf, recvd);
+			r = register_service(*cli_elem, msgbuf);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error registering a service\n");
@@ -732,7 +724,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			}
 			break;
 		case BBUS_MSGTYPE_SRVREPLY:
-			r = pass_srvc_reply(cli, msgbuf, recvd);
+			r = pass_srvc_reply(cli, msgbuf);
 			if (r < 0) {
 				logmsg(BBUS_LOG_ERR,
 					"Error passing a service reply: %s\n",

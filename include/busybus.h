@@ -937,7 +937,6 @@ struct bbus_msg
 /**
  * @brief Extracts the busybus object from the message buffer.
  * @param msg The message.
- * @param msgsize Size of the message.
  * @return Extracted busybus object or NULL if object not present.
  *
  * The returned object has to be freed using bbus_obj_free.
@@ -947,7 +946,6 @@ bbus_object* bbus_prot_extractobj(const struct bbus_msg* msg) BBUS_PUBLIC;
 /**
  * @brief Extracts the meta string from the message buffer.
  * @param msg The message.
- * @param msgsize Size of the message.
  * @return Pointer to the meta string or NULL if meta not present.
  *
  * The returned pointer points to the area inside 'msg'.
@@ -995,14 +993,14 @@ void bbus_hdr_build(struct bbus_msg_hdr* hdr, int typ, int err) BBUS_PUBLIC;
  * @param hdr The header.
  * @return The token.
  */
-uint32_t bbus_hdr_gettoken(const struct bbus_msg_hdr* hdr) BBUS_PUBLIC;
+unsigned bbus_hdr_gettoken(const struct bbus_msg_hdr* hdr) BBUS_PUBLIC;
 
 /**
  * @brief Converts given token to network byte order and assigns it to 'hdr'.
  * @param hdr The header.
  * @param tok The token.
  */
-void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, uint32_t tok) BBUS_PUBLIC;
+void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, unsigned tok) BBUS_PUBLIC;
 
 /**
  * @brief Returns the payload size from the header in host byte order.

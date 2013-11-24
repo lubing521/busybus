@@ -308,14 +308,14 @@ void bbus_hdr_build(struct bbus_msg_hdr* hdr, int typ, int err)
 	hdr->errcode = (uint8_t)err;
 }
 
-uint32_t bbus_hdr_gettoken(const struct bbus_msg_hdr* hdr)
+unsigned bbus_hdr_gettoken(const struct bbus_msg_hdr* hdr)
 {
-	return ntohl(hdr->token);
+	return (unsigned)ntohl(hdr->token);
 }
 
-void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, uint32_t tok)
+void bbus_hdr_settoken(struct bbus_msg_hdr* hdr, unsigned tok)
 {
-	hdr->token = htonl(tok);
+	hdr->token = (uint32_t)htonl(tok);
 }
 
 size_t bbus_hdr_getpsize(const struct bbus_msg_hdr* hdr)

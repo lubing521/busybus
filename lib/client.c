@@ -279,13 +279,13 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 		}
 
 		token = bbus_hdr_gettoken(&hdr);
-		meta = bbus_prot_extractmeta(msg, BBUS_MAXMSGSIZE);
+		meta = bbus_prot_extractmeta(msg);
 		if (meta == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
 		}
 
-		objarg = bbus_prot_extractobj(msg, BBUS_MAXMSGSIZE);
+		objarg = bbus_prot_extractobj(msg);
 		if (objarg == NULL) {
 			__bbus_seterr(BBUS_EMSGINVFMT);
 			return -1;
