@@ -8,3 +8,4 @@
   only rely on the array size taken from the object buffer.
 - Some other way to store and read byte arrays from object with obj_build and
   obj_parse functions.
+- Figure out when to pass the -Wno-psabi flag to GCC.

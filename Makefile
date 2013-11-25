@@ -2,7 +2,7 @@
 # globals
 ###############################################################################
 OPT =		-O2
-ABI =		-Wno-psabi
+ABI =
 CFLAGS =	-Wall -Wextra -fPIC $(OPT) -D_GNU_SOURCE -I./include	\
 				-fvisibility=hidden $(ABI)
 LDFLAGS =	-Wl,-E
