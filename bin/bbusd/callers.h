@@ -12,16 +12,11 @@
  * GNU General Public License for more details.
  */
 
-#include "common.h"
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef __BBUSD_CALLERS__
+#define __BBUSD_CALLERS__
 
-void bbusd_die(const char* format, ...)
-{
-	va_list va;
 
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
-}
+
+#endif /* __BBUSD_CALLERS__ */
+
+

@@ -10,10 +10,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <busybus.h>
@@ -25,12 +21,9 @@
 #include <string.h>
 #include "bbusd/log.h"
 #include "bbusd/common.h"
-
-struct option_flags
-{
-	int log_to_console;
-	int log_to_syslog;
-};
+#include "bbusd/service.h"
+#include "bbusd/methods.h"
+#include "bbusd/msgbuf.h"
 
 struct clientlist_elem
 {
@@ -45,59 +38,12 @@ struct clientlist
 	struct clientlist_elem* tail;
 };
 
-#define METHOD_LOCAL	0x01
-#define METHOD_REMOTE	0x02
+static volatile int run;
 
-struct method
-{
-	int type;
-	char data[0];
-};
-
-struct local_method
-{
-	int type;
-	bbus_method_func func;
-};
-
-#define DEF_LOCAL_METHOD(FUNC)						\
-	static struct local_method __m_##FUNC##__ = {			\
-		.type = METHOD_LOCAL,					\
-		.func = FUNC,						\
-	}
-
-#define REG_LOCAL_METHOD(PATH, FUNC)					\
-	do {								\
-		if (insert_method(PATH,					\
-				(struct method*)&__m_##FUNC##__) < 0) {	\
-			bbusd_die(					\
-				"Error inserting method: '%s'\n",	\
-				PATH);					\
-		}							\
-	} while (0)
-
-struct remote_method
-{
-	int type;
-	struct clientlist_elem* srvc;
-};
-
-struct service_tree
-{
-	/* Values are pointers to struct service_map. */
-	bbus_hashmap* subsrvc;
-	/* Values are pointers to struct method. */
-	bbus_hashmap* methods;
-};
-
-static bbus_server* server;
 static struct clientlist clients = { NULL, NULL };
 static struct clientlist monitors = { NULL, NULL };
-static volatile int run;
+
 static bbus_hashmap* caller_map;
-static struct service_tree* srvc_tree;
-static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
-static struct bbus_msg* msgbuf = (struct bbus_msg*)_msgbuf;
 
 static struct bbus_option cmdopts[] = {
 	{
@@ -117,19 +63,6 @@ static struct bbus_opt_list optlist = {
 	.version = "ALPHA",
 	.progdescr = "Tiny message bus daemon."
 };
-
-static bbus_object* lm_echo(bbus_object* arg)
-{
-	char* msg;
-	int ret;
-
-	ret = bbus_obj_parse(arg, "s", &msg);
-	if (ret < 0)
-		return NULL;
-	else
-		return bbus_obj_build("s", msg);
-}
-DEF_LOCAL_METHOD(lm_echo);
 
 static int do_run(void)
 {
@@ -182,123 +115,6 @@ static int monitor_list_add(bbus_client* cli)
 	return list_add(cli, &monitors);
 }
 
-static int do_insert_method(const char* path, struct method* mthd,
-					struct service_tree* node)
-{
-	char* found;
-	struct service_tree* next;
-	int ret;
-	void* mval;
-
-	found = index(path, '.');
-	if (found == NULL) {
-		/* Path is the method name. */
-		mval = bbus_hmap_findstr(node->methods, path);
-		if (mval != NULL) {
-			bbusd_logmsg(BBUS_LOG_ERR,
-				"Method already exists for this value: %s\n",
-				path);
-			return -1;
-		}
-		ret = bbus_hmap_setstr(node->methods, path, mthd);
-		if (ret < 0) {
-			bbusd_logmsg(BBUS_LOG_ERR,
-				"Error registering new method: %s\n",
-				bbus_strerror(bbus_lasterror()));
-			return -1;
-		}
-
-		return 0;
-	} else {
-		/* Path is the subservice name. */
-		*found = '\0';
-		next = bbus_hmap_findstr(node->subsrvc, path);
-		if (next == NULL) {
-			/* Insert new service. */
-			next = bbus_malloc(sizeof(struct service_tree));
-			if (next == NULL)
-				goto err_mknext;
-
-			next->subsrvc = bbus_hmap_create(BBUS_HMAP_KEYSTR);
-			if (next->subsrvc == NULL)
-				goto err_mksubsrvc;
-
-			next->methods = bbus_hmap_create(BBUS_HMAP_KEYSTR);
-			if (next->subsrvc == NULL)
-				goto err_mkmethods;
-
-			ret = bbus_hmap_setstr(node->subsrvc, path, next);
-			if (ret < 0)
-				goto err_setsrvc;
-		}
-
-		return do_insert_method(found+1, mthd, next);
-	}
-
-err_setsrvc:
-	bbus_hmap_free(next->methods);
-
-err_mkmethods:
-	bbus_hmap_free(next->subsrvc);
-
-err_mksubsrvc:
-	bbus_free(next);
-
-err_mknext:
-	return -1;
-}
-
-static int insert_method(const char* path, struct method* mthd)
-{
-	char* mname;
-	int ret;
-
-	mname = bbus_str_cpy(path);
-	if (mname == NULL)
-		return -1;
-
-	ret = do_insert_method(mname, mthd, srvc_tree);
-	bbus_str_free(mname);
-
-	return ret;
-}
-
-static struct method* do_locate_method(char* path, struct service_tree* node)
-{
-	char* found;
-	struct service_tree* next;
-
-	found = index(path, '.');
-	if (found == NULL) {
-		/* This is a method. */
-		return bbus_hmap_findstr(node->methods, path);
-	} else {
-		*found = '\0';
-		/* This is a sub-service. */
-		next = bbus_hmap_findstr(node->subsrvc, path);
-		if (next == NULL) {
-			return NULL;
-		}
-
-		return do_locate_method(found+1, next);
-	}
-}
-
-static struct method* locate_method(const char* path)
-{
-	char* mname;
-	struct method* ret;
-
-	mname = bbus_str_cpy(path);
-	if (mname == NULL)
-		return NULL;
-
-	ret = do_locate_method(mname, srvc_tree);
-	bbus_str_free(mname);
-
-	return ret;
-}
-
 static void send_to_monitors(struct bbus_msg* msg BBUS_UNUSED)
 {
 	return;
@@ -316,7 +132,7 @@ static char* mname_from_srvcname(const char* srvc)
 
 static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 {
-	struct method* mthd;
+	struct bbusd_method* mthd;
 	const char* mname;
 	int ret;
 	bbus_object* argobj = NULL;
@@ -329,7 +145,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 		return -1;
 
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
-	mthd = locate_method(mname);
+	mthd = bbusd_locate_method(mname);
 	if (mthd == NULL) {
 		bbusd_logmsg(BBUS_LOG_ERR, "No such method: %s\n", mname);
 		bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
@@ -342,8 +158,8 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 	if (argobj == NULL)
 		return -1;
 
-	if (mthd->type == METHOD_LOCAL) {
-		retobj = ((struct local_method*)mthd)->func(argobj);
+	if (mthd->type == BBUSD_METHOD_LOCAL) {
+		retobj = ((struct bbusd_local_method*)mthd)->func(argobj);
 		if (retobj == NULL) {
 			bbusd_logmsg(BBUS_LOG_ERR, "Error calling method.\n");
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
@@ -356,7 +172,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 
 		goto respond;
 	} else
-	if (mthd->type == METHOD_REMOTE) {
+	if (mthd->type == BBUSD_METHOD_REMOTE) {
 		meta = mname_from_srvcname(mname);
 		if (meta == NULL) {
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
@@ -371,7 +187,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 		bbus_hdr_settoken(&hdr, bbus_client_gettoken(cli));
 
 		ret = bbus_client_sendmsg(
-				((struct remote_method*)mthd)->srvc->cli,
+				((struct bbusd_remote_method*)mthd)->srvc->cli,
 				&hdr, meta, argobj);
 		if (ret < 0) {
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
@@ -407,7 +223,7 @@ static int register_service(struct clientlist_elem* cli, struct bbus_msg* msg)
 	int ret;
 	char* comma;
 	char* path;
-	struct remote_method* mthd;
+	struct bbusd_remote_method* mthd;
 	struct bbus_msg_hdr hdr;
 
 	extrmeta = bbus_prot_extractmeta(msg);
@@ -435,16 +251,16 @@ static int register_service(struct clientlist_elem* cli, struct bbus_msg* msg)
 		goto metafree;
 	}
 
-	mthd = bbus_malloc0(sizeof(struct remote_method));
+	mthd = bbus_malloc0(sizeof(struct bbusd_remote_method));
 	if (mthd == NULL) {
 		ret = -1;
 		goto pathfree;
 	}
 
-	mthd->type = METHOD_REMOTE;
+	mthd->type = BBUSD_METHOD_REMOTE;
 	mthd->srvc = cli;
 
-	ret = insert_method(path, (struct method*)mthd);
+	ret = bbusd_insert_method(path, (struct bbusd_method*)mthd);
 	if (ret < 0) {
 		ret = -1;
 		goto mthdfree;
@@ -541,7 +357,7 @@ static uint32_t make_token(void)
 	return ++curtok;
 }
 
-static void accept_client(void)
+static void accept_client(bbus_server* server)
 {
 	bbus_client* cli;
 	int r;
@@ -608,8 +424,8 @@ static void handle_client(struct clientlist_elem** cli_elem)
 	int r;
 
 	cli = (*cli_elem)->cli;
-	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
-	r = bbus_client_rcvmsg(cli, msgbuf, BBUS_MAXMSGSIZE);
+	memset(bbusd_getmsgbuf(), 0, BBUS_MAXMSGSIZE);
+	r = bbus_client_rcvmsg(cli, bbusd_getmsgbuf(), BBUS_MAXMSGSIZE);
 	if (r < 0) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error receiving message from client: %s\n",
@@ -617,14 +433,14 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		goto cli_close;
 	}
 
-	send_to_monitors(msgbuf);
+	send_to_monitors(bbusd_getmsgbuf());
 
 	/* TODO Common function for error reporting. */
 	switch (bbus_client_gettype(cli)) {
 	case BBUS_CLIENT_CALLER:
-		switch (msgbuf->hdr.msgtype) {
+		switch (bbusd_getmsgbuf()->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLICALL:
-			r = handle_clientcall(cli, msgbuf);
+			r = handle_clientcall(cli, bbusd_getmsgbuf());
 			if (r < 0) {
 				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error on client call\n");
@@ -642,9 +458,9 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		}
 		break;
 	case BBUS_CLIENT_SERVICE:
-		switch (msgbuf->hdr.msgtype) {
+		switch (bbusd_getmsgbuf()->hdr.msgtype) {
 		case BBUS_MSGTYPE_SRVREG:
-			r = register_service(*cli_elem, msgbuf);
+			r = register_service(*cli_elem, bbusd_getmsgbuf());
 			if (r < 0) {
 				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error registering a service\n");
@@ -652,7 +468,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			}
 			break;
 		case BBUS_MSGTYPE_SRVUNREG:
-			r = unregister_service(cli, msgbuf);
+			r = unregister_service(cli, bbusd_getmsgbuf());
 			if (r < 0) {
 				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error unregistering a service: %s\n",
@@ -661,7 +477,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 			}
 			break;
 		case BBUS_MSGTYPE_SRVREPLY:
-			r = pass_srvc_reply(cli, msgbuf);
+			r = pass_srvc_reply(cli, bbusd_getmsgbuf());
 			if (r < 0) {
 				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error passing a service reply: %s\n",
@@ -680,9 +496,9 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		}
 		break;
 	case BBUS_CLIENT_CTL:
-		switch (msgbuf->hdr.msgtype) {
+		switch (bbusd_getmsgbuf()->hdr.msgtype) {
 		case BBUS_MSGTYPE_CTRL:
-			handle_control_message(cli, msgbuf);
+			handle_control_message(cli, bbusd_getmsgbuf());
 			break;
 		case BBUS_MSGTYPE_CLOSE:
 			goto cli_close;
@@ -694,7 +510,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		}
 		break;
 	case BBUS_CLIENT_MON:
-		switch (msgbuf->hdr.msgtype) {
+		switch (bbusd_getmsgbuf()->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLOSE:
 			{
 				struct clientlist_elem* mon;
@@ -741,6 +557,7 @@ int main(int argc, char** argv)
 	struct clientlist_elem* tmpcli;
 	struct bbus_timeval tv;
 	static bbus_pollset* pollset;
+	bbus_server* server;
 
 	retval = bbus_parse_args(argc, argv, &optlist, NULL);
 	if (retval == BBUS_ARGS_HELP)
@@ -759,23 +576,8 @@ int main(int argc, char** argv)
 			bbus_strerror(bbus_lasterror()));
 	}
 
-	/* Service map. */
-	srvc_tree = bbus_malloc(sizeof(struct service_tree));
-	if (srvc_tree == NULL)
-		goto err_map;
-
-	srvc_tree->subsrvc = bbus_hmap_create(BBUS_HMAP_KEYSTR);
-	if (srvc_tree->subsrvc == NULL) {
-		bbus_free(srvc_tree);
-		goto err_map;
-	}
-
-	srvc_tree->methods = bbus_hmap_create(BBUS_HMAP_KEYSTR);
-	if (srvc_tree->methods == NULL) {
-		bbus_hmap_free(srvc_tree->subsrvc);
-		bbus_free(srvc_tree);
-		goto err_map;
-	}
+	bbusd_init_service_map();
+	bbusd_register_local_methods();
 
 	/* Creating the server object. */
 	server = bbus_srv_create();
@@ -795,8 +597,6 @@ int main(int argc, char** argv)
 		bbusd_die("Error creating the poll_set: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
-
-	REG_LOCAL_METHOD("bbus.bbusd.echo", lm_echo);
 
 	bbusd_logmsg(BBUS_LOG_INFO, "Busybus daemon starting!\n");
 	run = 1;
@@ -833,7 +633,7 @@ int main(int argc, char** argv)
 			/* Incoming data. */
 			if (bbus_pollset_srvisset(pollset, server)) {
 				while (bbus_srv_clientpending(server)) {
-					accept_client();
+					accept_client(server);
 				}
 				--retval;
 			}
@@ -867,11 +667,9 @@ int main(int argc, char** argv)
 		bbus_free(tmpcli);
 	}
 
+	bbusd_free_service_map();
+
 	bbusd_logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
 	return 0;
-
-err_map:
-	bbusd_die("Error creating the service map: %s\n",
-		bbus_strerror(bbus_lasterror()));
 }
 

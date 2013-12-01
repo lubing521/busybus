@@ -12,16 +12,10 @@
  * GNU General Public License for more details.
  */
 
-#include "common.h"
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef __BBUSD_METHODS__
+#define __BBUSD_METHODS__
 
-void bbusd_die(const char* format, ...)
-{
-	va_list va;
+void bbusd_register_local_methods(void);
 
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
-}
+#endif /* __BBUSD_METHODS__ */
+

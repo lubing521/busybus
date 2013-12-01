@@ -12,16 +12,35 @@
  * GNU General Public License for more details.
  */
 
+#ifndef __BBUSD_SERVICE__
+#define __BBUSD_SERVICE__
+
 #include "common.h"
-#include <stdlib.h>
-#include <stdio.h>
 
-void bbusd_die(const char* format, ...)
+#define BBUSD_METHOD_LOCAL	0x01
+#define BBUSD_METHOD_REMOTE	0x02
+
+struct bbusd_method
 {
-	va_list va;
+	int type;
+	char data[0];
+};
 
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
-}
+struct bbusd_local_method
+{
+	int type;
+	bbus_method_func func;
+};
+
+struct bbusd_remote_method
+{
+	int type;
+	struct clientlist_elem* srvc;
+};
+
+int bbusd_insert_method(const char* path, struct bbusd_method* mthd);
+struct bbusd_method* bbusd_locate_method(const char* path);
+void bbusd_init_service_map(void);
+void bbusd_free_service_map(void);
+
+#endif /* __BBUSD_SERVICE__ */

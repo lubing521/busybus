@@ -12,16 +12,12 @@
  * GNU General Public License for more details.
  */
 
-#include "common.h"
-#include <stdlib.h>
-#include <stdio.h>
+#ifndef __BBUSD_MSGBUF__
+#define __BBUSD_MSGBUF__
 
-void bbusd_die(const char* format, ...)
-{
-	va_list va;
+#include <busybus.h>
 
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
-}
+struct bbus_msg* bbusd_getmsgbuf(void);
+
+#endif /* __BBUSD_MSGBUF__ */
+

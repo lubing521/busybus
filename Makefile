@@ -41,7 +41,11 @@ libbbus.so:		$(LIBBBUS_OBJS)
 ###############################################################################
 BBUSD_OBJS =		./bin/bbusd.o					\
 			./bin/bbusd/log.o				\
-			./bin/bbusd/common.o
+			./bin/bbusd/common.o				\
+			./bin/bbusd/service.o				\
+			./bin/bbusd/methods.o				\
+			./bin/bbusd/msgbuf.o				\
+			./bin/bbusd/callers.o
 BBUSD_TARGET =		./bbusd
 BBUSD_LIBS =		-lbbus
 

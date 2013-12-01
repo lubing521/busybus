@@ -12,16 +12,12 @@
  * GNU General Public License for more details.
  */
 
-#include "common.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include "msgbuf.h"
 
-void bbusd_die(const char* format, ...)
+static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
+struct bbus_msg* msgbuf = (struct bbus_msg*)_msgbuf;
+
+struct bbus_msg* bbusd_getmsgbuf(void)
 {
-	va_list va;
-
-	va_start(va, format);
-	vfprintf(stderr, format, va);
-	va_end(va);
-	exit(EXIT_FAILURE);
+	return msgbuf;
 }

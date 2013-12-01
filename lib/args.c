@@ -10,10 +10,6 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- * with this program; if not, write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <busybus.h>
@@ -153,7 +149,7 @@ static char* make_info_string(const struct bbus_opt_list* optlist BBUS_UNUSED)
 		tmp = bbus_str_build("  %s%c%s%s%s -\t%s\n",
 			shortopt == 0 ? " " : "-",
 			shortopt == 0 ? ' ' : shortopt,
-			(shortopt != 0) && (longopt != NULL) ? "," : " ",
+			(shortopt != 0) && (longopt != NULL) ? ", " : "  ",
 			longopt == NULL ? "  " : "--",
 			longopt == NULL ? " " : longopt,
 			optlist->opts[i].descr);
