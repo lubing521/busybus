@@ -16,31 +16,30 @@
 #include "socket.h"
 #include "error.h"
 #include "protocol.h"
+#include "spinlock.h"
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdio.h>
-#include <pthread.h>
 #include <stdint.h>
 
 #define MAX_NUMIOV 3
 
-static pthread_mutex_t sockpath_mutex = PTHREAD_MUTEX_INITIALIZER;
+static struct __bbus_spinlock sockpath_lock = __BBUS_SPINLOCK_INITIALIZER;
 static char sockpath[BBUS_PROT_SOCKPATHMAX] = BBUS_PROT_DEFSOCKPATH;
 static BBUS_THREAD_LOCAL char localpath[BBUS_PROT_SOCKPATHMAX];
 
 void bbus_prot_setsockpath(const char* path)
 {
-	/* FIXME pthread_mutex_lock and unlock don't need pthread linkage? */
-	(void)pthread_mutex_lock(&sockpath_mutex);
+	__bbus_spinlock_lock(&sockpath_lock);
 	(void)snprintf(sockpath, BBUS_PROT_SOCKPATHMAX, "%s", path);
-	(void)pthread_mutex_unlock(&sockpath_mutex);
+	__bbus_spinlock_unlock(&sockpath_lock);
 }
 
 const char* bbus_prot_getsockpath(void)
 {
-	(void)pthread_mutex_lock(&sockpath_mutex);
+	__bbus_spinlock_lock(&sockpath_lock);
 	(void)snprintf(localpath, BBUS_PROT_SOCKPATHMAX, "%s", sockpath);
-	(void)pthread_mutex_unlock(&sockpath_mutex);
+	__bbus_spinlock_unlock(&sockpath_lock);
 	return localpath;
 }
 
