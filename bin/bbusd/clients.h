@@ -12,35 +12,29 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __BBUSD_SERVICE__
-#define __BBUSD_SERVICE__
+#ifndef __BBUSD_CLIENTS__
+#define __BBUSD_CLIENTS__
 
-#include "common.h"
+#include <busybus.h>
 
-#define BBUSD_METHOD_LOCAL	0x01
-#define BBUSD_METHOD_REMOTE	0x02
-
-struct bbusd_method
+struct bbusd_clientlist_elem
 {
-	int type;
-	char data[0];
+	struct bbusd_clientlist_elem* next;
+	struct bbusd_clientlist_elem* prev;
+	bbus_client* cli;
 };
 
-struct bbusd_local_method
+struct bbusd_clientlist
 {
-	int type;
-	bbus_method_func func;
+	struct bbusd_clientlist_elem* head;
+	struct bbusd_clientlist_elem* tail;
 };
 
-struct bbusd_remote_method
-{
-	int type;
-	struct bbusd_clientlist_elem* srvc;
-};
+int client_list_add(bbus_client* cli);
+int monitor_list_add(bbus_client* cli);
 
-int bbusd_insert_method(const char* path, struct bbusd_method* mthd);
-struct bbusd_method* bbusd_locate_method(const char* path);
-void bbusd_init_service_map(void);
-void bbusd_free_service_map(void);
+void list_rm(struct bbusd_clientlist_elem** elem,
+				struct bbusd_clientlist* list);
 
-#endif /* __BBUSD_SERVICE__ */
+#endif /* __BBUSD_CLIENTS__ */
+

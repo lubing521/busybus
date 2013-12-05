@@ -24,26 +24,14 @@
 #include "bbusd/service.h"
 #include "bbusd/methods.h"
 #include "bbusd/msgbuf.h"
-
-struct clientlist_elem
-{
-	struct clientlist_elem* next;
-	struct clientlist_elem* prev;
-	bbus_client* cli;
-};
-
-struct clientlist
-{
-	struct clientlist_elem* head;
-	struct clientlist_elem* tail;
-};
+#include "bbusd/clients.h"
 
 static volatile int run;
 
-static struct clientlist clients = { NULL, NULL };
-static struct clientlist monitors = { NULL, NULL };
-
 static bbus_hashmap* caller_map;
+
+extern struct bbusd_clientlist clients;
+extern struct bbusd_clientlist monitors;
 
 static struct bbus_option cmdopts[] = {
 	{
@@ -82,37 +70,6 @@ static void sighandler(int signum)
 		do_stop();
 		break;
 	}
-}
-
-static int list_add(bbus_client* cli, struct clientlist* list)
-{
-	struct clientlist_elem* el;
-
-	el = bbus_malloc(sizeof(struct clientlist_elem));
-	if (el == NULL)
-		return -1;
-
-	el->cli = cli;
-	bbus_list_push(list, el);
-
-	return 0;
-}
-
-static void list_rm(struct clientlist_elem** elem, struct clientlist* list)
-{
-	bbus_list_rm(list, *elem);
-	bbus_free(*elem);
-	*elem = NULL;
-}
-
-static int client_list_add(bbus_client* cli)
-{
-	return list_add(cli, &clients);
-}
-
-static int monitor_list_add(bbus_client* cli)
-{
-	return list_add(cli, &monitors);
 }
 
 static void send_to_monitors(struct bbus_msg* msg BBUS_UNUSED)
@@ -216,7 +173,7 @@ dontrespond:
 	return ret;
 }
 
-static int register_service(struct clientlist_elem* cli, struct bbus_msg* msg)
+static int register_service(struct bbusd_clientlist_elem* cli, struct bbus_msg* msg)
 {
 	const char* extrmeta;
 	char* meta;
@@ -309,11 +266,11 @@ static int handle_control_message(bbus_client* cli BBUS_UNUSED,
 static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED, struct bbus_msg* msg)
 {
 	struct bbus_msg_hdr hdr;
-	struct clientlist_elem* cli;
+	struct bbusd_clientlist_elem* cli;
 	bbus_object* obj;
 	int ret;
 
-	cli = (struct clientlist_elem*)bbus_hmap_finduint(caller_map,
+	cli = (struct bbusd_clientlist_elem*)bbus_hmap_finduint(caller_map,
 						bbus_hdr_gettoken(&msg->hdr));
 	if (cli == NULL) {
 		bbusd_logmsg(BBUS_LOG_ERR, "Caller not found for reply.\n");
@@ -418,7 +375,7 @@ static void accept_client(bbus_server* server)
 	}
 }
 
-static void handle_client(struct clientlist_elem** cli_elem)
+static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 {
 	bbus_client* cli;
 	int r;
@@ -513,7 +470,7 @@ static void handle_client(struct clientlist_elem** cli_elem)
 		switch (bbusd_getmsgbuf()->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLOSE:
 			{
-				struct clientlist_elem* mon;
+				struct bbusd_clientlist_elem* mon;
 
 				for (mon = monitors.head; mon != NULL;
 							mon = mon->next) {
@@ -554,7 +511,7 @@ cli_close:
 int main(int argc, char** argv)
 {
 	int retval;
-	struct clientlist_elem* tmpcli;
+	struct bbusd_clientlist_elem* tmpcli;
 	struct bbus_timeval tv;
 	static bbus_pollset* pollset;
 	bbus_server* server;
