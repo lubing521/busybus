@@ -529,6 +529,26 @@ void bbus_free_nonopts(struct bbus_nonopts* nonopts) BBUS_PUBLIC;
 /**
  * @}
  *
+ * @defgroup __environ__ Environment variables
+ * @{
+ *
+ * Environment variables that can be set to affect the behavior of the
+ * busybus library.
+ */
+
+/**
+ * @brief Path to the busybus unix socket.
+ *
+ * Affects the default socket path. If this variable is set libbbus will use
+ * its value instead of the default path specified in busybus.h. In most
+ * busybus programs however this can be overridden by socket path passed as a
+ * command-line argument e.g. '--sockpath' in bbusd.
+ */
+#define BBUS_ENV_SOCKPATH	"BBUS_SOCKPATH"
+
+/**
+ * @}
+ *
  * @defgroup __error__ Error handling
  * @{
  *

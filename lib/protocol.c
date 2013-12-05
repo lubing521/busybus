@@ -17,6 +17,7 @@
 #include "error.h"
 #include "protocol.h"
 #include "spinlock.h"
+#include <stdlib.h>
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdio.h>
@@ -24,9 +25,24 @@
 
 #define MAX_NUMIOV 3
 
-static struct __bbus_spinlock sockpath_lock = __BBUS_SPINLOCK_INITIALIZER;
-static char sockpath[BBUS_PROT_SOCKPATHMAX] = BBUS_PROT_DEFSOCKPATH;
+static struct __bbus_spinlock sockpath_lock;
+static char sockpath[BBUS_PROT_SOCKPATHMAX];
 static BBUS_THREAD_LOCAL char localpath[BBUS_PROT_SOCKPATHMAX];
+
+static void BBUS_ATSTART sockpath_init(void)
+{
+	char* pathenv;
+	char* path;
+
+	__bbus_spinlock_init(&sockpath_lock);
+	pathenv = getenv(BBUS_ENV_SOCKPATH);
+	if (pathenv) {
+		path = pathenv;
+	} else {
+		path = BBUS_PROT_DEFSOCKPATH;
+	}
+	(void)snprintf(sockpath, BBUS_PROT_SOCKPATHMAX, "%s", path);
+}
 
 void bbus_prot_setsockpath(const char* path)
 {
