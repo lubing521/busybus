@@ -12,6 +12,7 @@
  * GNU General Public License for more details.
  */
 
+#include <busybus.h>
 #include "spinlock.h"
 
 void __bbus_spinlock_init(struct __bbus_spinlock* lock)
@@ -23,11 +24,11 @@ void __bbus_spinlock_lock(struct __bbus_spinlock* lock)
 {
 	do {
 		while (lock->val);
-	} while (__sync_lock_test_and_set(&lock->val, 1));
+	} while (BBUS_ATOMIC_LOCK_TEST_AND_SET(lock->val, 1));
 }
 
 void __bbus_spinlock_unlock(struct __bbus_spinlock* lock)
 {
-	(void)__sync_lock_release(&lock->val);
+	(void)BBUS_ATOMIC_LOCK_RELEASE(lock->val);
 }
 
