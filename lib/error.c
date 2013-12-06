@@ -13,6 +13,7 @@
  */
 
 #include <busybus.h>
+#include "error.h"
 #include <stdlib.h>
 #include <string.h>
 
