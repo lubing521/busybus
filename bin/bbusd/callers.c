@@ -13,6 +13,37 @@
  */
 
 #include "callers.h"
+#include "common.h"
 
+/*
+ * Caller map:
+ * 	keys -> tokens,
+ * 	values -> pointers to caller objects.
+ */
+static bbus_hashmap* caller_map;
 
+void bbusd_init_caller_map(void)
+{
+	caller_map = bbus_hmap_create(BBUS_HMAP_KEYUINT);
+	if (caller_map == NULL) {
+		bbusd_die("Error creating the caller hashmap: %s\n",
+					bbus_strerror(bbus_lasterror()));
+	}
+}
+
+void bbusd_clean_caller_map(void)
+{
+	bbus_hmap_free(caller_map);
+}
+
+struct bbusd_clientlist_elem* bbusd_get_caller(unsigned token)
+{
+	return (struct bbusd_clientlist_elem*)bbus_hmap_finduint(caller_map,
+									token);
+}
+
+int bbusd_add_caller(unsigned token, struct bbusd_clientlist_elem* caller)
+{
+	return bbus_hmap_setuint(caller_map, (unsigned)token, caller);
+}
 

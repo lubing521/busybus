@@ -25,10 +25,9 @@
 #include "bbusd/methods.h"
 #include "bbusd/msgbuf.h"
 #include "bbusd/clients.h"
+#include "bbusd/callers.h"
 
 static volatile int run;
-
-static bbus_hashmap* caller_map;
 
 extern struct bbusd_clientlist clients;
 extern struct bbusd_clientlist monitors;
@@ -270,8 +269,7 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED, struct bbus_msg* msg)
 	bbus_object* obj;
 	int ret;
 
-	cli = (struct bbusd_clientlist_elem*)bbus_hmap_finduint(caller_map,
-						bbus_hdr_gettoken(&msg->hdr));
+	cli = bbusd_get_caller(bbus_hdr_gettoken(&msg->hdr));
 	if (cli == NULL) {
 		bbusd_logmsg(BBUS_LOG_ERR, "Caller not found for reply.\n");
 		return -1;
@@ -304,9 +302,9 @@ respond:
 	return ret;
 }
 
-static uint32_t make_token(void)
+static unsigned make_token(void)
 {
-	static uint32_t curtok = 0;
+	static unsigned curtok = 0;
 
 	if (curtok == UINT_MAX)
 		curtok = 0;
@@ -318,7 +316,7 @@ static void accept_client(bbus_server* server)
 {
 	bbus_client* cli;
 	int r;
-	uint32_t token;
+	unsigned token;
 
 	/* TODO Client credentials verification. */
 	cli = bbus_srv_accept(server);
@@ -344,8 +342,7 @@ static void accept_client(bbus_server* server)
 		token = make_token();
 		bbus_client_settoken(cli, token);
 		/* This client is the list's tail at this point. */
-		r = bbus_hmap_setuint(caller_map, (unsigned)token,
-							clients.tail);
+		r = bbusd_add_caller(token, clients.tail);
 		if (r < 0) {
 			bbusd_logmsg(BBUS_LOG_ERR,
 				"Error adding new client to "
@@ -522,17 +519,7 @@ int main(int argc, char** argv)
 	else if (retval == BBUS_ARGS_ERR)
 		return -1;
 
-	/*
-	 * Caller map:
-	 * 	keys -> tokens,
-	 * 	values -> pointers to caller objects.
-	 */
-	caller_map = bbus_hmap_create(BBUS_HMAP_KEYUINT);
-	if (caller_map == NULL) {
-		bbusd_die("Error creating the caller hashmap: %s\n",
-			bbus_strerror(bbus_lasterror()));
-	}
-
+	bbusd_init_caller_map();
 	bbusd_init_service_map();
 	bbusd_register_local_methods();
 

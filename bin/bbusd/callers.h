@@ -16,7 +16,13 @@
 #define __BBUSD_CALLERS__
 
 #include <busybus.h>
+#include "clients.h"
 
+void bbusd_init_caller_map(void);
+void bbusd_clean_caller_map(void);
+
+struct bbusd_clientlist_elem* bbusd_get_caller(unsigned token);
+int bbusd_add_caller(unsigned token, struct bbusd_clientlist_elem* caller);
 
 
 #endif /* __BBUSD_CALLERS__ */
