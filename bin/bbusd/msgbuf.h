@@ -18,6 +18,8 @@
 #include <busybus.h>
 
 struct bbus_msg* bbusd_getmsgbuf(void);
+void bbusd_zeromsgbuf(void);
+size_t bbusd_msgbufsize(void);
 
 #endif /* __BBUSD_MSGBUF__ */
 

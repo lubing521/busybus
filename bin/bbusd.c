@@ -378,8 +378,8 @@ static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 	int r;
 
 	cli = (*cli_elem)->cli;
-	memset(bbusd_getmsgbuf(), 0, BBUS_MAXMSGSIZE);
-	r = bbus_client_rcvmsg(cli, bbusd_getmsgbuf(), BBUS_MAXMSGSIZE);
+	bbusd_zeromsgbuf();
+	r = bbus_client_rcvmsg(cli, bbusd_getmsgbuf(), bbusd_msgbufsize());
 	if (r < 0) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error receiving message from client: %s\n",

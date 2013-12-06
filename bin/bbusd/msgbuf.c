@@ -13,6 +13,7 @@
  */
 
 #include "msgbuf.h"
+#include <string.h>
 
 static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
 struct bbus_msg* msgbuf = (struct bbus_msg*)_msgbuf;
@@ -21,3 +22,14 @@ struct bbus_msg* bbusd_getmsgbuf(void)
 {
 	return msgbuf;
 }
+
+void bbusd_zeromsgbuf(void)
+{
+	memset(msgbuf, 0, BBUS_MAXMSGSIZE);
+}
+
+size_t bbusd_msgbufsize(void)
+{
+	return BBUS_MAXMSGSIZE;
+}
+
