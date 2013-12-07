@@ -505,11 +505,59 @@ cli_close:
 	bbusd_logmsg(BBUS_LOG_INFO, "Client disconnected.\n");
 }
 
-int main(int argc, char** argv)
+static void poll_and_handle_inbound_traffic(bbus_server* server,
+						bbus_pollset* pollset)
 {
 	int retval;
 	struct bbusd_clientlist_elem* tmpcli;
 	struct bbus_timeval tv;
+
+	memset(&tv, 0, sizeof(struct bbus_timeval));
+	bbus_pollset_clear(pollset);
+	bbus_pollset_addsrv(pollset, server);
+	for (tmpcli = clients.head; tmpcli != NULL;
+			tmpcli = tmpcli->next) {
+		bbus_pollset_addcli(pollset, tmpcli->cli);
+	}
+	tv.sec = 0;
+	tv.usec = 500000;
+	retval = bbus_poll(pollset, &tv);
+	if (retval < 0) {
+		if (bbus_lasterror() == BBUS_EPOLLINTR) {
+			continue;
+		} else {
+			bbusd_die("Error polling connections: %s",
+					bbus_strerror(bbus_lasterror()));
+		}
+	} else
+	if (retval == 0) {
+		/* Timeout. */
+		continue;
+	} else {
+		/* Incoming data. */
+		if (bbus_pollset_srvisset(pollset, server)) {
+			while (bbus_srv_clientpending(server)) {
+				accept_client(server);
+			}
+			--retval;
+		}
+
+		tmpcli = clients.head;
+		while (retval > 0) {
+			if (bbus_pollset_cliisset(pollset, tmpcli->cli)) {
+				handle_client(&tmpcli);
+				--retval;
+			}
+			if (tmpcli != NULL)
+				tmpcli = tmpcli->next;
+		}
+	}
+}
+
+int main(int argc, char** argv)
+{
+	int retval;
+	struct bbusd_clientlist_elem* tmpcli;
 	static bbus_pollset* pollset;
 	bbus_server* server;
 
@@ -546,57 +594,15 @@ int main(int argc, char** argv)
 	run = 1;
 	(void)signal(SIGTERM, sighandler);
 	(void)signal(SIGINT, sighandler);
+	/* TODO Ignore SIGPIPE on socket level */
 	(void)signal(SIGPIPE, SIG_IGN);
 
 	/*
 	 * MAIN LOOP
 	 */
 	while (do_run()) {
-		memset(&tv, 0, sizeof(struct bbus_timeval));
-		bbus_pollset_clear(pollset);
-		bbus_pollset_addsrv(pollset, server);
-		for (tmpcli = clients.head; tmpcli != NULL;
-				tmpcli = tmpcli->next) {
-			bbus_pollset_addcli(pollset, tmpcli->cli);
-		}
-		tv.sec = 0;
-		tv.usec = 500000;
-		retval = bbus_poll(pollset, &tv);
-		if (retval < 0) {
-			if (bbus_lasterror() == BBUS_EPOLLINTR) {
-				continue;
-			} else {
-				bbusd_die("Error polling connections: %s",
-					bbus_strerror(bbus_lasterror()));
-			}
-		} else
-		if (retval == 0) {
-			/* Timeout. */
-			continue;
-		} else {
-			/* Incoming data. */
-			if (bbus_pollset_srvisset(pollset, server)) {
-				while (bbus_srv_clientpending(server)) {
-					accept_client(server);
-				}
-				--retval;
-			}
-
-			tmpcli = clients.head;
-			while (retval > 0) {
-				if (bbus_pollset_cliisset(pollset,
-							tmpcli->cli)) {
-					handle_client(&tmpcli);
-					--retval;
-				}
-				if (tmpcli != NULL)
-					tmpcli = tmpcli->next;
-			}
-		}
+		poll_and_handle_inbound_traffic(server, pollset);
 	}
-	/*
-	 * END OF THE MAIN LOOP
-	 */
 
 	/* Cleanup. */
 	bbus_srv_close(server);

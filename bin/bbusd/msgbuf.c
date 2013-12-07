@@ -15,8 +15,8 @@
 #include "msgbuf.h"
 #include <string.h>
 
-static unsigned char _msgbuf[BBUS_MAXMSGSIZE];
-struct bbus_msg* msgbuf = (struct bbus_msg*)_msgbuf;
+static unsigned char __msgbuf[BBUS_MAXMSGSIZE];
+struct bbus_msg* msgbuf = (struct bbus_msg*)__msgbuf;
 
 struct bbus_msg* bbusd_getmsgbuf(void)
 {
