@@ -9,3 +9,5 @@
 - Some other way to store and read byte arrays from object with obj_build and
   obj_parse functions.
 - Figure out when to pass the -Wno-psabi flag to GCC.
+- Make busybus more portable - eg. strerror_r, REG_NOERROR etc.
+- Proper clean-up code in bbusd.
