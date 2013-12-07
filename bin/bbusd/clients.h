@@ -16,25 +16,12 @@
 #define __BBUSD_CLIENTS__
 
 #include <busybus.h>
+#include "clientlist.h"
 
-struct bbusd_clientlist_elem
-{
-	struct bbusd_clientlist_elem* next;
-	struct bbusd_clientlist_elem* prev;
-	bbus_client* cli;
-};
-
-struct bbusd_clientlist
-{
-	struct bbusd_clientlist_elem* head;
-	struct bbusd_clientlist_elem* tail;
-};
-
-int client_list_add(bbus_client* cli);
-int monitor_list_add(bbus_client* cli);
-
-void list_rm(struct bbusd_clientlist_elem** elem,
-				struct bbusd_clientlist* list);
+int bbusd_clientlist_add(bbus_client* cli);
+void bbusd_clientlist_rm(struct bbusd_clientlist_elem** elem);
+struct bbusd_clientlist_elem* bbusd_clientlist_getfirst(void);
+struct bbusd_clientlist_elem* bbusd_clientlist_getlast(void);
 
 #endif /* __BBUSD_CLIENTS__ */
 

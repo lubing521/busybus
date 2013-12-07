@@ -24,12 +24,13 @@
 #include "bbusd/service.h"
 #include "bbusd/methods.h"
 #include "bbusd/msgbuf.h"
+#include "bbusd/clientlist.h"
 #include "bbusd/clients.h"
 #include "bbusd/callers.h"
+#include "bbusd/monitor.h"
 
 static volatile int run;
 
-extern struct bbusd_clientlist clients;
 extern struct bbusd_clientlist monitors;
 
 static struct bbus_option cmdopts[] = {
@@ -329,7 +330,7 @@ static void accept_client(bbus_server* server)
 	}
 	bbusd_logmsg(BBUS_LOG_INFO, "Client connected.\n");
 
-	r = client_list_add(cli);
+	r = bbusd_clientlist_add(cli);
 	if (r < 0) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error adding new client to the list: %s\n",
@@ -342,7 +343,7 @@ static void accept_client(bbus_server* server)
 		token = make_token();
 		bbus_client_settoken(cli, token);
 		/* This client is the list's tail at this point. */
-		r = bbusd_add_caller(token, clients.tail);
+		r = bbusd_add_caller(token, bbusd_clientlist_getlast());
 		if (r < 0) {
 			bbusd_logmsg(BBUS_LOG_ERR,
 				"Error adding new client to "
@@ -351,7 +352,7 @@ static void accept_client(bbus_server* server)
 		}
 		break;
 	case BBUS_CLIENT_MON:
-		r = monitor_list_add(cli);
+		r = bbusd_monlist_add(cli);
 		if (r < 0) {
 			bbusd_logmsg(BBUS_LOG_ERR,
 				"Error adding new monitor to "
@@ -519,7 +520,7 @@ static void poll_and_handle_inbound_traffic(bbus_server* server,
 	memset(&tv, 0, sizeof(struct bbus_timeval));
 	bbus_pollset_clear(pollset);
 	bbus_pollset_addsrv(pollset, server);
-	for (tmpcli = clients.head; tmpcli != NULL;
+	for (tmpcli = bbusd_clientlist_getfirst(); tmpcli != NULL;
 			tmpcli = tmpcli->next) {
 		bbus_pollset_addcli(pollset, tmpcli->cli);
 	}
@@ -547,7 +548,7 @@ static void poll_and_handle_inbound_traffic(bbus_server* server,
 			--numclients;
 		}
 
-		tmpcli = clients.head;
+		tmpcli = bbusd_clientlist_getfirst();
 		while (numclients > 0) {
 			if (bbus_pollset_cliisset(pollset, tmpcli->cli)) {
 				retval = handle_client(tmpcli);
@@ -561,7 +562,7 @@ static void poll_and_handle_inbound_traffic(bbus_server* server,
 				bbus_client_free(tmpcli->cli);
 				cli_rm = tmpcli;
 				tmpcli = tmpcli->next;
-				list_rm(&cli_rm, &clients);
+				bbusd_clientlist_rm(&cli_rm);
 				bbusd_logmsg(BBUS_LOG_INFO,
 						"Client disconnected.\n");
 			}
@@ -622,7 +623,8 @@ int main(int argc, char** argv)
 	/* Cleanup. */
 	bbus_srv_close(server);
 
-	for (tmpcli = clients.head; tmpcli != NULL; tmpcli = tmpcli->next) {
+	for (tmpcli = bbusd_clientlist_getfirst(); tmpcli != NULL;
+					tmpcli = tmpcli->next) {
 		bbus_client_close(tmpcli->cli);
 		bbus_client_free(tmpcli->cli);
 		bbus_free(tmpcli);

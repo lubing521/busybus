@@ -45,7 +45,9 @@ BBUSD_OBJS =		./bin/bbusd.o					\
 			./bin/bbusd/methods.o				\
 			./bin/bbusd/msgbuf.o				\
 			./bin/bbusd/callers.o				\
-			./bin/bbusd/clients.o
+			./bin/bbusd/clients.o				\
+			./bin/bbusd/clientlist.o			\
+			./bin/bbusd/monitor.o
 BBUSD_TARGET =		./bbusd
 BBUSD_LIBS =		-lbbus
 

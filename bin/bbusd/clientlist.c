@@ -12,27 +12,26 @@
  * GNU General Public License for more details.
  */
 
-#include "clients.h"
+#include "clientlist.h"
 
-static struct bbusd_clientlist clients = { NULL, NULL };
-
-int bbusd_clientlist_add(bbus_client* cli)
+int list_add(bbus_client* cli, struct bbusd_clientlist* list)
 {
-	return list_add(cli, &clients);
+	struct bbusd_clientlist_elem* el;
+
+	el = bbus_malloc(sizeof(struct bbusd_clientlist_elem));
+	if (el == NULL)
+		return -1;
+
+	el->cli = cli;
+	bbus_list_push(list, el);
+
+	return 0;
 }
 
-void bbusd_clientlist_rm(struct bbusd_clientlist_elem** elem)
+void list_rm(struct bbusd_clientlist_elem** elem,
+				struct bbusd_clientlist* list)
 {
-	list_rm(elem, &clients);
-}
-
-struct bbusd_clientlist_elem* bbusd_clientlist_getfirst(void)
-{
-	return clients.head;
-}
-
-struct bbusd_clientlist_elem* bbusd_clientlist_getlast(void)
-{
-	return clients.tail;
+	bbus_list_rm(list, *elem);
+	bbus_free(*elem);
 }
 

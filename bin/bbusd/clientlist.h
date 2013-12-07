@@ -12,27 +12,27 @@
  * GNU General Public License for more details.
  */
 
-#include "clients.h"
+#ifndef __BBUSD_CLIENTLIST__
+#define __BBUSD_CLIENTLIST__
 
-static struct bbusd_clientlist clients = { NULL, NULL };
+#include <busybus.h>
 
-int bbusd_clientlist_add(bbus_client* cli)
+struct bbusd_clientlist_elem
 {
-	return list_add(cli, &clients);
-}
+	struct bbusd_clientlist_elem* next;
+	struct bbusd_clientlist_elem* prev;
+	bbus_client* cli;
+};
 
-void bbusd_clientlist_rm(struct bbusd_clientlist_elem** elem)
+struct bbusd_clientlist
 {
-	list_rm(elem, &clients);
-}
+	struct bbusd_clientlist_elem* head;
+	struct bbusd_clientlist_elem* tail;
+};
 
-struct bbusd_clientlist_elem* bbusd_clientlist_getfirst(void)
-{
-	return clients.head;
-}
+int list_add(bbus_client* cli, struct bbusd_clientlist* list);
+void list_rm(struct bbusd_clientlist_elem** elem,
+				struct bbusd_clientlist* list);
 
-struct bbusd_clientlist_elem* bbusd_clientlist_getlast(void)
-{
-	return clients.tail;
-}
+#endif /* __BBUSD_CLIENTLIST__ */
 
