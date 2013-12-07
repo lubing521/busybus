@@ -372,12 +372,16 @@ static void accept_client(bbus_server* server)
 	}
 }
 
-static void handle_client(struct bbusd_clientlist_elem** cli_elem)
+/*
+ * Returns -1 if client connection shall be closed after the function call,
+ * and 0 if it must be kept active.
+ */
+static int handle_client(struct bbusd_clientlist_elem* cli_elem)
 {
 	bbus_client* cli;
 	int r;
 
-	cli = (*cli_elem)->cli;
+	cli = cli_elem->cli;
 	bbusd_zeromsgbuf();
 	r = bbus_client_rcvmsg(cli, bbusd_getmsgbuf(), bbusd_msgbufsize());
 	if (r < 0) {
@@ -414,11 +418,11 @@ static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 	case BBUS_CLIENT_SERVICE:
 		switch (bbusd_getmsgbuf()->hdr.msgtype) {
 		case BBUS_MSGTYPE_SRVREG:
-			r = register_service(*cli_elem, bbusd_getmsgbuf());
+			r = register_service(cli_elem, bbusd_getmsgbuf());
 			if (r < 0) {
 				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error registering a service\n");
-				return;
+				goto out;
 			}
 			break;
 		case BBUS_MSGTYPE_SRVUNREG:
@@ -427,7 +431,7 @@ static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error unregistering a service: %s\n",
 					bbus_strerror(bbus_lasterror()));
-				return;
+				goto out;
 			}
 			break;
 		case BBUS_MSGTYPE_SRVREPLY:
@@ -436,7 +440,7 @@ static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 				bbusd_logmsg(BBUS_LOG_ERR,
 					"Error passing a service reply: %s\n",
 					bbus_strerror(bbus_lasterror()));
-				return;
+				goto out;
 			}
 			break;
 		case BBUS_MSGTYPE_CLOSE:
@@ -446,7 +450,7 @@ static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 			bbusd_logmsg(BBUS_LOG_ERR,
 					"Unexpected message received.\n");
 			goto cli_close;
-			return;
+			goto out;
 		}
 		break;
 	case BBUS_CLIENT_CTL:
@@ -460,7 +464,7 @@ static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 		default:
 			bbusd_logmsg(BBUS_LOG_ERR,
 					"Unexpected message received.\n");
-			return;
+			goto out;
 		}
 		break;
 	case BBUS_CLIENT_MON:
@@ -493,23 +497,23 @@ static void handle_client(struct bbusd_clientlist_elem** cli_elem)
 	default:
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Unhandled client type in the received message.\n");
-		return;
+		goto out;
 	}
 
-	return;
+out:
+	return 0;
 
 cli_close:
-	bbus_client_close(cli);
-	bbus_client_free(cli);
-	list_rm(cli_elem, &clients);
-	bbusd_logmsg(BBUS_LOG_INFO, "Client disconnected.\n");
+	return -1;
 }
 
 static void poll_and_handle_inbound_traffic(bbus_server* server,
 						bbus_pollset* pollset)
 {
 	int retval;
+	int numclients;
 	struct bbusd_clientlist_elem* tmpcli;
+	struct bbusd_clientlist_elem* cli_rm;
 	struct bbus_timeval tv;
 
 	memset(&tv, 0, sizeof(struct bbus_timeval));
@@ -524,7 +528,7 @@ static void poll_and_handle_inbound_traffic(bbus_server* server,
 	retval = bbus_poll(pollset, &tv);
 	if (retval < 0) {
 		if (bbus_lasterror() == BBUS_EPOLLINTR) {
-			continue;
+			return;
 		} else {
 			bbusd_die("Error polling connections: %s",
 					bbus_strerror(bbus_lasterror()));
@@ -532,24 +536,35 @@ static void poll_and_handle_inbound_traffic(bbus_server* server,
 	} else
 	if (retval == 0) {
 		/* Timeout. */
-		continue;
+		return;
 	} else {
 		/* Incoming data. */
+		numclients = retval;
 		if (bbus_pollset_srvisset(pollset, server)) {
 			while (bbus_srv_clientpending(server)) {
 				accept_client(server);
 			}
-			--retval;
+			--numclients;
 		}
 
 		tmpcli = clients.head;
-		while (retval > 0) {
+		while (numclients > 0) {
 			if (bbus_pollset_cliisset(pollset, tmpcli->cli)) {
-				handle_client(&tmpcli);
-				--retval;
+				retval = handle_client(tmpcli);
+				--numclients;
 			}
-			if (tmpcli != NULL)
+
+			if (retval == 0) {
 				tmpcli = tmpcli->next;
+			} else {
+				bbus_client_close(tmpcli->cli);
+				bbus_client_free(tmpcli->cli);
+				cli_rm = tmpcli;
+				tmpcli = tmpcli->next;
+				list_rm(&cli_rm, &clients);
+				bbusd_logmsg(BBUS_LOG_INFO,
+						"Client disconnected.\n");
+			}
 		}
 	}
 }

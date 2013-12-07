@@ -36,7 +36,6 @@ void list_rm(struct bbusd_clientlist_elem** elem,
 {
 	bbus_list_rm(list, *elem);
 	bbus_free(*elem);
-	*elem = NULL;
 }
 
 int client_list_add(bbus_client* cli)
