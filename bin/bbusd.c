@@ -477,7 +477,7 @@ static int handle_client(struct bbusd_clientlist_elem* cli_elem)
 				for (mon = monitors.head; mon != NULL;
 							mon = mon->next) {
 					if (mon->cli == cli) {
-						list_rm(&mon, &monitors);
+						__bbusd_clientlist_rm(&mon, &monitors);
 						goto cli_close;
 					}
 				}

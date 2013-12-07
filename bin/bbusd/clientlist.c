@@ -14,7 +14,7 @@
 
 #include "clientlist.h"
 
-int list_add(bbus_client* cli, struct bbusd_clientlist* list)
+int __bbusd_clientlist_add(bbus_client* cli, struct bbusd_clientlist* list)
 {
 	struct bbusd_clientlist_elem* el;
 
@@ -28,7 +28,7 @@ int list_add(bbus_client* cli, struct bbusd_clientlist* list)
 	return 0;
 }
 
-void list_rm(struct bbusd_clientlist_elem** elem,
+void __bbusd_clientlist_rm(struct bbusd_clientlist_elem** elem,
 				struct bbusd_clientlist* list)
 {
 	bbus_list_rm(list, *elem);

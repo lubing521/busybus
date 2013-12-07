@@ -18,12 +18,12 @@ static struct bbusd_clientlist clients = { NULL, NULL };
 
 int bbusd_clientlist_add(bbus_client* cli)
 {
-	return list_add(cli, &clients);
+	return __bbusd_clientlist_add(cli, &clients);
 }
 
 void bbusd_clientlist_rm(struct bbusd_clientlist_elem** elem)
 {
-	list_rm(elem, &clients);
+	__bbusd_clientlist_rm(elem, &clients);
 }
 
 struct bbusd_clientlist_elem* bbusd_clientlist_getfirst(void)

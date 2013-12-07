@@ -18,6 +18,10 @@ struct bbusd_clientlist monitors = { NULL, NULL };
 
 int bbusd_monlist_add(bbus_client* cli)
 {
-	return list_add(cli, &monitors);
+	return __bbusd_clientlist_add(cli, &monitors);
 }
 
+void bbusd_monlist_rm(struct bbusd_clientlist_elem** elem)
+{
+	__bbusd_clientlist_rm(elem, &monitors);
+}

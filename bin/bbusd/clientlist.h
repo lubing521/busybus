@@ -30,8 +30,8 @@ struct bbusd_clientlist
 	struct bbusd_clientlist_elem* tail;
 };
 
-int list_add(bbus_client* cli, struct bbusd_clientlist* list);
-void list_rm(struct bbusd_clientlist_elem** elem,
+int __bbusd_clientlist_add(bbus_client* cli, struct bbusd_clientlist* list);
+void __bbusd_clientlist_rm(struct bbusd_clientlist_elem** elem,
 				struct bbusd_clientlist* list);
 
 #endif /* __BBUSD_CLIENTLIST__ */
