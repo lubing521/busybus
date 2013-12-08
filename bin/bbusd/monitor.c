@@ -37,3 +37,9 @@ void bbusd_monlist_rm(bbus_client* cli)
 		"Monitor not found in the list, "
 		"this should not happen.\n");
 }
+
+void bbusd_send_to_monitors(struct bbus_msg* msg BBUS_UNUSED)
+{
+	return;
+}
+

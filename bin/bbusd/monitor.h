@@ -20,6 +20,7 @@
 
 int bbusd_monlist_add(bbus_client* cli);
 void bbusd_monlist_rm(bbus_client* cli);
+void bbusd_send_to_monitors(struct bbus_msg* msg);
 
 #endif /* __BBUSD_MONITOR__ */
 

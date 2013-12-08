@@ -31,13 +31,18 @@
 
 static volatile int run;
 
+static void opt_setsockpath(const char* path)
+{
+	bbus_prot_setsockpath(path);
+}
+
 static struct bbus_option cmdopts[] = {
 	{
 		.shortopt = 0,
 		.longopt = "sockpath",
 		.hasarg = BBUS_OPT_ARGREQ,
 		.action = BBUS_OPTACT_CALLFUNC,
-		.actdata = &bbus_prot_setsockpath,
+		.actdata = &opt_setsockpath,
 		.descr = "path to the busybus socket",
 	}
 };
@@ -68,11 +73,6 @@ static void sighandler(int signum)
 		do_stop();
 		break;
 	}
-}
-
-static void send_to_monitors(struct bbus_msg* msg BBUS_UNUSED)
-{
-	return;
 }
 
 static char* mname_from_srvcname(const char* srvc)
@@ -171,7 +171,8 @@ dontrespond:
 	return ret;
 }
 
-static int register_service(struct bbusd_clientlist_elem* cli, struct bbus_msg* msg)
+static int register_service(struct bbusd_clientlist_elem* cli,
+						struct bbus_msg* msg)
 {
 	const char* extrmeta;
 	char* meta;
@@ -390,7 +391,7 @@ static int handle_client(struct bbusd_clientlist_elem* cli_elem)
 		goto cli_close;
 	}
 
-	send_to_monitors(bbusd_getmsgbuf());
+	bbusd_send_to_monitors(bbusd_getmsgbuf());
 
 	/* TODO Common function for error reporting. */
 	switch (bbus_client_gettype(cli)) {
