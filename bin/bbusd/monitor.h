@@ -19,7 +19,7 @@
 #include "clientlist.h"
 
 int bbusd_monlist_add(bbus_client* cli);
-void bbusd_monlist_rm(struct bbusd_clientlist_elem** elem);
+void bbusd_monlist_rm(bbus_client* cli);
 
 #endif /* __BBUSD_MONITOR__ */
 

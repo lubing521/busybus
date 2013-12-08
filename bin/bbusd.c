@@ -31,8 +31,6 @@
 
 static volatile int run;
 
-extern struct bbusd_clientlist monitors;
-
 static struct bbus_option cmdopts[] = {
 	{
 		.shortopt = 0,
@@ -471,21 +469,8 @@ static int handle_client(struct bbusd_clientlist_elem* cli_elem)
 	case BBUS_CLIENT_MON:
 		switch (bbusd_getmsgbuf()->hdr.msgtype) {
 		case BBUS_MSGTYPE_CLOSE:
-			{
-				struct bbusd_clientlist_elem* mon;
-
-				for (mon = monitors.head; mon != NULL;
-							mon = mon->next) {
-					if (mon->cli == cli) {
-						__bbusd_clientlist_rm(&mon, &monitors);
-						goto cli_close;
-					}
-				}
-				bbusd_logmsg(BBUS_LOG_WARN,
-					"Monitor not found in the list, "
-					"this should not happen.\n");
-				goto cli_close;
-			}
+			bbusd_monlist_rm(cli);
+			goto cli_close;
 			break;
 		default:
 			bbusd_logmsg(BBUS_LOG_WARN,
@@ -627,10 +612,6 @@ int main(int argc, char** argv)
 					tmpcli = tmpcli->next) {
 		bbus_client_close(tmpcli->cli);
 		bbus_client_free(tmpcli->cli);
-		bbus_free(tmpcli);
-	}
-
-	for (tmpcli = monitors.head; tmpcli != NULL; tmpcli = tmpcli->next) {
 		bbus_free(tmpcli);
 	}
 

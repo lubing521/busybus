@@ -13,15 +13,27 @@
  */
 
 #include "monitor.h"
+#include "log.h"
 
-struct bbusd_clientlist monitors = { NULL, NULL };
+static struct bbusd_clientlist monitors = { NULL, NULL };
 
 int bbusd_monlist_add(bbus_client* cli)
 {
 	return __bbusd_clientlist_add(cli, &monitors);
 }
 
-void bbusd_monlist_rm(struct bbusd_clientlist_elem** elem)
+void bbusd_monlist_rm(bbus_client* cli)
 {
-	__bbusd_clientlist_rm(elem, &monitors);
+	struct bbusd_clientlist_elem* mon;
+
+	for (mon = monitors.head; mon != NULL; mon = mon->next) {
+		if (mon->cli == cli) {
+			__bbusd_clientlist_rm(&mon, &monitors);
+			return;
+		}
+	}
+
+	bbusd_logmsg(BBUS_LOG_WARN,
+		"Monitor not found in the list, "
+		"this should not happen.\n");
 }
