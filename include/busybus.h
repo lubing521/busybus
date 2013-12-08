@@ -1231,6 +1231,16 @@ typedef struct __bbus_client bbus_client;
 #define BBUS_CLIENT_CTL		4 /**< Busybus control program. */
 
 /**
+ * @brief Stores the unix credentials of the client process.
+ */
+struct bbus_client_cred
+{
+	pid_t pid; /**< Process ID of the client process */
+	uid_t uid; /**< User ID of the client process */
+	gid_t gid; /**< Group ID of the client process */
+};
+
+/**
  * @brief Gives access to the token of a bbus_client object.
  * @param cli The client.
  * @return The token.
