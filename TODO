@@ -11,3 +11,4 @@
 - Figure out when to pass the -Wno-psabi flag to GCC.
 - Make busybus more portable - eg. strerror_r, REG_NOERROR etc.
 - Proper clean-up code in bbusd.
+- Check client credentials on accept.
