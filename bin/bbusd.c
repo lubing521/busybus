@@ -319,7 +319,7 @@ static void accept_client(bbus_server* server)
 	unsigned token;
 
 	/* TODO Client credentials verification. */
-	cli = bbus_srv_accept(server);
+	cli = bbus_srv_accept(server, NULL);
 	if (cli == NULL) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error accepting incoming client "

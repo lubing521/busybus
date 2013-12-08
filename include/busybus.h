@@ -1235,9 +1235,9 @@ typedef struct __bbus_client bbus_client;
  */
 struct bbus_client_cred
 {
-	pid_t pid; /**< Process ID of the client process */
-	uid_t uid; /**< User ID of the client process */
-	gid_t gid; /**< Group ID of the client process */
+	pid_t pid;	/**< Process ID of the client process */
+	uid_t uid;	/**< User ID of the client process */
+	gid_t gid;	/**< Group ID of the client process */
 };
 
 /**
@@ -1324,12 +1324,31 @@ int bbus_srv_listen(bbus_server* srv) BBUS_PUBLIC;
  */
 int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
 
+#define BBUS_SRV_AUTHOK		0	/**< Client authorized. */
+#define BBUS_SRV_AUTHERR	-1	/**< Client unauthorized to connect. */
+
+/**
+ * @brief Callback function used to authenticate the client before connection.
+ */
+typedef int (*bbus_auth_func)(struct bbus_client_cred* cred);
+
 /**
  * @brief Accepts a client connection.
  * @param srv The server.
+ * @param authfunc Callback function used to authenticate the client.
  * @return New client connection or NULL on error.
+ *
+ * After an initial connection is established this function will call
+ * 'authfunc' in order to get an authentication for the client. This function
+ * will receive the unix credentials of the client process and should decide
+ * whether this client is allowed to connect to the busybus daemon returning
+ * BBUS_SRV_AUTHOK if so and BBUS_SRV_AUTHERR otherwise.
+ *
+ * The 'authfunc' pointer can be NULL - in that case no authentication will
+ * be performed and every client will be accepted.
  */
-bbus_client* bbus_srv_accept(bbus_server* srv) BBUS_PUBLIC;
+bbus_client* bbus_srv_accept(bbus_server* srv,
+		bbus_auth_func authfunc) BBUS_PUBLIC;
 
 /**
  * @brief Stops listening on a server socket and closes it.

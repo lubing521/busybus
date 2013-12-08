@@ -121,7 +121,7 @@ int bbus_srv_clientpending(bbus_server* srv)
 	return __bbus_sock_rdready(srv->sock, &tv);
 }
 
-bbus_client* bbus_srv_accept(bbus_server* srv)
+bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 {
 	char addrbuf[128];
 	size_t addrsize;
@@ -135,6 +135,12 @@ bbus_client* bbus_srv_accept(bbus_server* srv)
 					sizeof(addrbuf), &addrsize);
 	if (sock < 0)
 		return NULL;
+
+	if (authfunc) {
+		ret = authfunc(NULL); /* TODO Pass proper credentials. */
+		if (ret == BBUS_SRV_AUTHERR)
+			goto errout;
+	}
 
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
 	ret = __bbus_prot_recvvmsg(sock, &hdr, NULL, 0);
