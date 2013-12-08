@@ -479,7 +479,7 @@ enum bbus_opt_hasarg
 typedef void (*bbus_opt_callback)(const char* arg);
 
 /**
- * @brief Describes a single option recognised by bbus_parse_args().
+ * @brief Describes a single option recognized by bbus_parse_args().
  */
 struct bbus_option
 {
@@ -492,12 +492,25 @@ struct bbus_option
 };
 
 /**
+ * @brief Describes a single positional parameter for bbus_parse_args().
+ */
+struct bbus_posarg
+{
+	enum bbus_opt_action action;	/**< Action to be performed. */
+	void* actdata;			/**< Action-specific data. */
+	const char* descr;		/**< Description string. */
+};
+
+/**
  * @brief Contains all needed input information for bbus_parse_args().
  */
 struct bbus_opt_list
 {
 	const struct bbus_option* opts;	/**< List of available options. */
 	size_t numopts;			/**< Number of supplied options. */
+	const struct bbus_posarg* pargs;
+	/**< List of expected positional parameters. */
+	size_t numpargs;		/**< Number of positional arguments. */
 	const char* progname;		/**< Full program name. */
 	const char* version;		/**< Program version string. */
 	const char* progdescr;		/**< Elaborate program description. */

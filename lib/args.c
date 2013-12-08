@@ -143,29 +143,63 @@ static char* make_info_string(const struct bbus_opt_list* optlist BBUS_UNUSED)
 	if (info == NULL)
 		return NULL;
 
-	for (i = 0; i < optlist->numopts; ++i) {
-		shortopt = optlist->opts[i].shortopt;
-		longopt = optlist->opts[i].longopt;
-		tmp = bbus_str_build("  %s%c%s%s%s -\t%s\n",
-			shortopt == 0 ? " " : "-",
-			shortopt == 0 ? ' ' : shortopt,
-			(shortopt != 0) && (longopt != NULL) ? ", " : "  ",
-			longopt == NULL ? "  " : "--",
-			longopt == NULL ? " " : longopt,
-			optlist->opts[i].descr);
-		if (tmp == NULL) {
-			bbus_str_free(info);
-			return NULL;
+	if (optlist->numopts > 0) {
+		info = bbus_str_join(info, "Options:\n");
+		if (info == NULL)
+			goto errout;
+
+		for (i = 0; i < optlist->numopts; ++i) {
+			shortopt = optlist->opts[i].shortopt;
+			longopt = optlist->opts[i].longopt;
+			tmp = bbus_str_build("  %s%c%s%s%s -\t%s\n",
+				shortopt == 0 ? " " : "-",
+				shortopt == 0 ? ' ' : shortopt,
+				(shortopt != 0)
+					&& (longopt != NULL) ? ", " : "  ",
+				longopt == NULL ? "  " : "--",
+				longopt == NULL ? " " : longopt,
+				optlist->opts[i].descr);
+			if (tmp == NULL)
+				goto errout;
+
+			info = bbus_str_join(info, tmp);
+			bbus_str_free(tmp);
+			if (info == NULL)
+				goto errout;
 		}
 
-		info = bbus_str_join(info, tmp);
-		if (info == NULL) {
+		info = bbus_str_join(info, "\n");
+		if (info == NULL)
+			goto errout;
+	}
+
+	if (optlist->numpargs > 0) {
+		info = bbus_str_join(info, "Positional parameters:\n");
+		if (info == NULL)
+			goto errout;
+
+		for (i = 0; i < optlist->numpargs; ++i) {
+			tmp = bbus_str_build("  #%d - %s\n",
+						i+1, optlist->pargs[i].descr);
+			if (tmp == NULL)
+				goto errout;
+
+			info = bbus_str_join(info, tmp);
 			bbus_str_free(tmp);
-			return NULL;
+			if (info == NULL)
+				goto errout;
 		}
+
+		info = bbus_str_join(info, "\n");
+		if (info == NULL)
+			goto errout;
 	}
 
 	return info;
+
+errout:
+	bbus_str_free(info);
+	return NULL;
 }
 
 void bbus_free_nonopts(struct bbus_nonopts* nonopts)
@@ -186,10 +220,12 @@ static struct bbus_nonopts* find_nonopts(int argc, char** argv)
 	nonopts = bbus_malloc0(sizeof(struct bbus_nonopts));
 	if (nonopts == NULL)
 		return NULL;
-	nonopts->args = bbus_malloc0(arrsize * sizeof(char*));
-	if (nonopts->args == NULL) {
-		bbus_free(nonopts);
-		return NULL;
+	if (arrsize > 0) {
+		nonopts->args = bbus_malloc0(arrsize * sizeof(char*));
+		if (nonopts->args == NULL) {
+			bbus_free(nonopts);
+			return NULL;
+		}
 	}
 	nonopts->numargs = arrsize;
 
@@ -198,6 +234,25 @@ static struct bbus_nonopts* find_nonopts(int argc, char** argv)
 	}
 
 	return nonopts;
+}
+
+static void handle_option(enum bbus_opt_action action,
+				void* actdata, char* arg)
+{
+	switch (action) {
+	case BBUS_OPTACT_SETFLAG:
+		*((int*)actdata) = 1;
+		break;
+	case BBUS_OPTACT_GETOPTARG:
+		*((char**)actdata) = arg;
+		break;
+	case BBUS_OPTACT_CALLFUNC:
+		((bbus_opt_callback)actdata)(arg);
+		break;
+	case BBUS_OPTACT_NOTHING:
+	default:
+		break;
+	}
 }
 
 int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
@@ -242,7 +297,7 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 							optlist->progname,
 							optlist->version);
 				} else {
-					fprintf(stdout, "%s\n", info);
+					fprintf(stdout, "%s", info);
 				}
 				ret = BBUS_ARGS_HELP;
 				goto out;
@@ -268,23 +323,24 @@ int bbus_parse_args(int argc, char** argv, const struct bbus_opt_list* optlist,
 		}
 
 		/* Now actually handle the option. */
-		switch (curopt->action) {
-		case BBUS_OPTACT_SETFLAG:
-			*((int*)curopt->actdata) = 1;
-			break;
-		case BBUS_OPTACT_GETOPTARG:
-			*((char**)curopt->actdata) = optarg;
-			break;
-		case BBUS_OPTACT_CALLFUNC:
-			((bbus_opt_callback)curopt->actdata)(optarg);
-			break;
-		case BBUS_OPTACT_NOTHING:
-		default:
-			break;
-		}
+		handle_option(curopt->action, curopt->actdata, optarg);
 	}
 
-	/* TODO Parse and interpret positional arguments as well? */
+	for (i = 0; i < optlist->numpargs; ++i) {
+		if (optind >= argc) {
+			fprintf(stderr, "%s: expected additional parameters"
+							"\ntry %s --help\n",
+							argv[0], argv[0]);
+			ret = BBUS_ARGS_ERR;
+			goto out;
+		}
+
+		handle_option(optlist->pargs[i].action,
+				optlist->pargs[i].actdata,
+				argv[optind]);
+		++optind;
+	}
+
 	if (nonopts != NULL) {
 		*nonopts = find_nonopts(argc, argv);
 		if (*nonopts == NULL)

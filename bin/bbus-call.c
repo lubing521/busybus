@@ -18,17 +18,10 @@
 #include <string.h>
 #include <signal.h>
 
-struct option_flags
-{
-	int print_help;
-	int print_version;
-};
-
 static char* method = NULL;
 static char* argdescr = NULL;
 static char** argstart = NULL;
 static char** argend = NULL;
-static struct option_flags options = { 0, 0 };
 
 static void BBUS_PRINTF_FUNC(1, 2) BBUS_NORETURN die(const char* format, ...)
 {
@@ -40,59 +33,45 @@ static void BBUS_PRINTF_FUNC(1, 2) BBUS_NORETURN die(const char* format, ...)
 	exit(EXIT_FAILURE);
 }
 
-static void parse_args(int argc, char** argv)
+static void opt_setsockpath(const char* path)
 {
-	static const struct option longopts[] = {
-		{ "help", no_argument, &options.print_help, 1 },
-		{ "version", no_argument, &options.print_version, 1 },
-		{ "sockpath", required_argument, 0, 's' },
-		{ 0, 0, 0, 0 }
-	};
-
-	static const char* const shortopts = "s:";
-
-	int opt, index;
-
-	opterr = 0;
-	while ((opt = getopt_long(argc, argv, shortopts,
-				longopts, &index)) != -1) {
-		switch (opt) {
-		case 's':
-			bbus_prot_setsockpath(optarg);
-			break;
-		case 0:
-			/* Do nothing - we have a longopt. */
-			break;
-		case '?':
-		default:
-			die("Invalid arguments! Try %s --help\n", argv[0]);
-			break;
-		}
-	}
-
-	for (index = optind; index < argc; ++index) {
-		if (method == NULL) {
-			method = argv[index];
-		} else
-		if (argdescr == NULL) {
-			argdescr = argv[index];
-		} else {
-			if ((size_t)(argc - index) != strlen(argdescr)) {
-				die("Need to pass arguments matching "
-						"the description");
-			}
-
-			if (argstart == NULL) {
-				argstart = argend = &argv[index];
-			} else {
-				argend = &argv[index];
-			}
-		}
-	}
-
-	if (!method || !argdescr || !argstart || !argend)
-		die("Invalid method call format\n");
+	bbus_prot_setsockpath(path);
 }
+
+static struct bbus_option cmdopts[] = {
+	{
+		.shortopt = 0,
+		.longopt = "sockpath",
+		.hasarg = BBUS_OPT_ARGREQ,
+		.action = BBUS_OPTACT_CALLFUNC,
+		.actdata = &opt_setsockpath,
+		.descr = "path to the busybus socket",
+	}
+};
+
+static struct bbus_posarg posargs[] = {
+	{
+		.action = BBUS_OPTACT_GETOPTARG,
+		.actdata = &method,
+		.descr = "name of the method to call",
+	},
+	{
+		.action = BBUS_OPTACT_GETOPTARG,
+		.actdata = &argdescr,
+		.descr = "description string of the argument object",
+	}
+};
+
+static struct bbus_opt_list optlist = {
+	.opts = cmdopts,
+	.numopts = BBUS_ARRAY_SIZE(cmdopts),
+	.pargs = posargs,
+	.numpargs = BBUS_ARRAY_SIZE(posargs),
+	.progname = "Busybus",
+	.version = "ALPHA",
+	.progdescr = "bbus-call: call remote methods offered by service "
+				"providers using the busybus protocol",
+};
 
 int main(int argc, char** argv)
 {
@@ -103,8 +82,19 @@ int main(int argc, char** argv)
 	char** curarg;
 	char reprbuf[BUFSIZ];
 	char* descr;
+	struct bbus_nonopts* nonopts;
 
-	parse_args(argc, argv);
+	r = bbus_parse_args(argc, argv, &optlist, &nonopts);
+	if (r == BBUS_ARGS_HELP)
+		return EXIT_SUCCESS;
+	else if (r == BBUS_ARGS_ERR)
+		return EXIT_FAILURE;
+
+	if (nonopts->numargs != strlen(argdescr))
+		die("Need to pass arguments matching the description\n");
+	argstart = &nonopts->args[0];
+	argend = &nonopts->args[nonopts->numargs - 1];
+
 	(void)signal(SIGPIPE, SIG_IGN);
 
 	conn = bbus_connect();
@@ -156,7 +146,7 @@ int main(int argc, char** argv)
 	bbus_obj_free(arg);
 	bbus_obj_free(ret);
 
-	return 0;
+	return EXIT_SUCCESS;
 
 err_conn:
 	die("Error connecting to bbusd: %s\n",

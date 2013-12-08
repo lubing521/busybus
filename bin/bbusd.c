@@ -565,9 +565,9 @@ int main(int argc, char** argv)
 
 	retval = bbus_parse_args(argc, argv, &optlist, NULL);
 	if (retval == BBUS_ARGS_HELP)
-		return 0;
+		return EXIT_SUCCESS;
 	else if (retval == BBUS_ARGS_ERR)
-		return -1;
+		return EXIT_FAILURE;
 
 	bbusd_init_caller_map();
 	bbusd_init_service_map();
@@ -619,6 +619,6 @@ int main(int argc, char** argv)
 	bbusd_free_service_map();
 
 	bbusd_logmsg(BBUS_LOG_INFO, "Busybus daemon exiting!\n");
-	return 0;
+	return EXIT_SUCCESS;
 }
 

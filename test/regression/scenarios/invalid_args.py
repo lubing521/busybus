@@ -18,4 +18,5 @@ import libregr
 
 def run():
 	libregr.callExpect('call', retcode=1,
-				stderr='Invalid method call format')
+				stderr='./bbus-call: expected additional '
+					'parameters\ntry ./bbus-call --help')
