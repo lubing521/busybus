@@ -28,6 +28,7 @@
 #include "bbusd/clients.h"
 #include "bbusd/callers.h"
 #include "bbusd/monitor.h"
+#include "bbusd/auth.h"
 
 static volatile int run;
 
@@ -314,17 +315,8 @@ static unsigned make_token(void)
 
 static int client_auth(const struct bbus_client_cred* cred)
 {
-	char cliname[256];
-
-	bbusd_logmsg(BBUS_LOG_INFO,
-			"Client credentials: pid: %u, uid: %u, gid: %u\n",
-			cred->pid, cred->uid, cred->gid);
-	(void)bbus_proc_pidtoname(cred->pid, cliname, sizeof(cliname));
-	bbusd_logmsg(BBUS_LOG_INFO, "Client procname: %s\n", cliname);
-	(void)bbus_cred_uidtousername(cred->uid, cliname, sizeof(cliname));
-	bbusd_logmsg(BBUS_LOG_INFO, "Client user name: %s\n", cliname);
-
-	return BBUS_SRV_AUTHOK;
+	return bbusd_auth_client(cred) == 0 ?
+			BBUS_SRV_AUTHOK : BBUS_SRV_AUTHERR;
 }
 
 static void accept_client(bbus_server* server)
