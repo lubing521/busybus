@@ -139,12 +139,12 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 	if (sock < 0)
 		return NULL;
 
-	ret = __bbus_getcred(sock, &cred);
+	ret = __bbus_cred_get(sock, &cred);
 	if (ret < 0)
 		goto errout;
 
 	if (authfunc) {
-		ret = authfunc(&cred); /* TODO Pass proper credentials. */
+		ret = authfunc(&cred);
 		if (ret == BBUS_SRV_AUTHERR) {
 			__bbus_seterr(BBUS_ECLIUNAUTH);
 			goto errout;

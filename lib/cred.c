@@ -21,7 +21,7 @@
 #include <unistd.h>
 #include <stdio.h>
 
-int __bbus_getcred(int sock, struct bbus_client_cred* cred)
+int __bbus_cred_get(int sock, struct bbus_client_cred* cred)
 {
 	struct ucred ucr;
 	int ret;
@@ -39,6 +39,14 @@ int __bbus_getcred(int sock, struct bbus_client_cred* cred)
 	cred->gid = ucr.gid;
 
 	return 0;
+}
+
+void __bbus_cred_copy(struct bbus_client_cred* dst,
+			const struct bbus_client_cred* src)
+{
+	dst->pid = src->pid;
+	dst->uid = src->uid;
+	dst->gid = src->gid;
 }
 
 int bbus_cred_uidtousername(uid_t uid, char* buf, size_t buflen)
@@ -70,13 +78,5 @@ int bbus_cred_uidtousername(uid_t uid, char* buf, size_t buflen)
 out:
 	bbus_free(pbuf);
 	return ret;
-}
-
-void __bbus_cred_copy(struct bbus_client_cred* dst,
-			const struct bbus_client_cred* src)
-{
-	dst->pid = src->pid;
-	dst->uid = src->uid;
-	dst->gid = src->gid;
 }
 
