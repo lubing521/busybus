@@ -163,6 +163,8 @@ help:
 .SUFFIXES:
 .SUFFIXES:	.o .c
 .PHONY:		all clean help test_unit test_regr test doc
+.DEFAULT_GOAL	:=
+.DEFAULT_GOAL	:= all
 
 .c.o:
 	$(CROSSCC) -c -o $*.o $(CFLAGS) $(DEBUGFLAGS) $*.c
