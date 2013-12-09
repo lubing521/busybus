@@ -314,9 +314,14 @@ static unsigned make_token(void)
 
 static int client_auth(const struct bbus_client_cred* cred)
 {
+	char cliname[256];
+
+	memset(cliname, 0, sizeof(cliname));
+	(void)bbus_proc_pidtoname(cred->pid, cliname, sizeof(cliname));
 	bbusd_logmsg(BBUS_LOG_INFO,
 			"Client credentials: pid: %u, uid: %u, gid: %u\n",
 			cred->pid, cred->uid, cred->gid);
+	bbusd_logmsg(BBUS_LOG_INFO, "Client name: %s\n", cliname);
 
 	return BBUS_SRV_AUTHOK;
 }

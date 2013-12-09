@@ -28,7 +28,8 @@ LIBBBUS_OBJS =		./lib/error.o					\
 			./lib/regex.o					\
 			./lib/args.o					\
 			./lib/spinlock.o				\
-			./lib/cred.o
+			./lib/cred.o					\
+			./lib/process.o
 LIBBBUS_TARGET =	./libbbus.so
 LIBBBUS_SONAME =	libbbus.so
 

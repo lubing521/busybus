@@ -261,6 +261,18 @@ int bbus_regex_match(const char* pattern, const char* str) BBUS_PUBLIC;
 uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
 /**
+ * @brief Returns the name of the process with given pid.
+ * @param pid Process ID.
+ * @param buf Buffer to store the process name.
+ * @param buflen Size of the buffer.
+ * @return 0 if the name has been properly read, -1 on error.
+ *
+ * This function will fail if the proc filesystem is not mounted, or the
+ * calling process doesn't have the permissions to read it.
+ */
+int bbus_proc_pidtoname(pid_t pid, char* buf, size_t buflen) BBUS_PUBLIC;
+
+/**
  * @brief Returns the smallest of two values.
  * @param A First value.
  * @param B Second value.
