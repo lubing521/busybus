@@ -1330,7 +1330,7 @@ int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
 /**
  * @brief Callback function used to authenticate the client before connection.
  */
-typedef int (*bbus_auth_func)(struct bbus_client_cred* cred);
+typedef int (*bbus_auth_func)(const struct bbus_client_cred* cred);
 
 /**
  * @brief Accepts a client connection.

@@ -16,6 +16,7 @@
 #include "error.h"
 #include "socket.h"
 #include "protocol.h"
+#include "cred.h"
 #include <string.h>
 #include <sys/select.h>
 #include <errno.h>
@@ -130,6 +131,7 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 	bbus_client* cli;
 	struct bbus_msg_hdr hdr;
 	int clitype;
+	struct bbus_client_cred cred;
 
 	sock = __bbus_sock_accept(srv->sock, addrbuf,
 					sizeof(addrbuf), &addrsize);
@@ -137,7 +139,10 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 		return NULL;
 
 	if (authfunc) {
-		ret = authfunc(NULL); /* TODO Pass proper credentials. */
+		ret = __bbus_getcred(sock, &cred);
+		if (ret < 0)
+			goto errout;
+		ret = authfunc(&cred); /* TODO Pass proper credentials. */
 		if (ret == BBUS_SRV_AUTHERR)
 			goto errout;
 	}

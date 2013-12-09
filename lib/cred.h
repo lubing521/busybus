@@ -17,5 +17,7 @@
 
 #include <busybus.h>
 
+int __bbus_getcred(int sock, struct bbus_client_cred* cred);
+
 #endif /* __BBUS_CRED__ */
 
