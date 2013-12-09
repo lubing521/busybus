@@ -52,7 +52,7 @@ int bbus_proc_pidtoname(pid_t pid, char* buf, size_t buflen)
 	fclose(fd);
 
 	if (strlen(buf) == 0)
-		snprintf(buf, buflen, "<unknown>");
+		(void)snprintf(buf, buflen, "<unknown>");
 
 	return 0;
 }
