@@ -18,6 +18,8 @@
 #include <busybus.h>
 
 int __bbus_getcred(int sock, struct bbus_client_cred* cred);
+void __bbus_cred_copy(struct bbus_client_cred* dst,
+			const struct bbus_client_cred* src);
 
 #endif /* __BBUS_CRED__ */
 

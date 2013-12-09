@@ -72,3 +72,11 @@ out:
 	return ret;
 }
 
+void __bbus_cred_copy(struct bbus_client_cred* dst,
+			const struct bbus_client_cred* src)
+{
+	dst->pid = src->pid;
+	dst->uid = src->uid;
+	dst->gid = src->gid;
+}
+

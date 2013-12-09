@@ -28,6 +28,7 @@ struct __bbus_client
 	int sock;
 	int type;
 	uint32_t token;
+	struct bbus_client_cred cred;
 };
 
 struct __bbus_server
@@ -138,10 +139,11 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 	if (sock < 0)
 		return NULL;
 
+	ret = __bbus_getcred(sock, &cred);
+	if (ret < 0)
+		goto errout;
+
 	if (authfunc) {
-		ret = __bbus_getcred(sock, &cred);
-		if (ret < 0)
-			goto errout;
 		ret = authfunc(&cred); /* TODO Pass proper credentials. */
 		if (ret == BBUS_SRV_AUTHERR) {
 			__bbus_seterr(BBUS_ECLIUNAUTH);
@@ -171,6 +173,7 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 	cli->sock = sock;
 	cli->token = 0;
 	cli->type = clitype;
+	__bbus_cred_copy(&cli->cred, &cred);
 
 	return cli;
 
