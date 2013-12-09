@@ -312,6 +312,15 @@ static unsigned make_token(void)
 	return ++curtok;
 }
 
+static int client_auth(const struct bbus_client_cred* cred)
+{
+	bbusd_logmsg(BBUS_LOG_INFO,
+			"Client credentials: pid: %u, uid: %u, gid: %u\n",
+			cred->pid, cred->uid, cred->gid);
+
+	return BBUS_SRV_AUTHOK;
+}
+
 static void accept_client(bbus_server* server)
 {
 	bbus_client* cli;
@@ -319,7 +328,7 @@ static void accept_client(bbus_server* server)
 	unsigned token;
 
 	/* TODO Client credentials verification. */
-	cli = bbus_srv_accept(server, NULL);
+	cli = bbus_srv_accept(server, client_auth);
 	if (cli == NULL) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error accepting incoming client "
