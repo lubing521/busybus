@@ -261,6 +261,15 @@ int bbus_regex_match(const char* pattern, const char* str) BBUS_PUBLIC;
 uint32_t bbus_crc32(const void* buf, size_t bufsize) BBUS_PUBLIC;
 
 /**
+ * @brief For given uid returns the name of the user.
+ * @param uid The user ID.
+ * @param buf Buffer to store the username.
+ * @param buflen Size of the buffer.
+ * @return 0 on success, -1 on error.
+ */
+int bbus_cred_uidtousername(uid_t uid, char* buf, size_t buflen) BBUS_PUBLIC;
+
+/**
  * @brief Returns the name of the process with given pid.
  * @param pid Process ID.
  * @param buf Buffer to store the process name.

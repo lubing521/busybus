@@ -17,6 +17,9 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <pwd.h>
+#include <unistd.h>
+#include <stdio.h>
 
 int __bbus_getcred(int sock, struct bbus_client_cred* cred)
 {
@@ -36,5 +39,36 @@ int __bbus_getcred(int sock, struct bbus_client_cred* cred)
 	cred->gid = ucr.gid;
 
 	return 0;
+}
+
+int bbus_cred_uidtousername(uid_t uid, char* buf, size_t buflen)
+{
+	struct passwd pwd;
+	struct passwd* pres;
+	char* pbuf;
+	int pbufsiz;
+	int ret;
+
+	pbufsiz = sysconf(_SC_GETPW_R_SIZE_MAX);
+	if (pbufsiz < 0)
+		pbufsiz = 256;
+
+	pbuf = bbus_malloc0(pbufsiz);
+	if (pbuf == NULL)
+		return -1;
+
+	memset(&pwd, 0, sizeof(struct passwd));
+	ret = getpwuid_r(uid, &pwd, pbuf, pbufsiz, &pres);
+	if (ret < 0) {
+		__bbus_seterr(errno);
+		ret = -1;
+		goto out;
+	}
+
+	(void)snprintf(buf, buflen, "%s", pres->pw_name);
+
+out:
+	bbus_free(pbuf);
+	return ret;
 }
 
