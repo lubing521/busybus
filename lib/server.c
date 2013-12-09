@@ -143,8 +143,10 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 		if (ret < 0)
 			goto errout;
 		ret = authfunc(&cred); /* TODO Pass proper credentials. */
-		if (ret == BBUS_SRV_AUTHERR)
+		if (ret == BBUS_SRV_AUTHERR) {
+			__bbus_seterr(BBUS_ECLIUNAUTH);
 			goto errout;
+		}
 	}
 
 	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));

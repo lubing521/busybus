@@ -611,7 +611,8 @@ void bbus_free_nonopts(struct bbus_nonopts* nonopts) BBUS_PUBLIC;
 #define BBUS_EMREGERR		10016 /**< Error registering the method. */
 #define BBUS_EHMAPINVTYPE	10017 /**< Invalid key type for this map. */
 #define BBUS_EREGEXPTRN		10018 /**< Invalid regex pattern. */
-#define __BBUS_MAX_ERR		10019 /**< Highest error code */
+#define BBUS_ECLIUNAUTH		10019 /**< Client unauthorized. */
+#define __BBUS_MAX_ERR		10020 /**< Highest error code */
 
 /**
  * @}

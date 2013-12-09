@@ -45,7 +45,8 @@ static const char* const error_descr[] = {
 	"poll interrupted by a signal",
 	"error registering the method",
 	"invalid key type used on a hashmap",
-	"invalid regular expression pattern"
+	"invalid regular expression pattern",
+	"client unauthorized"
 };
 
 int bbus_lasterror(void)
