@@ -1400,12 +1400,33 @@ int bbus_srv_clientpending(bbus_server* srv) BBUS_PUBLIC;
 /**
  * @brief Callback function used to authenticate the client before connection.
  */
-typedef int (*bbus_auth_func)(const struct bbus_client_cred* cred);
+typedef int (*bbus_accept_authfunc)(const struct bbus_client_cred*);
+
+/**
+ * @brief Callback called when a message is received inside bbus_srv_accept.
+ */
+typedef void (*bbus_accept_msgrcvdfunc)(const struct bbus_msg*);
+
+/**
+ * @brief Callback called when a message is sent inside bbus_srv_accept.
+ */
+typedef void (*bbus_accept_msgsentfunc)(const struct bbus_msg_hdr*,
+						const char*, bbus_object*);
+
+/**
+ * @brief Contains all three available callbacks for bbus_srv_accept;
+ */
+struct bbus_accept_callbacks
+{
+	bbus_accept_authfunc auth;	/**< Authentication function. */
+	bbus_accept_msgrcvdfunc rcvd;	/**< Called on message reception. */
+	bbus_accept_msgsentfunc sent;	/**< Called on message send. */
+};
 
 /**
  * @brief Accepts a client connection.
  * @param srv The server.
- * @param authfunc Callback function used to authenticate the client.
+ * @param funcs Callback functions.
  * @return New client connection or NULL on error.
  *
  * After an initial connection is established this function will call
@@ -1418,7 +1439,7 @@ typedef int (*bbus_auth_func)(const struct bbus_client_cred* cred);
  * be performed and every client will be accepted.
  */
 bbus_client* bbus_srv_accept(bbus_server* srv,
-		bbus_auth_func authfunc) BBUS_PUBLIC;
+		const struct bbus_accept_callbacks* funcs) BBUS_PUBLIC;
 
 /**
  * @brief Stops listening on a server socket and closes it.

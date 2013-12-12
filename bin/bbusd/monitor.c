@@ -39,7 +39,7 @@ void bbusd_monlist_rm(bbus_client* cli)
 		"this should not happen.\n");
 }
 
-static bbus_object* pack_msg(struct bbus_msg_hdr* hdr, const char* meta)
+static bbus_object* pack_msg(const struct bbus_msg_hdr* hdr, const char* meta)
 {
 	bbus_object* obj;
 
@@ -88,7 +88,7 @@ static void send_to_monitors(const char* meta, bbus_object* obj)
 	}
 }
 
-void bbusd_mon_notify_recvd(struct bbus_msg* msg)
+void bbusd_mon_notify_recvd(const struct bbus_msg* msg)
 {
 	bbus_object* obj;
 	const char* meta;
@@ -113,8 +113,8 @@ void bbusd_mon_notify_recvd(struct bbus_msg* msg)
 	send_to_monitors("received", obj);
 }
 
-void bbusd_mon_notify_sent(struct bbus_msg_hdr* hdr,
-				char* meta, bbus_object* obj)
+void bbusd_mon_notify_sent(const struct bbus_msg_hdr* hdr,
+				const char* meta, bbus_object* obj)
 {
 	obj = pack_msg(hdr, meta == NULL ? "" : meta);
 	if (obj == NULL)

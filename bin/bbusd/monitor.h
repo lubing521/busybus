@@ -20,9 +20,9 @@
 
 int bbusd_monlist_add(bbus_client* cli);
 void bbusd_monlist_rm(bbus_client* cli);
-void bbusd_mon_notify_recvd(struct bbus_msg* msg);
-void bbusd_mon_notify_sent(struct bbus_msg_hdr* hdr,
-			char* meta, bbus_object* obj);
+void bbusd_mon_notify_recvd(const struct bbus_msg* msg);
+void bbusd_mon_notify_sent(const struct bbus_msg_hdr* hdr,
+			const char* meta, bbus_object* obj);
 
 #endif /* __BBUSD_MONITOR__ */
 

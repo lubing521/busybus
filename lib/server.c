@@ -123,14 +123,17 @@ int bbus_srv_clientpending(bbus_server* srv)
 	return __bbus_sock_rdready(srv->sock, &tv);
 }
 
-bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
+bbus_client* bbus_srv_accept(bbus_server* srv,
+				const struct bbus_accept_callbacks* funcs)
 {
 	char addrbuf[128];
 	size_t addrsize;
 	int sock;
 	int ret;
 	bbus_client* cli;
-	struct bbus_msg_hdr hdr;
+	unsigned char buf[sizeof(struct bbus_msg)];
+	struct bbus_msg* msg = (struct bbus_msg*)buf;
+	struct bbus_msg_hdr* hdr = &msg->hdr;
 	int clitype;
 	struct bbus_client_cred cred;
 
@@ -143,23 +146,26 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 	if (ret < 0)
 		goto errout;
 
-	if (authfunc) {
-		ret = authfunc(&cred);
+	if (funcs && funcs->auth) {
+		ret = funcs->auth(&cred);
 		if (ret == BBUS_SRV_AUTHERR) {
 			__bbus_seterr(BBUS_ECLIUNAUTH);
 			goto errout;
 		}
 	}
 
-	memset(&hdr, 0, sizeof(struct bbus_msg_hdr));
-	ret = __bbus_prot_recvvmsg(sock, &hdr, NULL, 0);
+	memset(hdr, 0, sizeof(struct bbus_msg_hdr));
+	ret = __bbus_prot_recvvmsg(sock, hdr, NULL, 0);
 	if (ret < 0)
 		goto errout;
-	if (hdr.msgtype != BBUS_MSGTYPE_SO)
+	if (hdr->msgtype != BBUS_MSGTYPE_SO)
 		goto errout;
 
+	if (funcs && funcs->rcvd)
+		funcs->rcvd(msg);
+
 	/* TODO Small function to do the convertion. */
-	switch (hdr.sotype) {
+	switch (hdr->sotype) {
 	case BBUS_SOTYPE_MTHCL: clitype = BBUS_CLIENT_CALLER; break;
 	case BBUS_SOTYPE_SRVPRV: clitype = BBUS_CLIENT_SERVICE; break;
 	case BBUS_SOTYPE_MON: clitype = BBUS_CLIENT_MON; break;
@@ -167,10 +173,13 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 	default: goto errout; break;
 	}
 
-	hdr.msgtype = BBUS_MSGTYPE_SOOK;
-	ret = __bbus_prot_sendvmsg(sock, &hdr, NULL, NULL, 0);
+	hdr->msgtype = BBUS_MSGTYPE_SOOK;
+	ret = __bbus_prot_sendvmsg(sock, hdr, NULL, NULL, 0);
 	if (ret < 0)
 		goto errout;
+
+	if (funcs && funcs->sent)
+		funcs->sent(hdr, NULL, NULL);
 
 	cli = bbus_malloc(sizeof(struct __bbus_client));
 	if (cli == NULL)

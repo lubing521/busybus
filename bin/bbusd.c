@@ -334,6 +334,23 @@ static int client_auth(const struct bbus_client_cred* cred)
 			BBUS_SRV_AUTHOK : BBUS_SRV_AUTHERR;
 }
 
+static void accept_msg_rcvd(const struct bbus_msg* msg)
+{
+	bbusd_mon_notify_recvd(msg);
+}
+
+static void accept_msg_sent(const struct bbus_msg_hdr* hdr,
+				const char* meta, bbus_object* obj)
+{
+	bbusd_mon_notify_sent(hdr, meta, obj);
+}
+
+static struct bbus_accept_callbacks accept_funcs = {
+	.auth = client_auth,
+	.rcvd = accept_msg_rcvd,
+	.sent = accept_msg_sent,
+};
+
 static void accept_client(bbus_server* server)
 {
 	bbus_client* cli;
@@ -341,7 +358,7 @@ static void accept_client(bbus_server* server)
 	unsigned token;
 
 	/* TODO Client credentials verification. */
-	cli = bbus_srv_accept(server, client_auth);
+	cli = bbus_srv_accept(server, &accept_funcs);
 	if (cli == NULL) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error accepting incoming client "
