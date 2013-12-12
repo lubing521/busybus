@@ -1000,7 +1000,7 @@ struct bbus_msg_hdr
 	uint32_t token;		/**< Used only for method calling. */
 	uint16_t psize;		/**< Size of the payload. */
 	uint8_t flags;		/**< Various protocol flags. */
-};
+} __attribute__((packed)); /* FIXME Temporary fix for structure padding bugs. */
 
 /**
  * @brief Size of the busybus message header.
@@ -1014,7 +1014,7 @@ struct bbus_msg
 {
 	struct bbus_msg_hdr hdr;	/**< Message header. */
 	char payload[1];		/**< Start of the payload data. */
-};
+} __attribute__((packed)); /* FIXME See struct bbus_msg_hdr. */
 
 /**
  * @brief Extracts the busybus object from the message buffer.

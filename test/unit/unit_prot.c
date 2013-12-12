@@ -22,13 +22,13 @@ BBUSUNIT_DEFINE_TEST(prot_extract_obj)
 	BBUSUNIT_BEGINTEST;
 
 		static const char msgbuf[] =
-				"\xBB\xC5"
-				"\x01"
-				"\x00"
-				"\x00\x00\x00\x00"
-				"\x00\x09"
-				"\x02"
-				"\x00"
+				"\xBB\xC5"		/* magic */
+				"\x01"			/* msgtype */
+				"\x00"			/* sotype */
+				"\x00"			/* errcode */
+				"\x00\x00\x00\x00"	/* token */
+				"\x00\x09"		/* psize */
+				"\x02"			/* flags */
 				"a string\0";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
@@ -58,13 +58,13 @@ BBUSUNIT_DEFINE_TEST(prot_extract_meta)
 	BBUSUNIT_BEGINTEST;
 
 		static const char msgbuf[] =
-				"\xBB\xC5"
-				"\x01"
-				"\x00"
-				"\x00\x00\x00\x00"
-				"\x00\x0C"
-				"\x01"
-				"\x00"
+				"\xBB\xC5"		/* magic */
+				"\x01"			/* msgtype */
+				"\x00"			/* sotype */
+				"\x00"			/* errcode */
+				"\x00\x00\x00\x00"	/* token */
+				"\x00\x0C"		/* psize */
+				"\x01"			/* flags */
 				"meta string\0";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
@@ -84,13 +84,13 @@ BBUSUNIT_DEFINE_TEST(prot_extract_meta_and_obj)
 	BBUSUNIT_BEGINTEST;
 
 		static const char msgbuf[] =
-				"\xBB\xC5"
-				"\x01"
-				"\x00"
-				"\x00\x00\x00\x00"
-				"\x00\x14"
-				"\x03"
-				"\x00"
+				"\xBB\xC5"		/* magic */
+				"\x01"			/* msgtype */
+				"\x00"			/* sotype */
+				"\x00"			/* errcode */
+				"\x00\x00\x00\x00"	/* token */
+				"\x00\x14"		/* psize */
+				"\x03"			/* flags */
 				"meta string\0"
 				"\x11\x22\x33\x44"
 				"\x55\x66\x77\x88";
@@ -125,13 +125,13 @@ BBUSUNIT_DEFINE_TEST(prot_extract_invalid_meta)
 	BBUSUNIT_BEGINTEST;
 
 		static const char msgbuf[] =
-				"\xBB\xC5"
-				"\x01"
-				"\x00"
-				"\x00\x00\x00\x00"
-				"\x00\x0C"
-				"\x01"
-				"\x00"
+				"\xBB\xC5"		/* magic */
+				"\x01"			/* msgtype */
+				"\x00"			/* sotype */
+				"\x00"			/* errcode */
+				"\x00\x00\x00\x00"	/* token */
+				"\x00\x0C"		/* psize */
+				"\x01"			/* flags */
 				"meta string without null";
 
 		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
@@ -150,13 +150,13 @@ BBUSUNIT_DEFINE_TEST(prot_extract_flags_not_set)
 	BBUSUNIT_BEGINTEST;
 
 		static const char msgbuf[] =
-				"\xBB\xC5"
-				"\x01"
-				"\x00"
-				"\x00\x00\x00\x00"
-				"\x00\x14"
-				"\x00"
-				"\x00"
+				"\xBB\xC5"		/* magic */
+				"\x01"			/* msgtype */
+				"\x00"			/* sotype */
+				"\x00"			/* errcode */
+				"\x00\x00\x00\x00"	/* token */
+				"\x00\x14"		/* psize */
+				"\x00"			/* flags */
 				"meta string\0"
 				"\x11\x22\x33\x44"
 				"\x55\x66\x77\x88";

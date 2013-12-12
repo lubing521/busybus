@@ -12,3 +12,5 @@
 - Make busybus more portable - eg. strerror_r, REG_NOERROR etc.
 - Proper clean-up code in bbusd.
 - Check client credentials on accept.
+- Rebuild the sending and receiving mechanism to handle the structure
+  padding differences.
