@@ -139,7 +139,7 @@ int __bbus_sock_close(int sock)
 	return 0;
 }
 
-static void prepare_msghdr(struct msghdr* hdr,
+static inline void prepare_msghdr(struct msghdr* hdr,
 				const struct iovec* iov, int numiov)
 {
 	hdr->msg_name = NULL;
