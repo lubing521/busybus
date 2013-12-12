@@ -64,19 +64,6 @@ int __bbus_sock_un_bind(int sock, const char* path)
 	return 0;
 }
 
-int __bbus_sock_listen(int sock, int backlog)
-{
-	int r;
-
-	r = listen(sock, backlog);
-	if (r < 0) {
-		__bbus_seterr(errno);
-		return -1;
-	}
-
-	return 0;
-}
-
 int __bbus_sock_un_accept(int sock, char* pathbuf,
 		size_t bufsize, size_t* pathsize)
 {
@@ -117,21 +104,34 @@ int __bbus_sock_un_connect(int sock, const char* path)
 	return 0;
 }
 
-int __bbus_sock_close(int sock)
+int __bbus_sock_un_rm(const char* path)
 {
-	int r;
-
-	r = close(sock);
-	if (r < 0) {
+	if (unlink(path) < 0) {
 		__bbus_seterr(errno);
 		return -1;
 	}
 	return 0;
 }
 
-int __bbus_sock_un_rm(const char* path)
+int __bbus_sock_listen(int sock, int backlog)
 {
-	if (unlink(path) < 0) {
+	int r;
+
+	r = listen(sock, backlog);
+	if (r < 0) {
+		__bbus_seterr(errno);
+		return -1;
+	}
+
+	return 0;
+}
+
+int __bbus_sock_close(int sock)
+{
+	int r;
+
+	r = close(sock);
+	if (r < 0) {
 		__bbus_seterr(errno);
 		return -1;
 	}
