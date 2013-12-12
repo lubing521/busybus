@@ -155,12 +155,17 @@ bbus_client* bbus_srv_accept(bbus_server* srv, bbus_auth_func authfunc)
 	ret = __bbus_prot_recvvmsg(sock, &hdr, NULL, 0);
 	if (ret < 0)
 		goto errout;
-	if ((hdr.msgtype != BBUS_MSGTYPE_SOCLI)
-			&& (hdr.msgtype != BBUS_MSGTYPE_SOSRVP))
+	if (hdr.msgtype != BBUS_MSGTYPE_SO)
 		goto errout;
 
-	clitype = hdr.msgtype == BBUS_MSGTYPE_SOCLI
-			? BBUS_CLIENT_CALLER : BBUS_CLIENT_SERVICE;
+	/* TODO Small function to do the convertion. */
+	switch (hdr.sotype) {
+	case BBUS_SOTYPE_MTHCL: clitype = BBUS_CLIENT_CALLER; break;
+	case BBUS_SOTYPE_SRVPRV: clitype = BBUS_CLIENT_SERVICE; break;
+	case BBUS_SOTYPE_MON: clitype = BBUS_CLIENT_MON; break;
+	case BBUS_SOTYPE_CTL: clitype = BBUS_CLIENT_CTL; break;
+	default: goto errout; break;
+	}
 
 	hdr.msgtype = BBUS_MSGTYPE_SOOK;
 	ret = __bbus_prot_sendvmsg(sock, &hdr, NULL, NULL, 0);

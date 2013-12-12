@@ -935,19 +935,31 @@ int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
  *
  * Message types carried in the 'msgtype' field of the header.
  */
-#define BBUS_MSGTYPE_SOCLI	0x01 /**< Session open client. */
-#define BBUS_MSGTYPE_SOSRVP	0x02 /**< Session open service provider. */
-#define BBUS_MSGTYPE_SOOK	0x03 /**< Session open confirmed. */
-#define BBUS_MSGTYPE_SORJCT	0x04 /**< Session open rejected. */
-#define BBUS_MSGTYPE_SRVREG	0x05 /**< Register service. */
-#define BBUS_MSGTYPE_SRVUNREG	0x06 /**< Unregister service. */
-#define BBUS_MSGTYPE_SRVACK	0x07 /**< Service registered (or error). */
-#define BBUS_MSGTYPE_CLICALL	0x08 /**< Client calls a method. */
-#define BBUS_MSGTYPE_CLIREPLY	0x09 /**< Server replies to a client. */
-#define BBUS_MSGTYPE_SRVCALL	0x0A /**< Server calls a registered method. */
-#define BBUS_MSGTYPE_SRVREPLY	0x0B /**< Method provider replies. */
-#define BBUS_MSGTYPE_CLOSE	0x0C /**< Client closes session. */
-#define BBUS_MSGTYPE_CTRL	0x0D /**< Control message. */
+#define BBUS_MSGTYPE_SO		0x01 /**< Session open. */
+#define BBUS_MSGTYPE_SOOK	0x02 /**< Session open confirmed. */
+#define BBUS_MSGTYPE_SORJCT	0x03 /**< Session open rejected. */
+#define BBUS_MSGTYPE_SRVREG	0x04 /**< Register service. */
+#define BBUS_MSGTYPE_SRVUNREG	0x05 /**< Unregister service. */
+#define BBUS_MSGTYPE_SRVACK	0x06 /**< Service registered (or error). */
+#define BBUS_MSGTYPE_CLICALL	0x07 /**< Client calls a method. */
+#define BBUS_MSGTYPE_CLIREPLY	0x08 /**< Server replies to a client. */
+#define BBUS_MSGTYPE_SRVCALL	0x09 /**< Server calls a registered method. */
+#define BBUS_MSGTYPE_SRVREPLY	0x0A /**< Method provider replies. */
+#define BBUS_MSGTYPE_CLOSE	0x0B /**< Client closes session. */
+#define BBUS_MSGTYPE_CTRL	0x0C /**< Control message. */
+/**
+ * @}
+ *
+ * @defgroup __protsotypes__ Session open message types
+ * @{
+ *
+ * These constants indicate the client type which tries to connect
+ * to the busybus daemon.
+ */
+#define BBUS_SOTYPE_MTHCL	0x01 /**< Methad caller. */
+#define BBUS_SOTYPE_SRVPRV	0x02 /**< Service provider. */
+#define BBUS_SOTYPE_MON		0x03 /**< Message monitor. */
+#define BBUS_SOTYPE_CTL		0x04 /**< Control program. */
 /**
  * @}
  *
@@ -983,11 +995,11 @@ struct bbus_msg_hdr
 {
 	uint16_t magic;		/**< Busybus magic number. */
 	uint8_t msgtype;	/**< Message type. */
+	uint8_t sotype;		/**< Session open client type. */
 	uint8_t errcode;	/**< Protocol error code. */
 	uint32_t token;		/**< Used only for method calling. */
 	uint16_t psize;		/**< Size of the payload. */
 	uint8_t flags;		/**< Various protocol flags. */
-	uint8_t padding;	/**< Padding space. */
 };
 
 /**

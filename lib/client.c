@@ -30,7 +30,7 @@ struct __bbus_service_connection
 	bbus_hashmap* methods;
 };
 
-static int do_session_open(const char* path, int sotype)
+static int do_session_open(const char* path, int clitype)
 {
 	int r;
 	struct bbus_msg_hdr hdr;
@@ -46,7 +46,8 @@ static int do_session_open(const char* path, int sotype)
 
 	memset(&hdr, 0, BBUS_MSGHDR_SIZE);
 	__bbus_prot_hdrsetmagic(&hdr);
-	hdr.msgtype = sotype;
+	hdr.msgtype = BBUS_MSGTYPE_SO;
+	hdr.sotype = clitype;
 	r = __bbus_prot_sendvmsg(sock, &hdr, NULL, NULL, 0);
 	if (r < 0)
 		goto errout_close;
@@ -96,7 +97,7 @@ bbus_client_connection* bbus_connect(void)
 	int sock;
 	bbus_client_connection* conn;
 
-	sock = do_session_open(bbus_prot_getsockpath(), BBUS_MSGTYPE_SOCLI);
+	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_MTHCL);
 	if (sock < 0)
 		return NULL;
 
@@ -166,7 +167,7 @@ bbus_service_connection* bbus_srvc_connect(const char* name)
 	int sock;
 	bbus_service_connection* conn;
 
-	sock = do_session_open(bbus_prot_getsockpath(), BBUS_MSGTYPE_SOSRVP);
+	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_SRVPRV);
 	if (sock < 0)
 		return NULL;
 
