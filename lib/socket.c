@@ -26,7 +26,7 @@
 #define SAUN_PATHLEN (sizeof(((struct sockaddr_un*)0)->sun_path))
 #define SAUN_FAMLEN (sizeof(((struct sockaddr_un*)0)->sun_family))
 
-int __bbus_sock_mksocket(void)
+int __bbus_sock_un_mksocket(void)
 {
 	int s;
 
@@ -39,7 +39,7 @@ int __bbus_sock_mksocket(void)
 	return s;
 }
 
-int __bbus_sock_bind(int sock, const char* path)
+int __bbus_sock_un_bind(int sock, const char* path)
 {
 	int r;
 	socklen_t addrlen;
@@ -77,7 +77,7 @@ int __bbus_sock_listen(int sock, int backlog)
 	return 0;
 }
 
-int __bbus_sock_accept(int sock, char* pathbuf,
+int __bbus_sock_un_accept(int sock, char* pathbuf,
 		size_t bufsize, size_t* pathsize)
 {
 	int s;
@@ -98,7 +98,7 @@ int __bbus_sock_accept(int sock, char* pathbuf,
 	return s;
 }
 
-int __bbus_sock_connect(int sock, const char* path)
+int __bbus_sock_un_connect(int sock, const char* path)
 {
 	int r;
 	struct sockaddr_un addr;
@@ -129,7 +129,7 @@ int __bbus_sock_close(int sock)
 	return 0;
 }
 
-int __bbus_sock_rm(const char* path)
+int __bbus_sock_un_rm(const char* path)
 {
 	if (unlink(path) < 0) {
 		__bbus_seterr(errno);

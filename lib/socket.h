@@ -19,14 +19,17 @@
 #include <stdlib.h>
 #include <sys/uio.h>
 
-int __bbus_sock_mksocket(void);
-int __bbus_sock_bind(int sock, const char* path);
-int __bbus_sock_listen(int sock, int backlog);
-int __bbus_sock_accept(int sock, char* pathbuf,
+/* Unix domain specific functions. */
+int __bbus_sock_un_mksocket(void);
+int __bbus_sock_un_bind(int sock, const char* path);
+int __bbus_sock_un_accept(int sock, char* pathbuf,
 		size_t bufsize, size_t* pathsize);
-int __bbus_sock_connect(int sock, const char* path);
+int __bbus_sock_un_connect(int sock, const char* path);
+int __bbus_sock_un_rm(const char* path);
+
+/* Common socket functions. */
+int __bbus_sock_listen(int sock, int backlog);
 int __bbus_sock_close(int sock);
-int __bbus_sock_rm(const char* path);
 ssize_t __bbus_sock_send(int sock, const void* buf, size_t size);
 ssize_t __bbus_sock_recv(int sock, void* buf, size_t size);
 ssize_t __bbus_sock_sendv(int sock, const struct iovec* iov, int numiov);

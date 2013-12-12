@@ -87,11 +87,11 @@ bbus_server* bbus_srv_create(void)
 	int sock;
 	int ret;
 
-	sock = __bbus_sock_mksocket();
+	sock = __bbus_sock_un_mksocket();
 	if (sock < 0)
 		goto err;
 
-	ret = __bbus_sock_bind(sock, bbus_prot_getsockpath());
+	ret = __bbus_sock_un_bind(sock, bbus_prot_getsockpath());
 	if (ret < 0)
 		goto err;
 
@@ -137,7 +137,7 @@ bbus_client* bbus_srv_accept(bbus_server* srv,
 	int clitype;
 	struct bbus_client_cred cred;
 
-	sock = __bbus_sock_accept(srv->sock, addrbuf,
+	sock = __bbus_sock_un_accept(srv->sock, addrbuf,
 					sizeof(addrbuf), &addrsize);
 	if (sock < 0)
 		return NULL;

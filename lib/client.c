@@ -36,11 +36,11 @@ static int do_session_open(const char* path, int clitype)
 	struct bbus_msg_hdr hdr;
 	int sock;
 
-	sock = __bbus_sock_mksocket();
+	sock = __bbus_sock_un_mksocket();
 	if (sock < 0)
 		goto errout;
 
-	r = __bbus_sock_connect(sock, path);
+	r = __bbus_sock_un_connect(sock, path);
 	if (r < 0)
 		goto errout;
 
