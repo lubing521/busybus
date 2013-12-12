@@ -202,7 +202,7 @@ int __bbus_sock_wrready(int sock, struct bbus_timeval* tv)
 	timeout.tv_usec = tv->usec;
 	r = select(sock+1, NULL, &wr_set, NULL, &timeout);
 	if (r < 0) {
-		__bbus_seterr(errno);
+		__bbus_seterr(errno == EINTR ? BBUS_EPOLLINTR : errno);
 		return -1;
 	}
 
@@ -223,7 +223,7 @@ int __bbus_sock_rdready(int sock, struct bbus_timeval* tv)
 	timeout.tv_usec = tv->usec;
 	r = select(sock+1, &rd_set, NULL, NULL, &timeout);
 	if (r < 0) {
-		__bbus_seterr(errno);
+		__bbus_seterr(errno == EINTR ? BBUS_EPOLLINTR : errno);
 		return -1;
 	}
 

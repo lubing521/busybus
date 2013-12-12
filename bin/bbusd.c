@@ -558,6 +558,7 @@ static void poll_and_handle_inbound_traffic(bbus_server* server,
 
 		tmpcli = bbusd_clientlist_getfirst();
 		while (numclients > 0) {
+			retval = 0;
 			if (bbus_pollset_cliisset(pollset, tmpcli->cli)) {
 				retval = handle_client(tmpcli);
 				--numclients;

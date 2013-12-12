@@ -71,7 +71,7 @@ static void send_to_monitors(const char* meta, bbus_object* obj)
 	struct bbusd_clientlist_elem* mon;
 
 	bbus_hdr_build(&hdr, BBUS_MSGTYPE_MON, BBUS_PROT_EGOOD);
-	bbus_hdr_setpsize(&hdr, meta == NULL ? 0 : strlen(meta) +
+	bbus_hdr_setpsize(&hdr, (meta == NULL ? 0 : strlen(meta)+1) +
 						bbus_obj_rawsize(obj));
 	if (meta)
 		BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASMETA);
@@ -110,7 +110,7 @@ void bbusd_mon_notify_recvd(struct bbus_msg* msg)
 	if (obj == NULL)
 		return;
 
-	send_to_monitors(NULL, obj);
+	send_to_monitors("received", obj);
 }
 
 void bbusd_mon_notify_sent(struct bbus_msg_hdr* hdr,
@@ -120,6 +120,6 @@ void bbusd_mon_notify_sent(struct bbus_msg_hdr* hdr,
 	if (obj == NULL)
 		return;
 
-	send_to_monitors(NULL, obj);
+	send_to_monitors("sent", obj);
 }
 

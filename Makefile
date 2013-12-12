@@ -70,6 +70,17 @@ bbus-call:		libbbus.so $(BBUSCALL_OBJS)
 		$(DEBUGFLAGS) $(BBUSCALL_LIBS) -L./
 
 ###############################################################################
+# bbus-mon
+###############################################################################
+BBUSMON_OBJS =		./bin/bbus-mon.o
+BBUSMON_TARGET =	./bbus-mon
+BBUSMON_LIBS =		-lbbus
+
+bbus-mon:		libbbus.so $(BBUSMON_OBJS)
+	$(CROSSCC) -o $(BBUSMON_TARGET) $(BBUSMON_OBJS) $(LDFLAGS)	\
+		$(DEBUGFLAGS) $(BBUSMON_LIBS) -L./
+
+###############################################################################
 # bbus-echod
 ###############################################################################
 BBUSECHOD_OBJS =	./bin/bbus-echod.o
@@ -108,7 +119,7 @@ test:		test_unit test_regr
 ###############################################################################
 # all
 ###############################################################################
-all:		libbbus.so bbusd bbus-call bbus-echod bbus-unit
+all:		libbbus.so bbusd bbus-call bbus-mon bbus-echod bbus-unit
 
 ###############################################################################
 # doc
@@ -125,6 +136,8 @@ clean:
 	rm -f $(BBUSD_TARGET)
 	rm -f $(BBUSCALL_OBJS)
 	rm -f $(BBUSCALL_TARGET)
+	rm -f $(BBUSMON_OBJS)
+	rm -f $(BBUSMON_TARGET)
 	rm -f $(BBUSECHOD_OBJS)
 	rm -f $(BBUSECHOD_TARGET)
 	rm -f $(LIBBBUS_OBJS)
@@ -144,6 +157,7 @@ help:
 	@echo "  all		- all executables and libraries"
 	@echo "  bbusd		- busybus daemon"
 	@echo "  bbus-call	- program for calling busybus methods"
+	@echo "  bbus-mon	- busybus monitoring program"
 	@echo "  bbus-echod	- busybus echo service daemon"
 	@echo "  libbbus.so	- busybus library"
 	@echo "  bbus-unit	- busybus unit-test binary"
