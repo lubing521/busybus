@@ -406,3 +406,26 @@ BBUSUNIT_DEFINE_TEST(object_repr_one_string)
 	BBUSUNIT_ENDTEST;
 }
 
+BBUSUNIT_DEFINE_TEST(object_build_empty_string)
+{
+	BBUSUNIT_BEGINTEST;
+
+		static const char* const str = "\0";
+
+		bbus_object* obj;
+		char* outstr;
+		int ret;
+
+		obj = bbus_obj_build("s", str);
+		BBUSUNIT_ASSERT_NOTNULL(obj);
+		ret = bbus_obj_parse(obj, "s", &outstr);
+		BBUSUNIT_ASSERT_EQ(0, ret);
+		BBUSUNIT_ASSERT_EQ(0, strlen(outstr));
+
+	BBUSUNIT_FINALLY;
+
+		bbus_obj_free(obj);
+
+	BBUSUNIT_ENDTEST;
+}
+
