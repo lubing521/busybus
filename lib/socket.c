@@ -25,6 +25,7 @@
 
 #define SAUN_PATHLEN (sizeof(((struct sockaddr_un*)0)->sun_path))
 #define SAUN_FAMLEN (sizeof(((struct sockaddr_un*)0)->sun_family))
+#define IO_FLAGS (MSG_DONTWAIT | MSG_NOSIGNAL)
 
 int __bbus_sock_un_mksocket(void)
 {
@@ -138,11 +139,25 @@ int __bbus_sock_close(int sock)
 	return 0;
 }
 
-ssize_t __bbus_sock_send(int sock, const void* buf, size_t size)
+static void prepare_msghdr(struct msghdr* hdr,
+				const struct iovec* iov, int numiov)
+{
+	hdr->msg_name = NULL;
+	hdr->msg_namelen = 0;
+	hdr->msg_iov = (void*)iov;
+	hdr->msg_iovlen = numiov;
+	hdr->msg_control = NULL;
+	hdr->msg_controllen = 0;
+	hdr->msg_flags = 0;
+}
+
+ssize_t __bbus_sock_send(int sock, const struct iovec* iov, int numiov)
 {
 	ssize_t b;
+	struct msghdr hdr;
 
-	b = send(sock, buf, size, MSG_DONTWAIT);
+	prepare_msghdr(&hdr, iov, numiov);
+	b = sendmsg(sock, &hdr, IO_FLAGS);
 	if (b < 0) {
 		__bbus_seterr(errno);
 		return -1;
@@ -151,37 +166,13 @@ ssize_t __bbus_sock_send(int sock, const void* buf, size_t size)
 	return b;
 }
 
-ssize_t __bbus_sock_recv(int sock, void* buf, size_t size)
+ssize_t __bbus_sock_recv(int sock, struct iovec* iov, int numiov)
 {
 	ssize_t b;
+	struct msghdr hdr;
 
-	b = recv(sock, buf, size, MSG_DONTWAIT);
-	if (b < 0) {
-		__bbus_seterr(errno);
-		return -1;
-	}
-
-	return b;
-}
-
-ssize_t __bbus_sock_sendv(int sock, const struct iovec* iov, int numiov)
-{
-	ssize_t b;
-
-	b = writev(sock, iov, numiov);
-	if (b < 0) {
-		__bbus_seterr(errno);
-		return -1;
-	}
-
-	return b;
-}
-
-ssize_t __bbus_sock_recvv(int sock, struct iovec* iov, int numiov)
-{
-	ssize_t b;
-
-	b = readv(sock, iov, numiov);
+	prepare_msghdr(&hdr, iov, numiov);
+	b = recvmsg(sock, &hdr, IO_FLAGS);
 	if (b < 0) {
 		__bbus_seterr(errno);
 		return -1;

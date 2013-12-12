@@ -68,16 +68,18 @@ static int hdr_check_magic(const struct bbus_msg_hdr* hdr)
 int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 {
 	ssize_t r;
-	ssize_t rcvd;
 	ssize_t msgsize;
 	struct bbus_msg_hdr* hdr;
+	struct iovec iov[1];
 
 	if (bufsize > BBUS_MAXMSGSIZE) {
 		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
 	}
 
-	r = __bbus_sock_recv(sock, buf, bufsize);
+	iov[0].iov_base = buf;
+	iov[0].iov_len = bufsize;
+	r = __bbus_sock_recv(sock, iov, 1);
 	if (r < 0) {
 		return -1;
 	} else
@@ -97,20 +99,6 @@ int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 		return -1;
 	}
 
-	rcvd = r;
-	buf += r;
-	while (rcvd != msgsize) {
-		r = __bbus_sock_recv(sock, buf, bufsize-rcvd);
-		if (r < 0) {
-			return -1;
-		} else
-		if (r == 0) {
-			__bbus_seterr(BBUS_ECONNCLOSED);
-			return -1;
-		}
-		rcvd += r;
-		buf += r;
-	}
 
 	if (!hdr_check_magic(hdr)) {
 		__bbus_seterr(BBUS_EMSGMAGIC);
@@ -124,7 +112,7 @@ int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf)
 {
 	ssize_t r;
 	size_t msgsize;
-	size_t sent;
+	struct iovec iov[1];
 
 	msgsize = BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(
 					(struct bbus_msg_hdr*)buf);
@@ -133,15 +121,12 @@ int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf)
 		__bbus_seterr(BBUS_EINVALARG);
 		return -1;
 	}
-	sent = 0;
 
-	do {
-		r = __bbus_sock_send(sock, buf, msgsize-sent);
-		if (r < 0)
-			return -1;
-		sent += r;
-		buf += r;
-	} while (msgsize != sent);
+	iov[0].iov_base = (void*)buf;
+	iov[0].iov_len = 1;
+	r = __bbus_sock_send(sock, iov, 1);
+	if (r < 0)
+		return -1;
 
 	return 0;
 }
@@ -168,7 +153,7 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 		++numiov;
 	}
 
-	r = __bbus_sock_recvv(sock, iov, numiov);
+	r = __bbus_sock_recv(sock, iov, numiov);
 	if (r < 0) {
 		return -1;
 	} else
@@ -221,7 +206,7 @@ int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 		++numiov;
 	}
 
-	r = __bbus_sock_sendv(sock, iov, numiov);
+	r = __bbus_sock_send(sock, iov, numiov);
 	if (r < 0) {
 		return -1;
 	} else
