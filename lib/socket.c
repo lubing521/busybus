@@ -190,24 +190,39 @@ ssize_t __bbus_sock_recvv(int sock, struct iovec* iov, int numiov)
 	return b;
 }
 
+#define SELECT_INIT(FDSET, SOCK, TV, BBTV)				\
+	do {								\
+		FD_ZERO(&(FDSET));					\
+		FD_SET((SOCK), &(FDSET));				\
+		(TV).tv_sec = (BBTV)->sec;				\
+		(TV).tv_usec = (BBTV)->usec;				\
+	} while (0)
+
+#define SELECT_CHECKERR(RETVAL)						\
+	do {								\
+		if ((RETVAL) < 0) {					\
+			__bbus_seterr(errno == EINTR			\
+					? BBUS_EPOLLINTR : errno);	\
+			return -1;					\
+		}							\
+	} while (0)
+
+#define SELECT_COPYTV(TV, BBTV)						\
+	do {								\
+		(BBTV)->sec = (TV).tv_sec;				\
+		(BBTV)->usec = (TV).tv_usec;				\
+	} while (0)
+
 int __bbus_sock_wrready(int sock, struct bbus_timeval* tv)
 {
 	fd_set wr_set;
 	struct timeval timeout;
 	int r;
 
-	FD_ZERO(&wr_set);
-	FD_SET(sock, &wr_set);
-	timeout.tv_sec = tv->sec;
-	timeout.tv_usec = tv->usec;
+	SELECT_INIT(wr_set, sock, timeout, tv);
 	r = select(sock+1, NULL, &wr_set, NULL, &timeout);
-	if (r < 0) {
-		__bbus_seterr(errno == EINTR ? BBUS_EPOLLINTR : errno);
-		return -1;
-	}
-
-	tv->sec = timeout.tv_sec;
-	tv->usec = timeout.tv_usec;
+	SELECT_CHECKERR(r);
+	SELECT_COPYTV(timeout, tv);
 	return r;
 }
 
@@ -217,18 +232,10 @@ int __bbus_sock_rdready(int sock, struct bbus_timeval* tv)
 	struct timeval timeout;
 	int r;
 
-	FD_ZERO(&rd_set);
-	FD_SET(sock, &rd_set);
-	timeout.tv_sec = tv->sec;
-	timeout.tv_usec = tv->usec;
+	SELECT_INIT(rd_set, sock, timeout, tv);
 	r = select(sock+1, &rd_set, NULL, NULL, &timeout);
-	if (r < 0) {
-		__bbus_seterr(errno == EINTR ? BBUS_EPOLLINTR : errno);
-		return -1;
-	}
-
-	tv->sec = timeout.tv_sec;
-	tv->usec = timeout.tv_usec;
+	SELECT_CHECKERR(r);
+	SELECT_COPYTV(timeout, tv);
 	return r;
 }
 
