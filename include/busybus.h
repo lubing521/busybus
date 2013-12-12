@@ -947,6 +947,7 @@ int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
 #define BBUS_MSGTYPE_SRVREPLY	0x0A /**< Method provider replies. */
 #define BBUS_MSGTYPE_CLOSE	0x0B /**< Client closes session. */
 #define BBUS_MSGTYPE_CTRL	0x0C /**< Control message. */
+#define BBUS_MSGTYPE_MON	0x0D /**< Monitoring message. */
 /**
  * @}
  *
@@ -1159,6 +1160,41 @@ bbus_object* bbus_callmethod(bbus_client_connection* conn,
 int bbus_closeconn(bbus_client_connection* conn) BBUS_PUBLIC;
 
 /**
+ * @defgroup __monctl__ Control and monitoring
+ * @{
+ *
+ * Functions used to send control messages and receive monitoring info.
+ */
+
+/**
+ * @brief Establishes a monitoring connection with busybus daemon.
+ * @return New connection object or NULL on error.
+ *
+ * Monitors receive every message that has been successfully received
+ * or sent by the busybus server daemon marshalled in a busybus object.
+ *
+ * Monitors use regular client connection objects and can be closed
+ * using bbus_closeconn().
+ */
+bbus_client_connection* bbus_mon_connect(void) BBUS_PUBLIC;
+
+/**
+ * @brief Receive a monitoring message from the busybus daemon.
+ * @param conn The monitor client connection.
+ * @param msg Buffer used to store the received message.
+ * @param bufsize Size of the buffer.
+ * @param tv Maximum interval that this function should wait for data.
+ * @param obj Received object is stored at this address.
+ * @param meta The meta string is stored at this address if present.
+ * @return -1 on error, 0 on timeout, 1 when a message has been received.
+ */
+int bbus_mon_recvmsg(bbus_client_connection* conn,
+		struct bbus_msg* msg, size_t bufsize, struct bbus_timeval* tv,
+		bbus_object** obj, const char** meta) BBUS_PUBLIC;
+
+/**
+ * @}
+ *
  * @}
  *
  * @defgroup __service__ Service publishing
@@ -1314,7 +1350,7 @@ int bbus_client_rcvmsg(bbus_client* cli, struct bbus_msg* buf,
  * @return 0 if a full message has been properly sent, -1 on error.
  */
 int bbus_client_sendmsg(bbus_client* cli, struct bbus_msg_hdr* hdr,
-		char* meta, bbus_object* obj) BBUS_PUBLIC;
+		const char* meta, bbus_object* obj) BBUS_PUBLIC;
 
 /**
  * @brief Closes the client connection.

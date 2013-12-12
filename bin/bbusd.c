@@ -86,6 +86,21 @@ static char* mname_from_srvcname(const char* srvc)
 	return found;
 }
 
+/*
+ * Send the message to client and notify the monitors if succeeded.
+ */
+static int send_message(bbus_client* cli, struct bbus_msg_hdr* hdr,
+					char* meta, bbus_object* obj)
+{
+	int ret;
+
+	ret = bbus_client_sendmsg(cli, hdr, meta, obj);
+	if (ret == 0)
+		bbusd_mon_notify_sent(hdr, meta, obj);
+
+	return ret;
+}
+
 static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 {
 	struct bbusd_method* mthd;
@@ -142,7 +157,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 						+ bbus_obj_rawsize(argobj)));
 		bbus_hdr_settoken(&hdr, bbus_client_gettoken(cli));
 
-		ret = bbus_client_sendmsg(
+		ret = send_message(
 				((struct bbusd_remote_method*)mthd)->srvc->cli,
 				&hdr, meta, argobj);
 		if (ret < 0) {
@@ -157,7 +172,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 	goto dontrespond;
 
 respond:
-	ret = bbus_client_sendmsg(cli, &hdr, NULL, retobj);
+	ret = send_message(cli, &hdr, NULL, retobj);
 	if (ret < 0) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 				"Error sending reply to client: %s\n",
@@ -240,7 +255,7 @@ metafree:
 respond:
 	bbus_hdr_build(&hdr, BBUS_MSGTYPE_SRVACK, ret == 0
 				? BBUS_PROT_EGOOD : BBUS_PROT_EMREGERR);
-	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, NULL);
+	ret = send_message(cli->cli, &hdr, NULL, NULL);
 	if (ret < 0) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 				"Error sending reply to client: %s\n",
@@ -291,7 +306,7 @@ static int pass_srvc_reply(bbus_client* srvc BBUS_UNUSED, struct bbus_msg* msg)
 	bbus_hdr_setpsize(&hdr, bbus_obj_rawsize(obj));
 
 respond:
-	ret = bbus_client_sendmsg(cli->cli, &hdr, NULL, obj);
+	ret = send_message(cli->cli, &hdr, NULL, obj);
 	if (ret < 0) {
 		bbusd_logmsg(BBUS_LOG_ERR,
 			"Error sending server reply to client: %s\n",
@@ -398,7 +413,7 @@ static int handle_client(struct bbusd_clientlist_elem* cli_elem)
 		goto cli_close;
 	}
 
-	bbusd_send_to_monitors(bbusd_getmsgbuf());
+	bbusd_mon_notify_recvd(bbusd_getmsgbuf());
 
 	/* TODO Common function for error reporting. */
 	switch (bbus_client_gettype(cli)) {

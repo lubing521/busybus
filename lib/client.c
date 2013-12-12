@@ -150,6 +150,67 @@ bbus_object* bbus_callmethod(bbus_client_connection* conn,
 	}
 }
 
+/* TODO Refactor common code for bbus_connect and this. */
+bbus_client_connection* bbus_mon_connect(void)
+{
+	int sock;
+	bbus_client_connection* conn;
+
+	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_MON);
+	if (sock < 0)
+		return NULL;
+
+	conn = bbus_malloc(sizeof(struct __bbus_client_connection));
+	if (conn == NULL)
+		return NULL;
+	conn->sock = sock;
+	return conn;
+}
+
+int bbus_mon_recvmsg(bbus_client_connection* conn,
+		struct bbus_msg* msg, size_t bufsize,
+		struct bbus_timeval* tv, bbus_object** obj, const char** meta)
+{
+	int r;
+
+	r = __bbus_sock_rdready(conn->sock, tv);
+	if (r <= 0) {
+		return r;
+	} else {
+		memset(msg, 0, bufsize);
+		r = __bbus_prot_recvmsg(conn->sock, msg, bufsize);
+		if (r < 0)
+			return -1;
+		if (msg->hdr.msgtype != BBUS_MSGTYPE_MON) {
+			__bbus_seterr(BBUS_EMSGINVTYPRCVD);
+			return -1;
+		}
+
+		if (meta) {
+			if (BBUS_HDR_ISFLAGSET(&msg->hdr, BBUS_PROT_HASMETA)) {
+				*meta = bbus_prot_extractmeta(msg);
+				if (*meta == NULL)
+					return -1;
+			}
+		}
+
+		if (!BBUS_HDR_ISFLAGSET(&msg->hdr, BBUS_PROT_HASOBJECT)) {
+			__bbus_seterr(BBUS_EMSGINVTYPRCVD);
+			return -1;
+		}
+		if (obj == NULL) {
+			__bbus_seterr(BBUS_EINVALARG);
+			return -1;
+		}
+
+		*obj = bbus_prot_extractobj(msg);
+		if (*obj == NULL)
+			return -1;
+	}
+
+	return 1;
+}
+
 int bbus_closeconn(bbus_client_connection* conn)
 {
 	int r;

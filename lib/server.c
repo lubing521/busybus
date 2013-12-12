@@ -64,7 +64,7 @@ int bbus_client_rcvmsg(bbus_client* cli,
 }
 
 int bbus_client_sendmsg(bbus_client* cli, struct bbus_msg_hdr* hdr,
-		char* meta, bbus_object* obj)
+		const char* meta, bbus_object* obj)
 {
 	return __bbus_prot_sendvmsg(cli->sock, hdr, meta,
 				obj == NULL ? NULL : bbus_obj_rawdata(obj),
