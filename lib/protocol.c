@@ -93,45 +93,8 @@ static void header_to_iovec(const struct bbus_msg_hdr* hdr,
 
 int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 {
-	ssize_t r;
-	ssize_t msgsize;
-	struct bbus_msg_hdr* hdr;
-	struct iovec iov[1];
-
-	if (bufsize > BBUS_MAXMSGSIZE) {
-		__bbus_seterr(BBUS_EINVALARG);
-		return -1;
-	}
-
-	iov[0].iov_base = buf;
-	iov[0].iov_len = bufsize;
-	r = __bbus_sock_recv(sock, iov, 1);
-	if (r < 0) {
-		return -1;
-	} else
-	if (r == 0) {
-		__bbus_seterr(BBUS_ECONNCLOSED);
-		return -1;
-	} else
-	if (r < (ssize_t)BBUS_MSGHDR_SIZE) {
-		__bbus_seterr(BBUS_EMSGINVFMT);
-		return -1;
-	}
-
-	hdr = (struct bbus_msg_hdr*)buf;
-	msgsize = bbus_hdr_getpsize(hdr) + BBUS_MSGHDR_SIZE;
-	if (msgsize > (ssize_t)bufsize) {
-		__bbus_seterr(BBUS_ENOSPACE);
-		return -1;
-	}
-
-
-	if (!hdr_check_magic(hdr)) {
-		__bbus_seterr(BBUS_EMSGMAGIC);
-		return -1;
-	}
-
-	return 0;
+	return __bbus_prot_recvvmsg(sock, &buf->hdr, buf->payload,
+						bufsize-BBUS_MSGHDR_SIZE);
 }
 
 int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
