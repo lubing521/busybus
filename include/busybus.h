@@ -927,8 +927,6 @@ int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
 /* TODO should go in /var/run/bbus/ in the future. */
 #define BBUS_PROT_DEFSOCKPATH "/tmp/bbus.sock" /**< Default socket path. */
 
-#define BBUS_MAXMSGSIZE	4096	/**< Biggest allowed message size. */
-
 /**
  * @defgroup __protmsgtypes__ Protocol message types
  * @{
@@ -1004,9 +1002,24 @@ struct bbus_msg_hdr
 } __attribute__((packed)); /* FIXME Temporary fix for structure padding bugs. */
 
 /**
+ * @brief Number of fields in the header.
+ */
+#define BBUS_MSGHDR_NUMFIELDS	7
+
+/**
  * @brief Size of the busybus message header.
  */
 #define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))
+
+/**
+ * @brief Biggest allowed message size.
+ */
+#define BBUS_MAXMSGSIZE		4096
+
+/**
+ * @brief Biggest allowed payload size.
+ */
+#define BBUS_MAXPLOADSIZE	(BBUS_MAXMSGSIZE - BBUS_MSGHDR_SIZE)
 
 /**
  * @brief Represents a busybus message.

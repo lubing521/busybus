@@ -25,7 +25,6 @@
 
 #define SAUN_PATHLEN (sizeof(((struct sockaddr_un*)0)->sun_path))
 #define SAUN_FAMLEN (sizeof(((struct sockaddr_un*)0)->sun_family))
-#define IO_FLAGS (MSG_DONTWAIT | MSG_NOSIGNAL)
 
 int __bbus_sock_un_mksocket(void)
 {
@@ -157,7 +156,7 @@ ssize_t __bbus_sock_send(int sock, const struct iovec* iov, int numiov)
 	struct msghdr hdr;
 
 	prepare_msghdr(&hdr, iov, numiov);
-	b = sendmsg(sock, &hdr, IO_FLAGS);
+	b = sendmsg(sock, &hdr, MSG_NOSIGNAL);
 	if (b < 0) {
 		__bbus_seterr(errno);
 		return -1;
@@ -172,7 +171,7 @@ ssize_t __bbus_sock_recv(int sock, struct iovec* iov, int numiov)
 	struct msghdr hdr;
 
 	prepare_msghdr(&hdr, iov, numiov);
-	b = recvmsg(sock, &hdr, IO_FLAGS);
+	b = recvmsg(sock, &hdr, MSG_NOSIGNAL);
 	if (b < 0) {
 		__bbus_seterr(errno);
 		return -1;

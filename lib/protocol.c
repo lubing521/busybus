@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define MAX_NUMIOV 3
+#define MAX_NUMIOV (BBUS_MSGHDR_NUMFIELDS + 2) /* Header + meta + object. */
 
 static struct __bbus_spinlock sockpath_lock;
 static char sockpath[BBUS_PROT_SOCKPATHMAX];
@@ -65,6 +65,32 @@ static int hdr_check_magic(const struct bbus_msg_hdr* hdr)
 						? BBUS_TRUE : BBUS_FALSE;
 }
 
+static void header_to_iovec(const struct bbus_msg_hdr* hdr,
+				struct iovec* iov, int* numiov)
+{
+	iov[*numiov].iov_base = (void*)&hdr->magic;
+	iov[*numiov].iov_len = sizeof(hdr->magic);
+	++*numiov;
+	iov[*numiov].iov_base = (void*)&hdr->msgtype;
+	iov[*numiov].iov_len = sizeof(hdr->msgtype);
+	++*numiov;
+	iov[*numiov].iov_base = (void*)&hdr->sotype;
+	iov[*numiov].iov_len = sizeof(hdr->sotype);
+	++*numiov;
+	iov[*numiov].iov_base = (void*)&hdr->errcode;
+	iov[*numiov].iov_len = sizeof(hdr->errcode);
+	++*numiov;
+	iov[*numiov].iov_base = (void*)&hdr->token;
+	iov[*numiov].iov_len = sizeof(hdr->token);
+	++*numiov;
+	iov[*numiov].iov_base = (void*)&hdr->psize;
+	iov[*numiov].iov_len = sizeof(hdr->psize);
+	++*numiov;
+	iov[*numiov].iov_base = (void*)&hdr->flags;
+	iov[*numiov].iov_len = sizeof(hdr->flags);
+	++*numiov;
+}
+
 int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 {
 	ssize_t r;
@@ -104,29 +130,6 @@ int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 		__bbus_seterr(BBUS_EMSGMAGIC);
 		return -1;
 	}
-
-	return 0;
-}
-
-int __bbus_prot_sendmsg(int sock, const struct bbus_msg* buf)
-{
-	ssize_t r;
-	size_t msgsize;
-	struct iovec iov[1];
-
-	msgsize = BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(
-					(struct bbus_msg_hdr*)buf);
-	if (msgsize > BBUS_MAXMSGSIZE) {
-		/* FIXME Is this check needed? */
-		__bbus_seterr(BBUS_EINVALARG);
-		return -1;
-	}
-
-	iov[0].iov_base = (void*)buf;
-	iov[0].iov_len = 1;
-	r = __bbus_sock_send(sock, iov, 1);
-	if (r < 0)
-		return -1;
 
 	return 0;
 }
@@ -174,6 +177,49 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 	return 0;
 }
 
+static int do_send(int sock, const struct iovec* iov,
+				int numiov, size_t msgsize)
+{
+	ssize_t r;
+
+	r = __bbus_sock_send(sock, iov, numiov);
+	if (r < 0) {
+		return -1;
+	} else
+	if (r != (ssize_t)msgsize) {
+		/* TODO Retry? */
+		__bbus_seterr(BBUS_ESENTLESS);
+		return -1;
+	}
+
+	return 0;
+}
+
+int __bbus_prot_sendmsg(int sock, const struct bbus_msg* msg)
+{
+	ssize_t r;
+	size_t msgsize;
+	struct iovec iov[MAX_NUMIOV];
+	int numiov;
+
+	msgsize = BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(&msg->hdr);
+	if (msgsize > BBUS_MAXMSGSIZE) {
+		__bbus_seterr(BBUS_EINVALARG);
+		return -1;
+	}
+
+	numiov = 0;
+	header_to_iovec(&msg->hdr, iov, &numiov);
+	iov[numiov].iov_base = (void*)msg->payload;
+	iov[numiov].iov_len = bbus_hdr_getpsize(&msg->hdr);
+	++numiov;
+	r = do_send(sock, iov, numiov, msgsize);
+	if (r < 0)
+		return -1;
+
+	return 0;
+}
+
 int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 			const char* meta, const char* obj, size_t objsize)
 {
@@ -192,9 +238,7 @@ int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 	}
 
 	numiov = 0;
-	iov[numiov].iov_base = (void*)hdr;
-	iov[numiov].iov_len = BBUS_MSGHDR_SIZE;
-	++numiov;
+	header_to_iovec(hdr, iov, &numiov);
 	if (meta != NULL) {
 		iov[numiov].iov_base = (void*)meta;
 		iov[numiov].iov_len = metasize;
@@ -206,15 +250,10 @@ int __bbus_prot_sendvmsg(int sock, const struct bbus_msg_hdr* hdr,
 		++numiov;
 	}
 
-	r = __bbus_sock_send(sock, iov, numiov);
-	if (r < 0) {
+	r = do_send(sock, iov, numiov, msgsize);
+	if (r < 0)
 		return -1;
-	} else
-	if (r != (ssize_t)msgsize) {
-		/* TODO Retry? */
-		__bbus_seterr(BBUS_ESENTLESS);
-		return -1;
-	}
+
 
 	return 0;
 }
