@@ -131,13 +131,13 @@ static void print_msg_info(const char* meta, bbus_object* obj)
 
 	printf("Message %s\n", meta);
 	printf("{\n");
-	printf("\tmsgtype = %s\n", str_msgtype(msgtype));
-	printf("\tsotype = %s\n", str_sotype(sotype));
-	printf("\terrcode = %s\n", str_errcode(errcode));
-	printf("\ttoken = %u\n", token);
-	printf("\tpsize = %u\n", psize);
-	printf("\tflags = %s\n", str_flags(flags));
-	printf("\tmeta = \"%s\"\n", msgmeta);
+	printf("\tmsgtype\t=\t%s\n", str_msgtype(msgtype));
+	printf("\tsotype\t=\t%s\n", str_sotype(sotype));
+	printf("\terrcode\t=\t%s\n", str_errcode(errcode));
+	printf("\ttoken\t=\t%u\n", token);
+	printf("\tpsize\t=\t%u\n", psize);
+	printf("\tflags\t=\t%s\n", str_flags(flags));
+	printf("\tmeta\t=\t\"%s\"\n", msgmeta);
 	printf("}\n");
 }
 
