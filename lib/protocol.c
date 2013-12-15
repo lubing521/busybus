@@ -101,7 +101,7 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 					void* payload, size_t psize)
 {
 	ssize_t rcv1;
-	ssize_t rcv2;
+	ssize_t rcv2 = 0;
 	ssize_t rcvsum;
 	struct iovec iov[MAX_NUMIOV];
 	int numiov;
