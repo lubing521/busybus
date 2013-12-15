@@ -169,7 +169,7 @@ bbus_client_connection* bbus_mon_connect(void)
 
 int bbus_mon_recvmsg(bbus_client_connection* conn,
 		struct bbus_msg* msg, size_t bufsize,
-		struct bbus_timeval* tv, bbus_object** obj, const char** meta)
+		struct bbus_timeval* tv, const char** meta, bbus_object** obj)
 {
 	int r;
 

@@ -955,6 +955,7 @@ int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
  * These constants indicate the client type which tries to connect
  * to the busybus daemon.
  */
+#define BBUS_SOTYPE_NONE	0x00 /**< Not a session open message. */
 #define BBUS_SOTYPE_MTHCL	0x01 /**< Methad caller. */
 #define BBUS_SOTYPE_SRVPRV	0x02 /**< Service provider. */
 #define BBUS_SOTYPE_MON		0x03 /**< Message monitor. */
@@ -1203,7 +1204,7 @@ bbus_client_connection* bbus_mon_connect(void) BBUS_PUBLIC;
  */
 int bbus_mon_recvmsg(bbus_client_connection* conn,
 		struct bbus_msg* msg, size_t bufsize, struct bbus_timeval* tv,
-		bbus_object** obj, const char** meta) BBUS_PUBLIC;
+		const char** meta, bbus_object** obj) BBUS_PUBLIC;
 
 /**
  * @}
