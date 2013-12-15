@@ -100,9 +100,12 @@ int __bbus_prot_recvmsg(int sock, struct bbus_msg* buf, size_t bufsize)
 int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 					void* payload, size_t psize)
 {
-	ssize_t r;
+	ssize_t rcv1;
+	ssize_t rcv2;
+	ssize_t rcvsum;
 	struct iovec iov[MAX_NUMIOV];
 	int numiov;
+	size_t exppsize;
 
 	if ((BBUS_MSGHDR_SIZE + psize) > BBUS_MAXMSGSIZE) {
 		__bbus_seterr(BBUS_EINVALARG);
@@ -110,24 +113,33 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 	}
 
 	numiov = 0;
-	iov[numiov].iov_base = hdr;
-	iov[numiov].iov_len = BBUS_MSGHDR_SIZE;
-	++numiov;
-	if (payload != NULL) {
-		iov[numiov].iov_base = payload;
-		iov[numiov].iov_len = psize;
-		++numiov;
+	header_to_iovec(hdr, iov, &numiov);
+	rcv1 = __bbus_sock_recv(sock, iov, numiov);
+	if (rcv1 < 0)
+		return -1;
+	exppsize = bbus_hdr_getpsize(hdr);
+	if (exppsize > psize) {
+		__bbus_seterr(BBUS_EMSGINVFMT);
+		return -1;
 	}
 
-	r = __bbus_sock_recv(sock, iov, numiov);
-	if (r < 0) {
-		return -1;
-	} else
-	if (r < (ssize_t)BBUS_MSGHDR_SIZE) {
+	numiov = 0;
+	if (payload) {
+		iov[numiov].iov_base = payload;
+		iov[numiov].iov_len = exppsize;
+		++numiov;
+
+		rcv2 = __bbus_sock_recv(sock, iov, numiov);
+		if (rcv2 < 0)
+			return -1;
+	}
+
+	rcvsum = rcv1 + rcv2;
+	if (rcvsum < (ssize_t)BBUS_MSGHDR_SIZE) {
 		__bbus_seterr(BBUS_EMSGINVFMT);
 		return -1;
 	} else
-	if (r < (ssize_t)(BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(hdr))) {
+	if (rcvsum < (ssize_t)(BBUS_MSGHDR_SIZE + bbus_hdr_getpsize(hdr))) {
 		__bbus_seterr(BBUS_ERCVDLESS);
 		return -1;
 	}
