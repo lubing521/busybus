@@ -15,6 +15,7 @@
 #include <busybus.h>
 #include <stdio.h>
 #include <signal.h>
+#include <string.h>
 
 static unsigned char __msgbuf[BBUS_MAXMSGSIZE];
 static struct bbus_msg* msgbuf = (struct bbus_msg*)__msgbuf;
@@ -137,8 +138,13 @@ static void print_msg_info(const char* meta, bbus_object* obj)
 	printf("\ttoken\t=\t%u\n", token);
 	printf("\tpsize\t=\t%u\n", psize);
 	printf("\tflags\t=\t%s\n", str_flags(flags));
-	printf("\tmeta\t=\t\"%s\"\n", msgmeta);
-	printf("}\n");
+	printf("\tmeta\t=\t");
+	if (strlen(msgmeta) == 0) {
+		printf("<no meta>");
+	} else {
+		printf("\"%s\"", msgmeta);
+	}
+	printf("\n}\n");
 }
 
 int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
