@@ -636,8 +636,6 @@ int main(int argc, char** argv)
 	run = 1;
 	(void)signal(SIGTERM, sighandler);
 	(void)signal(SIGINT, sighandler);
-	/* TODO Ignore SIGPIPE on socket level */
-	(void)signal(SIGPIPE, SIG_IGN);
 
 	/*
 	 * MAIN LOOP

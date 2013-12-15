@@ -67,8 +67,6 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 
 	(void)signal(SIGTERM, sighandler);
 	(void)signal(SIGINT, sighandler);
-	/* TODO Ignore SIGPIPE on socket level */
-	(void)signal(SIGPIPE, SIG_IGN);
 
 	run = 1;
 	while (do_run()) {

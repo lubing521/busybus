@@ -76,7 +76,6 @@ int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 
 	(void)signal(SIGTERM, sighandler);
 	(void)signal(SIGINT, sighandler);
-	(void)signal(SIGPIPE, SIG_IGN);
 
 	conn = bbus_srvc_connect("echod");
 	if (conn == NULL) {
