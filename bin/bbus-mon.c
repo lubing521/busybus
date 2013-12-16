@@ -118,7 +118,7 @@ static void print_msg_info(const char* meta, bbus_object* obj)
 	unsigned char sotype;
 	unsigned char errcode;
 	unsigned token;
-	size_t psize;
+	unsigned psize;
 	unsigned char flags;
 	char* msgmeta;
 	int ret;
