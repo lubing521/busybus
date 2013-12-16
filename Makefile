@@ -2,9 +2,11 @@
 # globals
 ###############################################################################
 OPT =		-O2
-ABI =
 CFLAGS =	-Wall -Wextra -fPIC $(OPT) -D_GNU_SOURCE -I./include	\
-				-fvisibility=hidden $(ABI)
+				-fvisibility=hidden
+ifeq ($(ARCH),arm) # TODO check for gcc version.
+	CFLAGS += -Wno-psabi
+endif
 LDFLAGS =	-Wl,-E
 DEBUGFLAGS =
 LDSOFLAGS =	-shared -rdynamic
