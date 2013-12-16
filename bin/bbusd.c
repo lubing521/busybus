@@ -138,6 +138,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 		} else {
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EGOOD);
+			BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASOBJECT);
 			bbus_hdr_setpsize(&hdr, bbus_obj_rawsize(retobj));
 		}
 
@@ -163,6 +164,7 @@ static int handle_clientcall(bbus_client* cli, struct bbus_msg* msg)
 		if (ret < 0) {
 			bbus_hdr_build(&hdr, BBUS_MSGTYPE_CLIREPLY,
 					BBUS_PROT_EMETHODERR);
+			BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASOBJECT);
 			goto respond;
 		}
 	} else {

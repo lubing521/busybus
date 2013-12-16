@@ -99,7 +99,7 @@ static const char* str_errcode(unsigned char errcode)
 
 static const char* str_flags(unsigned char flags)
 {
-	if (flags & (BBUS_PROT_HASMETA | BBUS_PROT_HASOBJECT)) {
+	if ((flags & BBUS_PROT_HASMETA) && (flags & BBUS_PROT_HASOBJECT)) {
 		return "BBUS_PROT_HASMETA | BBUS_PROT_HASOBJECT";
 	} else
 	if (flags & BBUS_PROT_HASMETA) {
