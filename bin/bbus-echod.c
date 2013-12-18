@@ -68,11 +68,25 @@ struct bbus_method echo_method = {
 	.func = rm_echo,
 };
 
+static struct bbus_opt_list optlist = {
+	.opts = NULL,
+	.numopts = 0,
+	.progname = "Busybus",
+	.version = "ALPHA",
+	.progdescr = "bbus-echod - small echo daemon"
+};
+
 int main(int argc BBUS_UNUSED, char** argv BBUS_UNUSED)
 {
 	bbus_service_connection* conn;
 	struct bbus_timeval tv;
 	int ret;
+
+	ret = bbus_parse_args(argc, argv, &optlist, NULL);
+	if (ret == BBUS_ARGS_HELP)
+		return EXIT_SUCCESS;
+	else if (ret == BBUS_ARGS_ERR)
+		return EXIT_FAILURE;
 
 	(void)signal(SIGTERM, sighandler);
 	(void)signal(SIGINT, sighandler);

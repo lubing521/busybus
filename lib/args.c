@@ -128,7 +128,7 @@ static struct option* make_longopts(const struct bbus_opt_list* optlist,
 	return ret;
 }
 
-static char* make_info_string(const struct bbus_opt_list* optlist BBUS_UNUSED)
+static char* make_info_string(const struct bbus_opt_list* optlist)
 {
 	char* info;
 	char* tmp;
