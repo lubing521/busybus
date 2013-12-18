@@ -1000,7 +1000,7 @@ struct bbus_msg_hdr
 	uint32_t token;		/**< Used only for method calling. */
 	uint16_t psize;		/**< Size of the payload. */
 	uint8_t flags;		/**< Various protocol flags. */
-} __attribute__((packed)); /* FIXME Temporary fix for structure padding bugs. */
+};
 
 /**
  * @brief Number of fields in the header.
@@ -1008,19 +1008,25 @@ struct bbus_msg_hdr
 #define BBUS_MSGHDR_NUMFIELDS	7
 
 /**
- * @brief Size of the busybus message header.
+ * @brief Size of the busybus message header structure.
  */
 #define BBUS_MSGHDR_SIZE	(sizeof(struct bbus_msg_hdr))
 
 /**
- * @brief Biggest allowed message size.
+ * @brief Real size of the busybus message header - without any padding space.
  */
-#define BBUS_MAXMSGSIZE		4096
+#define BBUS_MSGHDR_REALSIZE						\
+	(4*sizeof(uint8_t) + 2*sizeof(uint16_t) + sizeof(uint32_t))
 
 /**
  * @brief Biggest allowed payload size.
  */
-#define BBUS_MAXPLOADSIZE	(BBUS_MAXMSGSIZE - BBUS_MSGHDR_SIZE)
+#define BBUS_MAXPLOADSIZE	4096
+
+/**
+ * @brief Biggest allowed message size.
+ */
+#define BBUS_MAXMSGSIZE		(BBUS_MSGHDR_SIZE + BBUS_MAXPLOADSIZE)
 
 /**
  * @brief Represents a busybus message.
@@ -1029,7 +1035,7 @@ struct bbus_msg
 {
 	struct bbus_msg_hdr hdr;	/**< Message header. */
 	char payload[1];		/**< Start of the payload data. */
-} __attribute__((packed)); /* FIXME See struct bbus_msg_hdr. */
+};
 
 /**
  * @brief Extracts the busybus object from the message buffer.

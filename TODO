@@ -12,4 +12,3 @@
   variable on make start-up.
 - Make busybus more portable - eg. strerror_r, REG_NOERROR etc.
 - Proper clean-up code in bbusd.
-- Get rid of the 'packed' attribute from bbus_msg structures.
