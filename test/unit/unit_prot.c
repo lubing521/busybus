@@ -17,27 +17,31 @@
 #include <string.h>
 #include <stdint.h>
 
+#define MKMSG(MSG, MSGTYPE, SOTYPE, ERR, TOKEN, PSIZE, FLAGS, PLOAD)	\
+	do {								\
+		bbus_hdr_build(&(MSG)->hdr, (MSGTYPE), (ERR));		\
+		bbus_hdr_settoken(&(MSG)->hdr, (TOKEN));		\
+		bbus_hdr_setpsize(&(MSG)->hdr, (PSIZE));		\
+		(MSG)->hdr.flags = (FLAGS);				\
+		memcpy((MSG)->payload, (PLOAD), (PSIZE));		\
+	} while (0)
+
 BBUSUNIT_DEFINE_TEST(prot_extract_obj)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char msgbuf[] =
-				"\xBB\xC5"		/* magic */
-				"\x01"			/* msgtype */
-				"\x00"			/* sotype */
-				"\x00"			/* errcode */
-				"\x00\x00\x00\x00"	/* token */
-				"\x00\x09"		/* psize */
-				"\x02"			/* flags */
-				"a string\0";
+		static const char payload[] = "a string\0";
+		static const size_t payloadsize = sizeof(payload)-1;
+		static const size_t objsize = sizeof(payload)-1;
 
-		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-		static const size_t objsize = sizeof(msgbuf)-1
-							-BBUS_MSGHDR_SIZE;
-
+		char msgbuf[BBUS_MSGHDR_SIZE + payloadsize];
+		struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
 		bbus_object* obj;
 		char* s;
 		int ret;
+
+		MKMSG(msg, BBUS_MSGTYPE_SO, BBUS_SOTYPE_NONE, BBUS_PROT_EGOOD,
+			0, payloadsize, BBUS_PROT_HASOBJECT, payload);
 
 		obj = bbus_prot_extractobj(msg);
 		BBUSUNIT_ASSERT_NOTNULL(obj);
@@ -57,19 +61,15 @@ BBUSUNIT_DEFINE_TEST(prot_extract_meta)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char msgbuf[] =
-				"\xBB\xC5"		/* magic */
-				"\x01"			/* msgtype */
-				"\x00"			/* sotype */
-				"\x00"			/* errcode */
-				"\x00\x00\x00\x00"	/* token */
-				"\x00\x0C"		/* psize */
-				"\x01"			/* flags */
-				"meta string\0";
+		static const char payload[] = "meta string\0";
+		static const size_t payloadsize = sizeof(payload)-1;
 
-		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-
+		char msgbuf[BBUS_MSGHDR_SIZE + payloadsize];
+		struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
 		const char* meta;
+
+		MKMSG(msg, BBUS_MSGTYPE_SO, BBUS_SOTYPE_NONE, BBUS_PROT_EGOOD,
+			0, payloadsize, BBUS_PROT_HASMETA, payload);
 
 		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NOTNULL(meta);
@@ -83,23 +83,20 @@ BBUSUNIT_DEFINE_TEST(prot_extract_meta_and_obj)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char msgbuf[] =
-				"\xBB\xC5"		/* magic */
-				"\x01"			/* msgtype */
-				"\x00"			/* sotype */
-				"\x00"			/* errcode */
-				"\x00\x00\x00\x00"	/* token */
-				"\x00\x14"		/* psize */
-				"\x03"			/* flags */
-				"meta string\0"
-				"\x11\x22\x33\x44"
-				"\x55\x66\x77\x88";
+		static const char payload[] =	"meta string\0"
+						"\x11\x22\x33\x44"
+						"\x55\x66\x77\x88";
+		static const size_t payloadsize = sizeof(payload)-1;
 
-		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-
+		char msgbuf[BBUS_MSGHDR_SIZE + payloadsize];
+		struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
 		bbus_object* obj = NULL;
 		/* FIXME GCC complains later if obj is uninitialized, why? */
 		const char* meta;
+
+		MKMSG(msg, BBUS_MSGTYPE_SO, BBUS_SOTYPE_NONE,
+			BBUS_PROT_EGOOD, 0, payloadsize,
+			BBUS_PROT_HASMETA | BBUS_PROT_HASOBJECT, payload);
 
 		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NOTNULL(meta);
@@ -124,19 +121,15 @@ BBUSUNIT_DEFINE_TEST(prot_extract_invalid_meta)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char msgbuf[] =
-				"\xBB\xC5"		/* magic */
-				"\x01"			/* msgtype */
-				"\x00"			/* sotype */
-				"\x00"			/* errcode */
-				"\x00\x00\x00\x00"	/* token */
-				"\x00\x0C"		/* psize */
-				"\x01"			/* flags */
-				"meta string without null";
+		static const char payload[] = "meta string without null";
+		static const size_t payloadsize = sizeof(payload)-1;
 
-		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-
+		char msgbuf[BBUS_MSGHDR_SIZE + payloadsize];
+		struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
 		const char* meta;
+
+		MKMSG(msg, BBUS_MSGTYPE_SO, BBUS_SOTYPE_NONE, BBUS_PROT_EGOOD,
+			0, payloadsize, BBUS_PROT_HASMETA, payload);
 
 		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NULL(meta);
@@ -149,22 +142,18 @@ BBUSUNIT_DEFINE_TEST(prot_extract_flags_not_set)
 {
 	BBUSUNIT_BEGINTEST;
 
-		static const char msgbuf[] =
-				"\xBB\xC5"		/* magic */
-				"\x01"			/* msgtype */
-				"\x00"			/* sotype */
-				"\x00"			/* errcode */
-				"\x00\x00\x00\x00"	/* token */
-				"\x00\x14"		/* psize */
-				"\x00"			/* flags */
-				"meta string\0"
-				"\x11\x22\x33\x44"
-				"\x55\x66\x77\x88";
+		static const char payload[] =	"meta string\0"
+						"\x11\x22\x33\x44"
+						"\x55\x66\x77\x88";
+		static const size_t payloadsize = sizeof(payload)-1;
 
-		static const struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
-
+		char msgbuf[BBUS_MSGHDR_SIZE + payloadsize];
+		struct bbus_msg* msg = (struct bbus_msg*)msgbuf;
 		const char* meta;
 		bbus_object* obj;
+
+		MKMSG(msg, BBUS_MSGTYPE_SO, BBUS_SOTYPE_NONE,
+			BBUS_PROT_EGOOD, 0, payloadsize, 0, payload);
 
 		meta = bbus_prot_extractmeta(msg);
 		BBUSUNIT_ASSERT_NULL(meta);
