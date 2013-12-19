@@ -107,18 +107,13 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 	int numiov;
 	size_t exppsize;
 
-	if ((BBUS_MSGHDR_SIZE + psize) > BBUS_MAXMSGSIZE) {
-		__bbus_seterr(BBUS_EINVALARG);
-		return -1;
-	}
-
 	numiov = 0;
 	header_to_iovec(hdr, iov, &numiov);
 	rcv1 = __bbus_sock_recv(sock, iov, numiov);
 	if (rcv1 < 0)
 		return -1;
 	exppsize = bbus_hdr_getpsize(hdr);
-	if (exppsize > psize) {
+	if ((exppsize > psize) || (exppsize > BBUS_MAXPLOADSIZE)) {
 		__bbus_seterr(BBUS_EMSGINVFMT);
 		return -1;
 	}
