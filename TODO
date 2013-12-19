@@ -12,3 +12,7 @@
   variable on make start-up.
 - Make busybus more portable - eg. strerror_r, REG_NOERROR etc.
 - Proper clean-up code in bbusd.
+- Either the middle layer (defined in protocol.c) or the high layer (client.c,
+  server.c) library functions for sending and receiving messages should fill
+  header fields like flags, psize etc. instead of having redundant code doing
+  it every time a message is being prepared in busybus programs.

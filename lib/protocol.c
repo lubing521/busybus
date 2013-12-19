@@ -119,7 +119,7 @@ int __bbus_prot_recvvmsg(int sock, struct bbus_msg_hdr* hdr,
 	}
 
 	numiov = 0;
-	if (payload) {
+	if (payload && (exppsize > 0)) {
 		iov[numiov].iov_base = payload;
 		iov[numiov].iov_len = exppsize;
 		++numiov;

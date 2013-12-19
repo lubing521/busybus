@@ -21,6 +21,7 @@ static char* method = NULL;
 static char* argdescr = NULL;
 static char** argstart = NULL;
 static char** argend = NULL;
+static char* cliname = "bbus-call";
 
 static void BBUS_PRINTF_FUNC(1, 2) BBUS_NORETURN die(const char* format, ...)
 {
@@ -45,6 +46,14 @@ static struct bbus_option cmdopts[] = {
 		.action = BBUS_OPTACT_CALLFUNC,
 		.actdata = &opt_setsockpath,
 		.descr = "path to the busybus socket",
+	},
+	{
+		.shortopt = 0,
+		.longopt = "cliname",
+		.hasarg = BBUS_OPT_ARGREQ,
+		.action = BBUS_OPTACT_GETOPTARG,
+		.actdata = &cliname,
+		.descr = "name by which the program shall identify itself",
 	}
 };
 
@@ -96,7 +105,7 @@ int main(int argc, char** argv)
 
 	(void)signal(SIGPIPE, SIG_IGN);
 
-	conn = bbus_connect();
+	conn = bbus_connect(cliname);
 	if (conn == NULL)
 		goto err_conn;
 

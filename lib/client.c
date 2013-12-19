@@ -30,7 +30,7 @@ struct __bbus_service_connection
 	bbus_hashmap* methods;
 };
 
-static int do_session_open(const char* path, int clitype)
+static int do_session_open(const char* path, int clitype, const char* name)
 {
 	int r;
 	struct bbus_msg_hdr hdr;
@@ -48,7 +48,11 @@ static int do_session_open(const char* path, int clitype)
 	__bbus_prot_hdrsetmagic(&hdr);
 	hdr.msgtype = BBUS_MSGTYPE_SO;
 	hdr.sotype = clitype;
-	r = __bbus_prot_sendvmsg(sock, &hdr, NULL, NULL, 0);
+	if (name) {
+		BBUS_HDR_SETFLAG(&hdr, BBUS_PROT_HASMETA);
+		bbus_hdr_setpsize(&hdr, strlen(name)+1);
+	}
+	r = __bbus_prot_sendvmsg(sock, &hdr, name, NULL, 0);
 	if (r < 0)
 		goto errout_close;
 
@@ -92,12 +96,13 @@ static int send_session_close(int sock)
 	return 0;
 }
 
-bbus_client_connection* bbus_connect(void)
+bbus_client_connection* bbus_connect(const char* name)
 {
 	int sock;
 	bbus_client_connection* conn;
 
-	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_MTHCL);
+	sock = do_session_open(bbus_prot_getsockpath(),
+				BBUS_SOTYPE_MTHCL, name);
 	if (sock < 0)
 		return NULL;
 
@@ -156,7 +161,7 @@ bbus_client_connection* bbus_mon_connect(void)
 	int sock;
 	bbus_client_connection* conn;
 
-	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_MON);
+	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_MON, NULL);
 	if (sock < 0)
 		return NULL;
 
@@ -228,7 +233,7 @@ bbus_service_connection* bbus_srvc_connect(const char* name)
 	int sock;
 	bbus_service_connection* conn;
 
-	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_SRVPRV);
+	sock = do_session_open(bbus_prot_getsockpath(), BBUS_SOTYPE_SRVPRV, NULL);
 	if (sock < 0)
 		return NULL;
 

@@ -29,6 +29,7 @@ struct __bbus_client
 	int type;
 	uint32_t token;
 	struct bbus_client_cred cred;
+	char* name;
 };
 
 struct __bbus_server
@@ -57,6 +58,11 @@ int bbus_client_gettype(bbus_client* cli)
 	return cli->type;
 }
 
+const char* bbus_client_getname(bbus_client* cli)
+{
+	return cli->name;
+}
+
 int bbus_client_rcvmsg(bbus_client* cli,
 				struct bbus_msg* buf, size_t bufsize)
 {
@@ -78,6 +84,7 @@ int bbus_client_close(bbus_client* cli)
 
 void bbus_client_free(bbus_client* cli)
 {
+	bbus_str_free(cli->name);
 	bbus_free(cli);
 }
 
@@ -126,7 +133,8 @@ int bbus_srv_clientpending(bbus_server* srv)
 bbus_client* bbus_srv_accept(bbus_server* srv,
 				const struct bbus_accept_callbacks* funcs)
 {
-	char addrbuf[128];
+	char addrbuf[128]; /* FIXME Should be a constant, not a magic value. */
+	char clinamebuf[BBUS_CLIENT_MAXNAMESIZE];
 	size_t addrsize;
 	int sock;
 	int ret;
@@ -155,7 +163,9 @@ bbus_client* bbus_srv_accept(bbus_server* srv,
 	}
 
 	memset(hdr, 0, sizeof(struct bbus_msg_hdr));
-	ret = __bbus_prot_recvvmsg(sock, hdr, NULL, 0);
+	memset(clinamebuf, 0, BBUS_CLIENT_MAXNAMESIZE);
+	ret = __bbus_prot_recvvmsg(sock, hdr, clinamebuf,
+					BBUS_CLIENT_MAXNAMESIZE);
 	if (ret < 0)
 		goto errout;
 	if (hdr->msgtype != BBUS_MSGTYPE_SO)
@@ -174,6 +184,8 @@ bbus_client* bbus_srv_accept(bbus_server* srv,
 	}
 
 	hdr->msgtype = BBUS_MSGTYPE_SOOK;
+	hdr->psize = 0;
+	hdr->flags = 0;
 	ret = __bbus_prot_sendvmsg(sock, hdr, NULL, NULL, 0);
 	if (ret < 0)
 		goto errout;
@@ -188,6 +200,10 @@ bbus_client* bbus_srv_accept(bbus_server* srv,
 	cli->token = 0;
 	cli->type = clitype;
 	__bbus_cred_copy(&cli->cred, &cred);
+	cli->name = bbus_str_build("%s", strlen(clinamebuf) == 0
+					? "<unknown>" : clinamebuf);
+	if (cli->name == NULL)
+		goto errout;
 
 	return cli;
 

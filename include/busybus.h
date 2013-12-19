@@ -1160,7 +1160,7 @@ typedef struct __bbus_client_connection bbus_client_connection;
  * @brief Establishes a client connection with the busybus server.
  * @return New connection object or NULL in case of an error.
  */
-bbus_client_connection* bbus_connect(void) BBUS_PUBLIC;
+bbus_client_connection* bbus_connect(const char* name) BBUS_PUBLIC;
 
 /**
  * @brief Calls a method synchronously.
@@ -1350,6 +1350,17 @@ void bbus_client_settoken(bbus_client* cli, uint32_t tok) BBUS_PUBLIC;
  * @return One of the possible client types.
  */
 int bbus_client_gettype(bbus_client* cli) BBUS_PUBLIC;
+
+/**
+ * @brief Max size of the client name.
+ */
+#define BBUS_CLIENT_MAXNAMESIZE		32
+
+/**
+ * @brief Returns the name by which the client wants to be identified.
+ * @return Name of the client.
+ */
+const char* bbus_client_getname(bbus_client* cli) BBUS_PUBLIC;
 
 /**
  * @brief Receive a full message from client.

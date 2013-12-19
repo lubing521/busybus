@@ -368,7 +368,8 @@ static void accept_client(bbus_server* server)
 			bbus_strerror(bbus_lasterror()));
 		return;
 	}
-	bbusd_logmsg(BBUS_LOG_INFO, "Client connected.\n");
+	bbusd_logmsg(BBUS_LOG_INFO, "Client '%s' connected.\n",
+					bbus_client_getname(cli));
 
 	r = bbusd_clientlist_add(cli);
 	if (r < 0) {
