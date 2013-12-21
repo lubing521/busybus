@@ -1158,6 +1158,7 @@ typedef struct __bbus_client_connection bbus_client_connection;
 
 /**
  * @brief Establishes a client connection with the busybus server.
+ * @param name Name by which the client wants to identify itself.
  * @return New connection object or NULL in case of an error.
  */
 bbus_client_connection* bbus_connect(const char* name) BBUS_PUBLIC;
@@ -1170,7 +1171,10 @@ bbus_client_connection* bbus_connect(const char* name) BBUS_PUBLIC;
  * @return Returned marshalled data or NULL if error.
  */
 bbus_object* bbus_callmethod(bbus_client_connection* conn,
-		char* method, bbus_object* arg) BBUS_PUBLIC;
+		const char* method, bbus_object* arg) BBUS_PUBLIC;
+
+int bbus_emitsignal(bbus_client_connection* conn,
+		const char* signame, bbus_object* obj) BBUS_PUBLIC;
 
 /**
  * @brief Closes the client connection.

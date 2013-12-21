@@ -114,7 +114,7 @@ bbus_client_connection* bbus_connect(const char* name)
 }
 
 bbus_object* bbus_callmethod(bbus_client_connection* conn,
-		char* method, bbus_object* arg)
+		const char* method, bbus_object* arg)
 {
 	int r;
 	struct bbus_msg_hdr hdr;
