@@ -86,6 +86,8 @@ static void send_to_monitors(const char* meta, bbus_object* obj)
 				bbus_strerror(bbus_lasterror()));
 		}
 	}
+
+	bbus_obj_free(obj);
 }
 
 void bbusd_mon_notify_recvd(const struct bbus_msg* msg)
