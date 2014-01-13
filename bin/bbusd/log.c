@@ -35,16 +35,16 @@ void bbusd_logmsg(enum bbusd_loglevel lvl, const char* fmt, ...)
 	if (logmask & LOG_CONSOLE) {
 		va_start(va, fmt);
 		switch (lvl) {
-		case BBUS_LOG_EMERG:
-		case BBUS_LOG_ALERT:
-		case BBUS_LOG_CRIT:
-		case BBUS_LOG_ERR:
-		case BBUS_LOG_WARN:
+		case BBUSD_LOG_EMERG:
+		case BBUSD_LOG_ALERT:
+		case BBUSD_LOG_CRIT:
+		case BBUSD_LOG_ERR:
+		case BBUSD_LOG_WARN:
 			vfprintf(stderr, fmt, va);
 			break;
-		case BBUS_LOG_NOTICE:
-		case BBUS_LOG_INFO:
-		case BBUS_LOG_DEBUG:
+		case BBUSD_LOG_NOTICE:
+		case BBUSD_LOG_INFO:
+		case BBUSD_LOG_DEBUG:
 			vfprintf(stdout, fmt, va);
 			break;
 		default:

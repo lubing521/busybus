@@ -34,7 +34,7 @@ void bbusd_monlist_rm(bbus_client* cli)
 		}
 	}
 
-	bbusd_logmsg(BBUS_LOG_WARN,
+	bbusd_logmsg(BBUSD_LOG_WARN,
 		"Monitor not found in the list, "
 		"this should not happen.\n");
 }
@@ -52,7 +52,7 @@ static bbus_object* pack_msg(const struct bbus_msg_hdr* hdr, const char* meta)
 				hdr->flags,
 				meta);
 	if (obj == NULL) {
-		bbusd_logmsg(BBUS_LOG_ERR,
+		bbusd_logmsg(BBUSD_LOG_ERR,
 			"Error creating the message for monitors: %s\n",
 			bbus_strerror(bbus_lasterror()));
 	}
@@ -81,7 +81,7 @@ static void send_to_monitors(const char* meta, bbus_object* obj)
 	for (mon = monitors.head; mon != NULL; mon = mon->next) {
 		ret = bbus_client_sendmsg(mon->cli, &hdr, meta, obj);
 		if (ret < 0) {
-			bbusd_logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUSD_LOG_ERR,
 				"Error sending a message to monitor: %s\n",
 				bbus_strerror(bbus_lasterror()));
 		}
@@ -98,7 +98,7 @@ void bbusd_mon_notify_recvd(const struct bbus_msg* msg)
 	if (BBUS_HDR_ISFLAGSET(&msg->hdr, BBUS_PROT_HASMETA)) {
 		meta = bbus_prot_extractmeta(msg);
 		if (meta == NULL) {
-			bbusd_logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUSD_LOG_ERR,
 				"Error extracting the meta string from "
 				"message: %s\n",
 				bbus_strerror(bbus_lasterror()));

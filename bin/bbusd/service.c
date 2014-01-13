@@ -41,14 +41,14 @@ static int do_insert_method(const char* path, struct bbusd_method* mthd,
 		/* Path is the method name. */
 		mval = bbus_hmap_findstr(node->methods, path);
 		if (mval != NULL) {
-			bbusd_logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUSD_LOG_ERR,
 				"Method already exists for this value: %s\n",
 				path);
 			return -1;
 		}
 		ret = bbus_hmap_setstr(node->methods, path, mthd);
 		if (ret < 0) {
-			bbusd_logmsg(BBUS_LOG_ERR,
+			bbusd_logmsg(BBUSD_LOG_ERR,
 				"Error registering new method: %s\n",
 				bbus_strerror(bbus_lasterror()));
 			return -1;
