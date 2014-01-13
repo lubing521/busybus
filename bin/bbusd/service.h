@@ -19,6 +19,7 @@
 
 #define BBUSD_METHOD_LOCAL	0x01
 #define BBUSD_METHOD_REMOTE	0x02
+#define BBUSD_METHOD_SIGNAL	0x03
 
 struct bbusd_method
 {
@@ -36,6 +37,12 @@ struct bbusd_remote_method
 {
 	int type;
 	struct bbusd_clientlist_elem* srvc;
+};
+
+struct bbusd_signal
+{
+	int type;
+	struct bbusd_clientlist handlers;
 };
 
 int bbusd_insert_method(const char* path, struct bbusd_method* mthd);
