@@ -941,22 +941,24 @@ int bbus_obj_repr(bbus_object* obj, const char* descr, char* buf,
 #define BBUS_MSGTYPE_SRVACK	0x06 /**< Service registered (or error). */
 #define BBUS_MSGTYPE_CLICALL	0x07 /**< Client calls a method. */
 #define BBUS_MSGTYPE_CLIREPLY	0x08 /**< Server replies to a client. */
-#define BBUS_MSGTYPE_SRVCALL	0x09 /**< Server calls a registered method. */
-#define BBUS_MSGTYPE_SRVREPLY	0x0A /**< Method provider replies. */
-#define BBUS_MSGTYPE_CLOSE	0x0B /**< Client closes session. */
-#define BBUS_MSGTYPE_CTRL	0x0C /**< Control message. */
-#define BBUS_MSGTYPE_MON	0x0D /**< Monitoring message. */
+#define BBUS_MSGTYPE_CLISIG	0x09 /**< Client emits a signal. */
+#define BBUS_MSGTYPE_SRVCALL	0x0A /**< Server calls a registered method. */
+#define BBUS_MSGTYPE_SRVREPLY	0x0B /**< Method provider replies. */
+#define BBUS_MSGTYPE_SRVSIG	0x0C /**< Server sends a signal to handlers. */
+#define BBUS_MSGTYPE_CLOSE	0x0D /**< Client closes session. */
+#define BBUS_MSGTYPE_CTRL	0x0E /**< Control message. */
+#define BBUS_MSGTYPE_MON	0x0F /**< Monitoring message. */
 /**
  * @}
  *
  * @defgroup __protsotypes__ Session open message types
  * @{
  *
- * These constants indicate the client type which tries to connect
+ * These constants indicate the type of the client trying to connect
  * to the busybus daemon.
  */
 #define BBUS_SOTYPE_NONE	0x00 /**< Not a session open message. */
-#define BBUS_SOTYPE_MTHCL	0x01 /**< Methad caller. */
+#define BBUS_SOTYPE_MTHCL	0x01 /**< Method caller. */
 #define BBUS_SOTYPE_SRVPRV	0x02 /**< Service provider. */
 #define BBUS_SOTYPE_MON		0x03 /**< Message monitor. */
 #define BBUS_SOTYPE_CTL		0x04 /**< Control program. */
@@ -1173,6 +1175,13 @@ bbus_client_connection* bbus_connect(const char* name) BBUS_PUBLIC;
 bbus_object* bbus_callmethod(bbus_client_connection* conn,
 		const char* method, bbus_object* arg) BBUS_PUBLIC;
 
+/**
+ * @brief Emits a signal.
+ * @param conn The client connection.
+ * @param signame Full signal path.
+ * @param arg Marshalled arguments.
+ * @return 0 on success, -1 on failure.
+ */
 int bbus_emitsignal(bbus_client_connection* conn,
 		const char* signame, bbus_object* obj) BBUS_PUBLIC;
 
