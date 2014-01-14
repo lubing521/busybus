@@ -16,6 +16,7 @@
 #define __BBUSD_SERVICE__
 
 #include "common.h"
+#include "clientlist.h"
 
 #define BBUSD_METHOD_LOCAL	0x01
 #define BBUSD_METHOD_REMOTE	0x02
