@@ -8,8 +8,6 @@
   only rely on the array size taken from the object buffer.
 - Some other way to store and read byte arrays from object with obj_build and
   obj_parse functions.
-- Figure out when to pass the -Wno-psabi flag to GCC - e.g. check for ARCH
-  variable on make start-up.
 - Make busybus more portable - eg. strerror_r, REG_NOERROR etc.
 - Proper clean-up code in bbusd.
 - Either the middle layer (defined in protocol.c) or the high layer (client.c,
