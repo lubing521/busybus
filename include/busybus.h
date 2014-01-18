@@ -1179,7 +1179,7 @@ bbus_object* bbus_callmethod(bbus_client_connection* conn,
  * @brief Emits a signal.
  * @param conn The client connection.
  * @param signame Full signal path.
- * @param arg Marshalled arguments.
+ * @param obj Marshalled arguments.
  * @return 0 on success, -1 on failure.
  */
 int bbus_emitsignal(bbus_client_connection* conn,
