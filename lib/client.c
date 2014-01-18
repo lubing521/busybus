@@ -319,7 +319,7 @@ int bbus_srvc_listencalls(bbus_service_connection* conn,
 	bbus_object* objarg;
 	bbus_object* objret;
 	void* callback;
-	uint32_t token;
+	unsigned token;
 	struct bbus_msg* msg;
 
 	msg = (struct bbus_msg*)buf;

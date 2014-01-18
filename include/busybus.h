@@ -1255,7 +1255,7 @@ typedef bbus_object* (*bbus_method_func)(bbus_object*);
 struct bbus_method
 {
 	char* name;		/**< Name of the method. */
-	char* argdscr;		/**< Description of the required arguments. */
+	char* argdscr;		/**< Description of required arguments. */
 	char* retdscr;		/**< Description of the return value. */
 	bbus_method_func func;	/**< Pointer to the method function. */
 };
